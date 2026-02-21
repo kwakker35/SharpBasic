@@ -4,5 +4,14 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"chat.tools.terminal.autoApprove": {
+			"dotnet new": true,
+			"dotnet sln": true,
+			"dotnet add": true,
+			"New-Item": true,
+			"Out-Null": true,
+			"dotnet build": true
+		}
+	}
 }

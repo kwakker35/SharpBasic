@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SharpBasic.Ast\SharpBasic.Ast.csproj" />
+    <ProjectReference Include="..\SharpBasic.Lexer\SharpBasic.Lexer.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
