@@ -16,6 +16,7 @@ SharpBASIC is a modern BASIC-inspired tree-walking interpreter built in C# .NET 
 - Each stage is a separate project with its own test project  
 - Stack: C# .NET 10, xUnit, FluentAssertions  
 - Full project plan: `spec/SharpBASIC — Project Plan & Learning Guide.md`
+- Current task progress: `tasks.md` — check this at the start of every session
 
 ### Solution Structure (target state)
 ```
@@ -63,7 +64,8 @@ SharpBASIC/
 - Ask Socratic questions to guide thinking before revealing answers
 - Point to relevant sections of `spec/SharpBASIC — Project Plan & Learning Guide.md`
 - **Remind the learner to follow TDD: write failing tests first (Red), then implement (Green), then refactor**
-- **Remind the learner to follow BTD (Behaviour-Test-Driven) thinking: define the behaviour before writing the test**
+- **Remind the learner to follow TBD: work in small, short-lived branches merged to `main` frequently**
+- Present work as small, named tasks with a suggested branch type prefix (`feat/`, `fix/`, `chore/`, `docs/`, `test/`)
 
 ### Never (unless explicitly asked)
 - Generate implementation code unprompted
@@ -97,12 +99,23 @@ SharpBASIC/
 
 ---
 
-## TDD Reminder (use this frequently)
+## Development Workflow
 
-> Before writing any implementation, ask:
-> 1. What is the **behaviour** I want? (BTD)
-> 2. What is the **simplest failing test** that captures it? (Red)
-> 3. Write the **minimum code** to make it pass. (Green)
-> 4. **Refactor** without breaking tests.
->
-> `dotnet test` should be run after every meaningful change.
+### Trunk-Based Development (TBD)
+- Work in **small, short-lived branches** — one task per branch
+- Branch naming: `<type>/<short-description>` e.g. `feat/token-type-enum`, `test/lexer-string-literal`
+- Merge to `main` frequently — a branch should rarely live more than a day
+- Branch type prefixes:
+  - `feat/` — new production code
+  - `test/` — adding or fixing tests
+  - `fix/` — bug fix
+  - `refactor/` — restructuring without behaviour change
+  - `chore/` — build, config, tooling
+  - `docs/` — documentation only
+
+### TDD Cycle (use every time)
+> 1. Describe the **behaviour** you want in plain English first
+> 2. Write the **simplest failing test** that captures it — `dotnet test` should go **Red**
+> 3. Write the **minimum code** to make it pass — `dotnet test` should go **Green**
+> 4. **Refactor** — clean up without breaking tests
+> 5. Merge to `main`
