@@ -11,7 +11,8 @@
 			"dotnet add": true,
 			"New-Item": true,
 			"Out-Null": true,
-			"dotnet build": true
+			"dotnet build": true,
+			"ForEach-Object": true
 		}
 	}
 }
