@@ -13,6 +13,7 @@
 			"Out-Null": true,
 			"dotnet build": true,
 			"ForEach-Object": true
-		}
+		},
+		"github.copilot.nextEditSuggestions.enabled": false
 	}
 }

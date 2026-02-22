@@ -1,0 +1,7 @@
+{
+    "github.copilot.editor.enableAutoCompletions": false,
+    "github.copilot.enable": {
+        "*": false
+    },
+    "github.copilot.nextEditSuggestions.enabled": false
+}
