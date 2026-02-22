@@ -13,6 +13,9 @@ public class Lexer
         _source = source;
     }
 
+    private char Current => _pos < _source.Length ? _source[_pos]: '\0';
+    private char Peek() => _pos + 1 < _source.Length ? _source[_pos + 1] : '\0';
+    private void Advance() => _pos++;
 
     public IReadOnlyList<Token> Tokenise()
     {
@@ -20,23 +23,22 @@ public class Lexer
         StringBuilder token = new();
         _pos = 0;
 
-        foreach(var ch in _source)
+        while(_pos < _source.Length)
         {
-            if(!char.IsWhiteSpace(ch))
+            if(char.IsWhiteSpace(Current))
             {
-                token.Append(ch);
-            } else {
-                //char IS white space so end of a token
                 tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
                 token = new();
             }
-            _pos++;
-
-            if(_pos == _source.Length)
+            else
             {
-                tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                token.Append(Current);
             }
+            Advance();
         }
+
+        if(token.Length > 0)
+            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
 
         return tokens;
     }
