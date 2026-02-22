@@ -1,28 +1,52 @@
+using System.Text;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Lexer;
 
 public class Lexer
 {
-    private readonly string _input;
+    private readonly string _source;
+    private  int _pos;
 
-    public Lexer(string input)
+    public Lexer(string source)
     {
-        _input = input;
+        _source = source;
     }
+
 
     public IReadOnlyList<Token> Tokenise()
     {
         var tokens = new List<Token>();
+        StringBuilder token = new();
+        _pos = 0;
 
-        var tokenType = _input.ToUpper() switch
+        foreach(var ch in _source)
+        {
+            if(!char.IsWhiteSpace(ch))
+            {
+                token.Append(ch);
+            } else {
+                //char IS white space so end of a token
+                tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                token = new();
+            }
+            _pos++;
+
+            if(_pos == _source.Length)
+            {
+                tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+            }
+        }
+
+        return tokens;
+    }
+
+    private TokenType GetTokenType(string token)
+    {
+        return token.ToUpper() switch
         {
             "PRINT" => TokenType.Print,
             _ => TokenType.Unknown
         };
-
-        tokens.Add(new Token(tokenType, _input, 1, 1));
-        
-        return tokens;
     }
 }
