@@ -58,10 +58,11 @@ public class LexerTests
 
         var tokens = lexer.Tokenise();
 
-        Assert.Equal(3, tokens.Count);
+        Assert.Equal(4, tokens.Count);
         Assert.Equal(TokenType.Print, tokens[0].Type);
         Assert.Equal(TokenType.NewLine, tokens[1].Type);
         Assert.Equal(TokenType.Print, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
     }
 
     [Fact]
@@ -75,5 +76,20 @@ public class LexerTests
         Assert.Equal(2, tokens.Count);
         Assert.Equal(TokenType.Print, tokens[0].Type);
         Assert.Equal(TokenType.Eof, tokens[1].Type);
+    }
+
+    [Fact]
+    private void Lex_Mulitple_Spaces_Skipped()
+    {
+        var input = "PRINT  HELLO";
+
+         var lexer = new Lexer(input);
+
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(3, tokens.Count);
+        Assert.Equal(TokenType.Print, tokens[0].Type);
+        Assert.Equal(TokenType.Unknown, tokens[1].Type);
+        Assert.Equal(TokenType.Eof, tokens[2].Type);
     }
 }

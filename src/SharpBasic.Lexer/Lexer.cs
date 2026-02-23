@@ -28,8 +28,11 @@ public class Lexer
             switch (Current)
             {
                 case ' ':
-                    tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
-                    token = new();
+                    if(token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        token=new();
+                    }
                     break;
                 case '"':
                     tokens.Add(GetStringLiteral());
