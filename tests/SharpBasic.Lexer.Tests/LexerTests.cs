@@ -63,4 +63,17 @@ public class LexerTests
         Assert.Equal(TokenType.NewLine, tokens[1].Type);
         Assert.Equal(TokenType.Print, tokens[2].Type);
     }
+
+    [Fact]
+    private void Lex_Eof_IsLastToken()
+    {
+        var input ="PRINT";
+        var lexer = new Lexer(input);
+
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(2, tokens.Count);
+        Assert.Equal(TokenType.Print, tokens[0].Type);
+        Assert.Equal(TokenType.Eof, tokens[1].Type);
+    }
 }

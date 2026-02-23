@@ -52,6 +52,7 @@ public class Lexer
         if(token.Length > 0)
             tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
 
+        tokens.Add(new Token(TokenType.Eof, "", 1, _pos));
         return tokens;
     }
 
