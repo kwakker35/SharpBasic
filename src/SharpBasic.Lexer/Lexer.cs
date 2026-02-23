@@ -25,23 +25,26 @@ public class Lexer
 
         while(_pos < _source.Length)
         {
-            if(char.IsWhiteSpace(Current))
+            switch (Current)
             {
-                tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
-                token = new();
-            }
-            else
-            {
-                switch (Current)
-                {
-                    case '"':
-                        tokens.Add(GetStringLiteral());
-                        break;
-                    default:
-                        token.Append(Current);
-                        break;
-                }
-                
+                case ' ':
+                    tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                    token = new();
+                    break;
+                case '"':
+                    tokens.Add(GetStringLiteral());
+                    break;
+                case '\n':
+                    if(token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        token=new();
+                    }
+                    tokens.Add(new Token(TokenType.NewLine, "", 1, _pos));
+                    break;
+                default:
+                    token.Append(Current);
+                    break;
             }
             Advance();
         }

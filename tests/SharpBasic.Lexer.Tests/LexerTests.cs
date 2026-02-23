@@ -49,4 +49,18 @@ public class LexerTests
         Assert.Equal(TokenType.StringLiteral, token[0].Type);
         Assert.Equal("Hello, World!", token[0].Value);
     }   
+
+    [Fact]
+    public void Lex_NewLine_Emmited()
+    {
+        var input = "PRINT\nPRINT";
+        var lexer = new Lexer(input);
+
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(3, tokens.Count);
+        Assert.Equal(TokenType.Print, tokens[0].Type);
+        Assert.Equal(TokenType.NewLine, tokens[1].Type);
+        Assert.Equal(TokenType.Print, tokens[2].Type);
+    }
 }
