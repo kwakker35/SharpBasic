@@ -36,4 +36,17 @@ public class LexerTests
         Assert.NotNull(token);
         Assert.Equal(TokenType.Unknown, token[0].Type);
     }
+
+    [Fact]
+    public void Lex_StringLiteral_ReturnCorrectTokenAndValue()
+    {
+        var input  ="\"Hello, World!\"";
+        var lexer = new Lexer(input);
+
+        var token = lexer.Tokenise();
+
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.StringLiteral, token[0].Type);
+        Assert.Equal("Hello, World!", token[0].Value);
+    }   
 }

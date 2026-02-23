@@ -32,7 +32,16 @@ public class Lexer
             }
             else
             {
-                token.Append(Current);
+                switch (Current)
+                {
+                    case '"':
+                        tokens.Add(GetStringLiteral());
+                        break;
+                    default:
+                        token.Append(Current);
+                        break;
+                }
+                
             }
             Advance();
         }
@@ -50,5 +59,19 @@ public class Lexer
             "PRINT" => TokenType.Print,
             _ => TokenType.Unknown
         };
+    }
+
+    private Token GetStringLiteral()
+    {
+        StringBuilder lit = new();
+        Advance(); //skip opening "
+        while(Current != '"' && Current != '\0')
+        {
+            lit.Append(Current);
+            Advance();
+        }
+        Advance(); //to skip closing "
+
+        return new Token(TokenType.StringLiteral,lit.ToString(),1,_pos);
     }
 }
