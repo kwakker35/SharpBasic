@@ -4,9 +4,20 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 1 — Lexer & Hello World
+## Current Phase: 2 — Parser & AST
 
-**Goal:** `PRINT "Hello, World!"` runs in the REPL.
+**Goal:** Parse `PRINT "Hello"` into a proper AST.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/ast-nodes` | AST node hierarchy — `AstNode`, `Statement`, `Expression`, `Program` | ⬜ Not started |
+| 2 | `feat/ast-print-statement` | `PrintStatement` and `StringLiteralExpression` nodes | ⬜ Not started |
+| 3 | `feat/parser-print` | `Parser` class — parses `PRINT "..."` into a `PrintStatement` | ⬜ Not started |
+| 4 | `feat/repl-use-parser` | REPL uses Parser instead of raw token inspection | ⬜ Not started |
+
+---
+
+## Completed — Phase 1
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
