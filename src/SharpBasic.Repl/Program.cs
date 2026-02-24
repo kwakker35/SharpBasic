@@ -1,25 +1,21 @@
 using SharpBasic.Lexer;
 using SharpBasic.Ast;
 
-bool exitRepl = false;
-
 Console.WriteLine("Welcome to SharpBASIC");
-while(!exitRepl)
+while(true)
 {
     Console.Write("> ");
     var input = Console.ReadLine();
-    if (input is null) break;
-    if(input.ToUpperInvariant() != "EXIT")
+    if (input is null || input.ToUpperInvariant() == "EXIT") break;
+
+    var lexer = new Lexer(input);
+    var tokens = lexer.Tokenise();
+    if(tokens.Count > 1 && tokens[0].Type == TokenType.Print)
     {
-        var lexer = new Lexer(input);
-        var tokens = lexer.Tokenise();
-        if(tokens.Count > 1 && tokens[0].Type == TokenType.Print)
-        {
-            Console.WriteLine(tokens[1].Value);
-        }
+        Console.WriteLine(tokens[1].Value);
     }
     else
     {
-        exitRepl = true;
+        Console.WriteLine("Unknown Command");
     }
 }
