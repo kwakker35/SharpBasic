@@ -16,7 +16,10 @@ public class ParserTests
         };
 
         var parser = new Parser(tokens);
-        var program = parser.Parse();
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
 
         Assert.NotNull(program);
         Assert.Equal(1, program.Statements.Count);
@@ -26,7 +29,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parser_Throws_Exception_When_Invalid_Token_Follows_Print()
+    public void Parser_Genrates_ParseError_When_Invalid_Token_Follows_Print()
     {
         var tokens = new List<Token>
         {
@@ -36,7 +39,12 @@ public class ParserTests
         };
 
         var parser = new Parser(tokens);
-        Assert.Throws<InvalidOperationException>(()=>parser.Parse());
+        var result = parser.Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        var errors = failure.Errors;
+
+        Assert.Equal(1, errors.Count);
+        Assert.IsType<InvalidOperationException>(errors[0].Exception);
     }
 
     [Fact]
@@ -48,9 +56,13 @@ public class ParserTests
         };
 
         var parser = new Parser(tokens);
-        var program = parser.Parse();
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
 
+        Assert.NotNull(result);
         Assert.NotNull(program);
         Assert.Empty(program.Statements);
     }
+
 }
