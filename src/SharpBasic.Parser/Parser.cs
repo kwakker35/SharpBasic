@@ -1,5 +1,3 @@
-using System.Reflection.Metadata.Ecma335;
-using Microsoft.VisualBasic;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Parser;
@@ -26,14 +24,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             {
                 case TokenType.Print:
                     var result = ParsePrintStatement();
-                    if (result is ParseStatementSuccess)
+                    if (result is ParseStatementSuccess s)
                     {
-                        statements.Add(((ParseStatementSuccess)result).Statement);
+                        statements.Add(s.Statement);
                     }
-                    else
+                    else if (result is ParseStatementFailure f)
                     {
-                        var err = ((ParseStatementFailure)result).Error;
-                        errors.Add(new ParseError(err.Exception, err.Line, err.Col));
+                        errors.Add(new ParseError(f.Error.Exception, f.Error.Line, f.Error.Col));
                     }
                     break;
                 default:
