@@ -34,6 +34,9 @@ public class Parser(IReadOnlyList<Token> tokens)
                     }
                     break;
                 default:
+                    errors.Add(new ParseError(
+                        new InvalidOperationException($"Unexpected token '{Current.Value}' ({Current.Type})"),
+                        Current.Line, Current.Column));
                     Advance();
                     break;
             }
