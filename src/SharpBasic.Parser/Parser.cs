@@ -60,10 +60,11 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
 
         var value = Current.Value;
+        var loc = new SourceLocation(Current.Line, Current.Column);
         Advance();
         return new ParseStatementSuccess(
                     new PrintStatement(
-                    new StringLiteralExpression(value)
+                    new StringLiteralExpression(value, loc), loc
                     ));
 
     }

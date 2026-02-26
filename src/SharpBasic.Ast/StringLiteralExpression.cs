@@ -1,3 +1,4 @@
 namespace SharpBasic.Ast;
 
-public record StringLiteralExpression(string Value): Expression;
+public record StringLiteralExpression(string Value, SourceLocation Location)
+    : Expression(Location);

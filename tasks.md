@@ -13,7 +13,7 @@ Current phase and active task list. Update as you progress.
 | 1 | `feat/ast-nodes` | AST node hierarchy — `AstNode`, `Statement`, `Expression`, `Program` | ✅ Complete — merged to `main` |
 | 2 | `feat/ast-print-statement` | `PrintStatement` and `StringLiteralExpression` nodes | ✅ Complete — merged to `main` |
 | 3 | `feat/parser-print` | `Parser` class — parses `PRINT "..."` into a `PrintStatement` | ✅ Complete — merged to `main` |
-| 4 | `feat/repl-use-parser` | REPL uses Parser instead of raw token inspection | 🔵 In progress — next task |
+| 4 | `feat/evaluator-core` | `ParseResult` + `EvalResult` discriminated unions, `Evaluator` class, `SourceLocation` on AST nodes, REPL uses full pipeline | ✅ Complete — merged to `main` |
 
 ---
 

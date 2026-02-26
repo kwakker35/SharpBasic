@@ -1,3 +1,3 @@
 namespace SharpBasic.Ast;
 
-public abstract record Statement: AstNode;
+public abstract record Statement(SourceLocation Location): AstNode(Location);

@@ -10,7 +10,8 @@ public class EvaluatorTests
     {
         var input = new Program(
             [
-                new PrintStatement(new StringLiteralExpression("Hello World!"))
+                new PrintStatement(new StringLiteralExpression(
+                    "Hello World!", new SourceLocation(1, 1)), new SourceLocation(1, 1))
             ]);
 
         var evaluator = new Evaluator(input);
