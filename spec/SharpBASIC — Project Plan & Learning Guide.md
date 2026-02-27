@@ -152,19 +152,19 @@ what is specified in the 10 phases. When SharpBASIC is finished, a new project b
 SharpBasic/
 ├── src/
 │   ├── SharpBasic.Ast/
-│   ├── SharpBasic.Lexer/
-│   ├── SharpBasic.Parser/
+│   ├── SharpBasic.Lexing/         ← was SharpBasic.Lexer (renamed for namespace clarity)
+│   ├── SharpBasic.Parsing/        ← was SharpBasic.Parser
 │   ├── SharpBasic.Semantics/
-│   ├── SharpBasic.Evaluator/
-│   └── SharpBasic.Repl/          ← Console app entry point (REPL + file runner)
+│   ├── SharpBasic.Evaluation/     ← was SharpBasic.Evaluator
+│   └── SharpBasic.Repl/           ← Console app entry point (REPL + file runner)
 ├── tests/
-│   ├── SharpBasic.Lexer.Tests/
-│   ├── SharpBasic.Parser.Tests/
+│   ├── SharpBasic.Lexing.Tests/
+│   ├── SharpBasic.Parsing.Tests/
 │   ├── SharpBasic.Ast.Tests/
 │   ├── SharpBasic.Semantics.Tests/
-│   └── SharpBasic.Evaluator.Tests/
-├── samples/                       ← .bas sample programs
-├── docs/                          ← Language spec (living document)
+│   └── SharpBasic.Evaluation.Tests/
+├── samples/                        ← .bas sample programs
+├── docs/                           ← Language spec (living document)
 └── SharpBasic.sln
 ```
 
@@ -177,8 +177,11 @@ SharpBasic/
 | AST nodes | `abstract record` hierarchy | Immutable, pattern-matchable, value equality for free |
 | Visitor dispatch | `switch` expressions + pattern matching | Idiomatic C# 10+, avoids interface bloat |
 | Token type | `readonly record struct` | Zero allocation on the hot lexer path |
-| Error model | `Result<T>` / discriminated union | No exception-driven control flow in compiler internals |
-| Test framework | xUnit + FluentAssertions | Industry standard, expressive assertions |
+| Error model | `ParseResult` / `EvalResult` discriminated unions | No exception-driven control flow — `ParseSuccess`/`ParseFailure`, `EvalSuccess`/`EvalFailure` |
+| Source positions | `SourceLocation?(Line, Col)` nullable on `AstNode` | Every node carries optional file position for error reporting |
+| Runtime values | `abstract record Value` hierarchy | `StringValue`, `IntValue`, `FloatValue`, `BoolValue`, `VoidValue` |
+| Namespace naming | Verb-based: `SharpBasic.Lexing`, `SharpBasic.Parsing`, `SharpBasic.Evaluation` | Avoids CS0118 clash when class name matches namespace name |
+| Test assertions | xUnit `Assert.*` only | Consistent style — FluentAssertions removed |
 | NuGet extras | None required initially | Keep dependencies minimal |
 | Interpreter strategy | Tree-walking first | Ship fast, optimise later |
 
