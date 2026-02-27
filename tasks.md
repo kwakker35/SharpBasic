@@ -10,7 +10,7 @@ Current phase and active task list. Update as you progress.
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
-| 1 | `test/run-helper` | `Run()` test helper in `EvaluatorTests` | 🔵 In progress |
+| 1 | `test/run-helper` | `Run()` test helper in `EvaluatorTests` | ✅ Complete — merged to `main` |
 | 2 | `feat/symbol-table` | `SymbolTable` class + inject into `Evaluator` | ⬜ |
 | 3 | `feat/lexer-let-identifier` | Lexer recognises `LET`, `=`, and identifier tokens | ⬜ |
 | 4 | `feat/ast-let-identifier` | `LetStatement` and `IdentifierExpression` AST nodes | ⬜ |
