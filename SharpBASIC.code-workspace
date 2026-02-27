@@ -12,7 +12,8 @@
 			"New-Item": true,
 			"Out-Null": true,
 			"dotnet build": true,
-			"ForEach-Object": true
+			"ForEach-Object": true,
+			"git mv": true
 		},
 		"github.copilot.nextEditSuggestions.enabled": false
 	}
