@@ -1,4 +1,5 @@
 using SharpBasic.Ast;
+using SharpBasic.Parsing;
 using Xunit;
 
 namespace SharpBasic.Evaluation.Tests;
@@ -19,5 +20,13 @@ public class EvaluatorTests
 
         Assert.NotNull(result);
         Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output()
+    {
+        var output = RunHelper.Run("PRINT \"Hello World!\"");
+        Assert.NotNull(output);
+        Assert.Equal("Hello World!", output);
     }
 }
