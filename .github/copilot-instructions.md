@@ -14,26 +14,26 @@ SharpBASIC is a modern BASIC-inspired tree-walking interpreter built in C# .NET 
 - No line numbers — structured, readable syntax  
 - Clean pipeline: Lexer → Parser → AST → Semantic Analysis → Evaluator → REPL  
 - Each stage is a separate project with its own test project  
-- Stack: C# .NET 10, xUnit, FluentAssertions  
+- Stack: C# .NET 10, xUnit (`Assert.*` only — FluentAssertions removed)  
 - Full project plan: `spec/SharpBASIC — Project Plan & Learning Guide.md`
 - Current task progress: `tasks.md` — check this at the start of every session
 
-### Solution Structure (target state)
+### Solution Structure (current state)
 ```
 SharpBASIC/
 ├── src/
 │   ├── SharpBasic.Ast/         ← AST node definitions (shared)
-│   ├── SharpBasic.Lexer/       ← Tokeniser
-│   ├── SharpBasic.Parser/      ← Recursive descent parser
+│   ├── SharpBasic.Lexing/      ← Tokeniser (verb-based namespace, was Lexer)
+│   ├── SharpBasic.Parsing/     ← Recursive descent parser (was Parser)
 │   ├── SharpBasic.Semantics/   ← Type checking, symbol resolution
-│   ├── SharpBasic.Evaluator/   ← Tree-walking interpreter
+│   ├── SharpBasic.Evaluation/  ← Tree-walking interpreter (was Evaluator)
 │   └── SharpBasic.Repl/        ← Console app (REPL + file runner)
 ├── tests/
-│   ├── SharpBasic.Lexer.Tests/
-│   ├── SharpBasic.Parser.Tests/
+│   ├── SharpBasic.Lexing.Tests/
+│   ├── SharpBasic.Parsing.Tests/
 │   ├── SharpBasic.Ast.Tests/
 │   ├── SharpBasic.Semantics.Tests/
-│   └── SharpBasic.Evaluator.Tests/
+│   └── SharpBasic.Evaluation.Tests/
 ├── samples/                    ← .bas example programs
 ├── docs/
 │   └── language-spec.md
@@ -85,6 +85,13 @@ SharpBASIC/
 - Offer a hint before offering a solution
 - Suggest consulting *Crafting Interpreters* (craftinginterpreters.com) or the spec as first resources
 
+### Learner working style (observed)
+- Implements confidently and independently — avoid over-explaining C# syntax they clearly know
+- Prefers short, direct responses — match their register
+- Does a code review pass before running tests — don't interrupt this habit, it's good practice
+- Sometimes reports "all green" when a test run actually failed — always verify by checking the terminal exit code yourself before accepting the claim
+- Messages are brief and informal — don't require formal phrasing to understand intent
+
 ---
 
 ## Key Technical Decisions (from spec)
@@ -93,8 +100,11 @@ SharpBASIC/
 | AST nodes | `abstract record` hierarchy |
 | Visitor dispatch | `switch` expressions + pattern matching |
 | Token type | `readonly record struct` |
-| Error model | `Result<T>` / discriminated union — no exception-driven flow |
-| Test framework | xUnit + FluentAssertions |
+| Error model | `ParseResult`/`EvalResult` discriminated unions — `ParseSuccess`/`ParseFailure`, `EvalSuccess`/`EvalFailure` |
+| Source positions | `SourceLocation?(Line, Col)` nullable on `AstNode` |
+| Runtime values | `abstract record Value` — `StringValue`, `IntValue`, `FloatValue`, `BoolValue`, `VoidValue` |
+| Namespace naming | Verb-based: `SharpBasic.Lexing`, `SharpBasic.Parsing`, `SharpBasic.Evaluation` |
+| Test assertions | xUnit `Assert.*` only — no FluentAssertions |
 | Interpreter strategy | Tree-walking first |
 
 ---
