@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -7,27 +7,27 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Ast", "src\SharpBasic.Ast\SharpBasic.Ast.csproj", "{8CEF14C2-D951-43E3-BBEE-BF444C87461D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Lexer", "src\SharpBasic.Lexer\SharpBasic.Lexer.csproj", "{51A0C378-F8EF-4549-9AF5-18406AD7950E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Lexing", "src\SharpBasic.Lexing\SharpBasic.Lexing.csproj", "{51A0C378-F8EF-4549-9AF5-18406AD7950E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Parser", "src\SharpBasic.Parser\SharpBasic.Parser.csproj", "{4D3214E0-F2AF-4260-B321-DDC46B1569AE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Parsing", "src\SharpBasic.Parsing\SharpBasic.Parsing.csproj", "{4D3214E0-F2AF-4260-B321-DDC46B1569AE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Semantics", "src\SharpBasic.Semantics\SharpBasic.Semantics.csproj", "{6D79D574-5733-497D-8C7F-56737B8DB0B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Evaluator", "src\SharpBasic.Evaluator\SharpBasic.Evaluator.csproj", "{10D7B64A-A8DC-4580-BF3C-4540099BE7DF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Evaluation", "src\SharpBasic.Evaluation\SharpBasic.Evaluation.csproj", "{10D7B64A-A8DC-4580-BF3C-4540099BE7DF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Repl", "src\SharpBasic.Repl\SharpBasic.Repl.csproj", "{F363DE5D-A42E-4BFC-9B81-F91EB27D3CE9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Lexer.Tests", "tests\SharpBasic.Lexer.Tests\SharpBasic.Lexer.Tests.csproj", "{E7052DFC-6C52-411A-9357-F5A57880AA87}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Lexing.Tests", "tests\SharpBasic.Lexing.Tests\SharpBasic.Lexing.Tests.csproj", "{E7052DFC-6C52-411A-9357-F5A57880AA87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Parser.Tests", "tests\SharpBasic.Parser.Tests\SharpBasic.Parser.Tests.csproj", "{EA90D05D-F74C-4C70-8D77-ADBFE0B63A7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Parsing.Tests", "tests\SharpBasic.Parsing.Tests\SharpBasic.Parsing.Tests.csproj", "{EA90D05D-F74C-4C70-8D77-ADBFE0B63A7E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Ast.Tests", "tests\SharpBasic.Ast.Tests\SharpBasic.Ast.Tests.csproj", "{FC8D0162-9E26-4866-85B0-47D8FD041E93}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Semantics.Tests", "tests\SharpBasic.Semantics.Tests\SharpBasic.Semantics.Tests.csproj", "{B0288182-E3AB-476A-926E-457ABB79BE98}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Evaluator.Tests", "tests\SharpBasic.Evaluator.Tests\SharpBasic.Evaluator.Tests.csproj", "{9C2DAF5D-B941-4889-B43D-14655F8B4726}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpBasic.Evaluation.Tests", "tests\SharpBasic.Evaluation.Tests\SharpBasic.Evaluation.Tests.csproj", "{9C2DAF5D-B941-4889-B43D-14655F8B4726}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

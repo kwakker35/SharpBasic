@@ -1,6 +1,6 @@
-using SharpBasic.Lexer;
-using SharpBasic.Parser;
-using SharpBasic.Evaluator;
+using SharpBasic.Lexing;
+using SharpBasic.Parsing;
+using SharpBasic.Evaluation;
 
 Console.WriteLine("Welcome to SharpBASIC");
 while (true)
