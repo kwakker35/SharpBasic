@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\SharpBasic.Parsing\SharpBasic.Parsing.csproj" />
+    <ProjectReference Include="..\..\src\SharpBasic.Lexing\SharpBasic.Lexing.csproj" />
     <ProjectReference Include="..\..\src\SharpBasic.Evaluation\SharpBasic.Evaluation.csproj" />
   </ItemGroup>
 

@@ -1,7 +1,7 @@
-using SharpBasic.Evaluator;
-using SharpBasic.Parser;
+using SharpBasic.Lexing;
+using SharpBasic.Parsing;
 
-namespace SharpBasic.Evaluator.Tests;
+namespace SharpBasic.Evaluation.Tests;
 
 public static class RunHelper
 {
@@ -10,8 +10,8 @@ public static class RunHelper
         var writer = new StringWriter();
         Console.SetOut(writer);
 
-        var tokens = new SharpBasic.Lexer.Lexer(source).Tokenise();
-        var parseResult = new SharpBasic.Parser.Parser(tokens).Parse();
+        var tokens = new Lexer(source).Tokenise();
+        var parseResult = new Parser(tokens).Parse();
         if(parseResult is ParseSuccess ps)
             new Evaluator(ps.Program).Evaluate();
 
