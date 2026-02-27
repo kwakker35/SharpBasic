@@ -15,7 +15,8 @@
 			"ForEach-Object": true,
 			"dotnet test": true,
 			"git add": true,
-			"git commit": true
+			"git commit": true,
+			"git checkout": true
 		},
 		"github.copilot.nextEditSuggestions.enabled": false
 	}
