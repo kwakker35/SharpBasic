@@ -1,2 +1,3 @@
-using SharpBasic.Evaluator;
+namespace SharpBasic.Evaluator;
+
 public abstract record EvalResult;

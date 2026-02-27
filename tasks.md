@@ -4,9 +4,22 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 2 — Parser & AST
+## Current Phase: 3 — Variables & Assignment
 
-**Goal:** Parse `PRINT "Hello"` into a proper AST.
+**Goal:** `LET name = "Alice"` then `PRINT name` works.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `test/run-helper` | `Run()` test helper in `EvaluatorTests` | 🔵 In progress |
+| 2 | `feat/symbol-table` | `SymbolTable` class + inject into `Evaluator` | ⬜ |
+| 3 | `feat/lexer-let-identifier` | Lexer recognises `LET`, `=`, and identifier tokens | ⬜ |
+| 4 | `feat/ast-let-identifier` | `LetStatement` and `IdentifierExpression` AST nodes | ⬜ |
+| 5 | `feat/parser-let` | Parser parses `LET x = "value"` into a `LetStatement` | ⬜ |
+| 6 | `feat/evaluator-let` | Evaluator executes `LetStatement` and resolves `IdentifierExpression` | ⬜ |
+
+---
+
+## Completed — Phase 2
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
