@@ -23,10 +23,92 @@ public class LexerTests
     }   
 
     [Fact]
-    public void Lex_UnkownKeyword_ReturnsCorrectToken()
+    public void Lex_LetKeyword_ReturnsCorrectToken()
     {
         //Arange
-        var input = "UNKNOWN";
+        var input = "LET";
+        var lexer = new Lexer(input);
+
+        //Act
+        var token = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Let, token[0].Type);
+    }   
+
+    [Fact]
+    public void Lex_EqKeyword_ReturnsCorrectToken()
+    {
+        //Arange
+        var input = "=";
+        var lexer = new Lexer(input);
+
+        //Act
+        var token = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Eq, token[0].Type);
+    }   
+
+    [Fact]
+    public void Lex_Identifier_ReturnsCorrectToken()
+    {
+        //Arange
+        var input = "x";
+        var lexer = new Lexer(input);
+
+        //Act
+        var token = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Identifier, token[0].Type);
+        Assert.Equal("x", token[0].Value);
+    }   
+
+    [Fact]
+    public void Lex_Full_Let_Sequence_ReturnsCorrectTokens()
+    {
+        //Arange
+        var input = "LET x = \"Alice\"";
+        var lexer = new Lexer(input);
+
+        //Act
+        var tokens = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(tokens);
+        Assert.Equal(TokenType.Let, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("x", tokens[1].Value);
+        Assert.Equal(TokenType.Eq, tokens[2].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[3].Type);
+        Assert.Equal("Alice", tokens[3].Value);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }   
+
+    [Fact]
+    public void Lex_NonKeyword_Word_ReturnsIdentifierToken()
+    {
+        //Arange
+        var input = "WIBBLE";
+        var lexer = new Lexer(input);
+
+        //Act
+        var token = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(token);
+        Assert.Equal(TokenType.Identifier, token[0].Type);
+    }
+
+    [Fact]
+    public void Lex_UnrecognisedCharacter_ReturnsUnknownToken()
+    {
+        //Arange
+        var input = "@";
         var lexer = new Lexer(input);
 
         //Act
@@ -81,7 +163,7 @@ public class LexerTests
     [Fact]
     private void Lex_Mulitple_Spaces_Skipped()
     {
-        var input = "PRINT  HELLO";
+        var input = "PRINT  ##";
 
          var lexer = new Lexer(input);
 

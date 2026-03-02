@@ -64,7 +64,9 @@ public class Lexer
         return token.ToUpper() switch
         {
             "PRINT" => TokenType.Print,
-            _ => TokenType.Unknown
+            "LET" => TokenType.Let,
+            "=" => TokenType.Eq,
+            _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier: TokenType.Unknown
         };
     }
 

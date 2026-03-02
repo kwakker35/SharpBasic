@@ -11,6 +11,9 @@ public class TokenTypeTests
     [InlineData(TokenType.NewLine, "NewLine")]
     [InlineData(TokenType.Eof, "Eof")]
     [InlineData(TokenType.Unknown, "Unknown")]
+    [InlineData(TokenType.Let, "Let")]
+    [InlineData(TokenType.Eq, "Eq")]
+    [InlineData(TokenType.Identifier, "Identifier")]
     public void TokenType_ToString_Returns_Expected_Type(TokenType tokenType, string expectedType)
     {
         Assert.Equal(expectedType, tokenType.ToString());

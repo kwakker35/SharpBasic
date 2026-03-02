@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SharpBasic.Ast\SharpBasic.Ast.csproj" />
+    <ProjectReference Include="..\..\src\SharpBasic.Evaluation\SharpBasic.Evaluation.csproj" />
   </ItemGroup>
 
 </Project>
