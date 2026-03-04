@@ -23,14 +23,25 @@ public class Parser(IReadOnlyList<Token> tokens)
             switch (Current.Type)
             {
                 case TokenType.Print:
-                    var result = ParsePrintStatement();
-                    if (result is ParseStatementSuccess s)
+                    var ppsRes = ParsePrintStatement();
+                    if (ppsRes is ParseStatementSuccess ps)
                     {
-                        statements.Add(s.Statement);
+                        statements.Add(ps.Statement);
                     }
-                    else if (result is ParseStatementFailure f)
+                    else if (ppsRes is ParseStatementFailure pf)
                     {
-                        errors.Add(new ParseError(f.Error.Exception, f.Error.Line, f.Error.Col));
+                        errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
+                    }
+                    break;
+                case TokenType.Let:
+                    var plsRes = ParseLetStatement();
+                    if (plsRes is ParseStatementSuccess ls)
+                    {
+                        statements.Add(ls.Statement);
+                    }
+                    else if (plsRes is ParseStatementFailure lf)
+                    {
+                        errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
                     }
                     break;
                 default:
@@ -69,6 +80,64 @@ public class Parser(IReadOnlyList<Token> tokens)
                     new PrintStatement(
                     new StringLiteralExpression(value, loc), loc
                     ));
+
+    }
+
+    private ParseStatementResult ParseLetStatement()
+    {
+        var letLoc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //consume LET
+
+        if (Current.Type is not TokenType.Identifier)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                            new InvalidOperationException(
+                            $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}")
+                            , Current.Line, Current.Column
+                        );
+            return new ParseStatementFailure(err);
+        }
+
+        var ident = Current.Value;
+        var identLoc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //consume Identifier
+
+        if (Current.Type is not TokenType.Eq)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                            new InvalidOperationException(
+                            $"Expected = after LET <identifier> but got {Current.Type} at {Current.Line}:{Current.Column}")
+                            , Current.Line, Current.Column
+                        );
+            return new ParseStatementFailure(err);
+        }
+
+        Advance(); //consume =
+
+        if (Current.Type is not TokenType.StringLiteral)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                            new InvalidOperationException(
+                            $"Expected StringLiteral after LET <identifier> = but got {Current.Type} at {Current.Line}:{Current.Column}")
+                            , Current.Line, Current.Column
+                        );
+            return new ParseStatementFailure(err);
+        }
+
+        var value = Current.Value;
+        var valueLoc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //consume value
+
+        return new ParseStatementSuccess(
+            new LetStatement(
+                new Token(TokenType.Identifier, ident, identLoc.Line, identLoc.Col),
+                new StringLiteralExpression(value, valueLoc),
+                letLoc
+            )
+        );
 
     }
 }

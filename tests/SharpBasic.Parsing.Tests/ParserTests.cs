@@ -22,7 +22,7 @@ public class ParserTests
 
 
         Assert.NotNull(program);
-        Assert.Equal(1, program.Statements.Count);
+        Assert.Single(program.Statements);
         var stmt = Assert.IsType<PrintStatement>(program.Statements[0]);
         var expr = Assert.IsType<StringLiteralExpression>(stmt.Value);
         Assert.Equal("Hello World!", expr.Value);
@@ -43,7 +43,7 @@ public class ParserTests
         var failure = Assert.IsType<ParseFailure>(result);
         var errors = failure.Errors;
 
-        Assert.Equal(1, errors.Count);
+        Assert.Single(errors);
         Assert.IsType<InvalidOperationException>(errors[0].Exception);
     }
 
@@ -65,4 +65,50 @@ public class ParserTests
         Assert.Empty(program.Statements);
     }
 
+    [Fact]
+    public void Parser_Correctly_Generates_Let_Program()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.StringLiteral,"Hello World!",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<LetStatement>(program.Statements[0]);
+        Assert.Equal("X", stmt.Identifier.Value);
+        var expr = Assert.IsType<StringLiteralExpression>(stmt.Value);
+        Assert.Equal("Hello World!", expr.Value);
+    }
+
+    [Fact]
+    public void Parser_Genrates_ParseError_When_Invalid_Token_Follows_Let()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.NewLine,"",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        var errors = failure.Errors;
+
+        Assert.Single(errors);
+        Assert.IsType<InvalidOperationException>(errors[0].Exception);
+    }
 }
