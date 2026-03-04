@@ -22,6 +22,9 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             switch (Current.Type)
             {
+                case TokenType.NewLine:
+                    Advance(); //consume token
+                    break;
                 case TokenType.Print:
                     var ppsRes = ParsePrintStatement();
                     if (ppsRes is ParseStatementSuccess ps)
