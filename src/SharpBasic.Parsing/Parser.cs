@@ -9,7 +9,9 @@ public class Parser(IReadOnlyList<Token> tokens)
     private Token Eof = new(TokenType.Eof, "", 1, 1);
 
     private Token Current => _pos < _tokens.Count ? _tokens[_pos] : Eof;
+
     private Token Peek() => _pos + 1 < _tokens.Count ? _tokens[_pos + 1] : Eof;
+
     private void Advance() => _pos++;
 
     public ParseResult Parse()
@@ -48,42 +50,56 @@ public class Parser(IReadOnlyList<Token> tokens)
                     }
                     break;
                 default:
-                    errors.Add(new ParseError(
-                        new InvalidOperationException($"Unexpected token '{Current.Value}' ({Current.Type})"),
-                        Current.Line, Current.Column));
+                    errors.Add(
+                        new ParseError(
+                            new InvalidOperationException(
+                                $"Unexpected token '{Current.Value}' ({Current.Type})"
+                            ),
+                            Current.Line,
+                            Current.Column
+                        )
+                    );
                     Advance();
                     break;
             }
         }
 
-        return errors.Count > 0 ?
-                new ParseFailure(errors) :
-                new ParseSuccess(new Program(statements));
+        return errors.Count > 0
+            ? new ParseFailure(errors)
+            : new ParseSuccess(new Program(statements));
     }
 
     private ParseStatementResult ParsePrintStatement()
     {
         Advance(); //Consume PRINT
 
-        if (Current.Type is not TokenType.StringLiteral)
+        if (Current.Type is TokenType.StringLiteral)
         {
-            Advance();
-            var err = new ParseStatementError(
-                            new InvalidOperationException(
-                            $"Expected StringLiteral after PRINT but got {Current.Type} at {Current.Line}:{Current.Column}")
-                            , Current.Line, Current.Column
-                        );
-            return new ParseStatementFailure(err);
+            var value = Current.Value;
+            var loc = new SourceLocation(Current.Line, Current.Column);
+            Advance(); //consume next token
+            return new ParseStatementSuccess(
+                new PrintStatement(new StringLiteralExpression(value, loc), loc)
+            );
+        }
+        else if (Current.Type is TokenType.Identifier)
+        {
+            var value = Current.Value;
+            var loc = new SourceLocation(Current.Line, Current.Column);
+            Advance(); //consume next token
+            return new ParseStatementSuccess(
+                new PrintStatement(new IdentifierExpression(value, loc), loc)
+            );
         }
 
-        var value = Current.Value;
-        var loc = new SourceLocation(Current.Line, Current.Column);
-        Advance();
-        return new ParseStatementSuccess(
-                    new PrintStatement(
-                    new StringLiteralExpression(value, loc), loc
-                    ));
-
+        var err = new ParseStatementError(
+            new InvalidOperationException(
+                $"Expected StringLiteral after PRINT but got {Current.Type} at {Current.Line}:{Current.Column}"
+            ),
+            Current.Line,
+            Current.Column
+        );
+        return new ParseStatementFailure(err);
     }
 
     private ParseStatementResult ParseLetStatement()
@@ -95,10 +111,12 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             Advance();
             var err = new ParseStatementError(
-                            new InvalidOperationException(
-                            $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}")
-                            , Current.Line, Current.Column
-                        );
+                new InvalidOperationException(
+                    $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
             return new ParseStatementFailure(err);
         }
 
@@ -110,10 +128,12 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             Advance();
             var err = new ParseStatementError(
-                            new InvalidOperationException(
-                            $"Expected = after LET <identifier> but got {Current.Type} at {Current.Line}:{Current.Column}")
-                            , Current.Line, Current.Column
-                        );
+                new InvalidOperationException(
+                    $"Expected = after LET <identifier> but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
             return new ParseStatementFailure(err);
         }
 
@@ -123,10 +143,12 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             Advance();
             var err = new ParseStatementError(
-                            new InvalidOperationException(
-                            $"Expected StringLiteral after LET <identifier> = but got {Current.Type} at {Current.Line}:{Current.Column}")
-                            , Current.Line, Current.Column
-                        );
+                new InvalidOperationException(
+                    $"Expected StringLiteral after LET <identifier> = but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
             return new ParseStatementFailure(err);
         }
 
@@ -141,6 +163,5 @@ public class Parser(IReadOnlyList<Token> tokens)
                 letLoc
             )
         );
-
     }
 }

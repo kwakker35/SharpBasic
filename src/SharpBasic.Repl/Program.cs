@@ -1,13 +1,15 @@
+using SharpBasic.Evaluation;
 using SharpBasic.Lexing;
 using SharpBasic.Parsing;
-using SharpBasic.Evaluation;
 
+var table = new SymbolTable();
 Console.WriteLine("Welcome to SharpBASIC");
 while (true)
 {
     Console.Write("> ");
     var input = Console.ReadLine();
-    if (input is null || input.ToUpperInvariant() == "EXIT") break;
+    if (input is null || input.ToUpperInvariant() == "EXIT")
+        break;
 
     var lexer = new Lexer(input);
     var tokens = lexer.Tokenise();
@@ -26,7 +28,7 @@ while (true)
     else
     {
         var ps = (ParseSuccess)parseResult;
-        var evaluator = new Evaluator(ps.Program);
+        var evaluator = new Evaluator(ps.Program, table);
         var evalResult = evaluator.Evaluate();
         if (evalResult is EvalFailure ef)
         {
@@ -42,5 +44,4 @@ while (true)
             //do someting later with other value types?
         }
     }
-
 }
