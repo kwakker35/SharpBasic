@@ -4,9 +4,20 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 3 — Variables & Assignment
+## Current Phase: 4 — Expressions & Arithmetic
 
-**Goal:** `LET name = "Alice"` then `PRINT name` works.
+**Goal:** `LET x = 1 + 2 * 3` evaluates correctly using Pratt parsing.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/lexer-numbers-operators` | Lexer recognises integer literals and `+` `-` `*` `/` `(` `)` | ⬜ |
+| 2 | `feat/ast-expressions` | `IntLiteralExpression`, `BinaryExpression` AST nodes | ⬜ |
+| 3 | `feat/parser-pratt` | Pratt expression parser — precedence, associativity | ⬜ |
+| 4 | `feat/evaluator-arithmetic` | Evaluator handles `BinaryExpression` and `IntLiteralExpression` | ⬜ |
+
+---
+
+## Completed — Phase 3
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
@@ -14,8 +25,8 @@ Current phase and active task list. Update as you progress.
 | 2 | `feat/symbol-table` | `SymbolTable` class + inject into `Evaluator` | ✅ Complete — merged to `main` |
 | 3 | `feat/lexer-let-identifier` | Lexer recognises `LET`, `=`, and identifier tokens | ✅ Complete — merged to `main` |
 | 4 | `feat/ast-let-identifier` | `LetStatement` and `IdentifierExpression` AST nodes | ✅ Complete — merged to `main` |
-| 5 | `feat/parser-let` | Parser parses `LET x = "value"` into a `LetStatement` | ⬜ |
-| 6 | `feat/evaluator-let` | Evaluator executes `LetStatement` and resolves `IdentifierExpression` | ⬜ |
+| 5 | `feat/parser-let` | Parser parses `LET x = "value"` into a `LetStatement` | ✅ Complete — merged to `main` |
+| 6 | `feat/evaluator-let` | Evaluator executes `LetStatement` and resolves `IdentifierExpression` | ✅ Complete — merged to `main` |
 
 ---
 
