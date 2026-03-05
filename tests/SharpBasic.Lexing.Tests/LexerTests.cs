@@ -6,7 +6,7 @@ namespace SharpBasic.Lexing.Tests;
 
 public class LexerTests
 {
-    
+
     [Fact]
     public void Lex_PrintKeyword_ReturnsCorrectToken()
     {
@@ -20,7 +20,7 @@ public class LexerTests
         //Assert
         Assert.NotNull(token);
         Assert.Equal(TokenType.Print, token[0].Type);
-    }   
+    }
 
     [Fact]
     public void Lex_LetKeyword_ReturnsCorrectToken()
@@ -35,7 +35,7 @@ public class LexerTests
         //Assert
         Assert.NotNull(token);
         Assert.Equal(TokenType.Let, token[0].Type);
-    }   
+    }
 
     [Fact]
     public void Lex_EqKeyword_ReturnsCorrectToken()
@@ -50,7 +50,7 @@ public class LexerTests
         //Assert
         Assert.NotNull(token);
         Assert.Equal(TokenType.Eq, token[0].Type);
-    }   
+    }
 
     [Fact]
     public void Lex_Identifier_ReturnsCorrectToken()
@@ -66,7 +66,7 @@ public class LexerTests
         Assert.NotNull(token);
         Assert.Equal(TokenType.Identifier, token[0].Type);
         Assert.Equal("x", token[0].Value);
-    }   
+    }
 
     [Fact]
     public void Lex_Full_Let_Sequence_ReturnsCorrectTokens()
@@ -87,7 +87,7 @@ public class LexerTests
         Assert.Equal(TokenType.StringLiteral, tokens[3].Type);
         Assert.Equal("Alice", tokens[3].Value);
         Assert.Equal(TokenType.Eof, tokens[4].Type);
-    }   
+    }
 
     [Fact]
     public void Lex_NonKeyword_Word_ReturnsIdentifierToken()
@@ -122,7 +122,7 @@ public class LexerTests
     [Fact]
     public void Lex_StringLiteral_ReturnCorrectTokenAndValue()
     {
-        var input  ="\"Hello, World!\"";
+        var input = "\"Hello, World!\"";
         var lexer = new Lexer(input);
 
         var token = lexer.Tokenise();
@@ -130,7 +130,7 @@ public class LexerTests
         Assert.NotNull(token);
         Assert.Equal(TokenType.StringLiteral, token[0].Type);
         Assert.Equal("Hello, World!", token[0].Value);
-    }   
+    }
 
     [Fact]
     public void Lex_NewLine_Emmited()
@@ -150,7 +150,7 @@ public class LexerTests
     [Fact]
     private void Lex_Eof_IsLastToken()
     {
-        var input ="PRINT";
+        var input = "PRINT";
         var lexer = new Lexer(input);
 
         var tokens = lexer.Tokenise();
@@ -165,7 +165,7 @@ public class LexerTests
     {
         var input = "PRINT  ##";
 
-         var lexer = new Lexer(input);
+        var lexer = new Lexer(input);
 
         var tokens = lexer.Tokenise();
 
@@ -173,5 +173,69 @@ public class LexerTests
         Assert.Equal(TokenType.Print, tokens[0].Type);
         Assert.Equal(TokenType.Unknown, tokens[1].Type);
         Assert.Equal(TokenType.Eof, tokens[2].Type);
+    }
+
+    [Fact]
+    private void Lex_Integer_Returns_Correct_Tokens_And_Value()
+    {
+        var input = "42";
+
+        var lexer = new Lexer(input);
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(2, tokens.Count);
+        Assert.Equal(TokenType.IntLiteral, tokens[0].Type);
+        Assert.Equal("42", tokens[0].Value);
+        Assert.Equal(TokenType.Eof, tokens[1].Type);
+    }
+
+    [Fact]
+    private void Lex_Float_Returns_Correct_Tokens_And_Value()
+    {
+        var input = "3.14";
+
+        var lexer = new Lexer(input);
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(2, tokens.Count);
+        Assert.Equal(TokenType.FloatLiteral, tokens[0].Type);
+        Assert.Equal("3.14", tokens[0].Value);
+        Assert.Equal(TokenType.Eof, tokens[1].Type);
+    }
+
+    [Fact]
+    private void Lex_Simple_Sum_Returns_Correct_Tokens_And_Value()
+    {
+        var input = "1 + 2";
+
+        var lexer = new Lexer(input);
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.IntLiteral, tokens[0].Type);
+        Assert.Equal("1", tokens[0].Value);
+        Assert.Equal(TokenType.Plus, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal("2", tokens[2].Value);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    private void Lex_Backeted_Simple_Sum_Returns_Correct_Tokens_And_Value()
+    {
+        var input = "(10 * 3)";
+
+        var lexer = new Lexer(input);
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(6, tokens.Count);
+        Assert.Equal(TokenType.LParen, tokens[0].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[1].Type);
+        Assert.Equal("10", tokens[1].Value);
+        Assert.Equal(TokenType.Multiply, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal("3", tokens[3].Value);
+        Assert.Equal(TokenType.RParen, tokens[4].Type);
+        Assert.Equal(TokenType.Eof, tokens[5].Type);
     }
 }

@@ -6,7 +6,8 @@ public enum TokenType
     Print, Let,
 
     //Identifiers and Literals
-    Identifier, StringLiteral,
+    Identifier, StringLiteral, IntLiteral, FloatLiteral,
+    Plus, Minus, Multiply, Divide, LParen, RParen,
 
     //Operators and Punctuation
     Eq,
