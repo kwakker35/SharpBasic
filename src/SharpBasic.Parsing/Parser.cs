@@ -87,7 +87,6 @@ public class Parser(IReadOnlyList<Token> tokens)
             return new ParseStatementFailure(err);
         }
 
-        Advance(); //consume expression token
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
     }
 
@@ -143,8 +142,6 @@ public class Parser(IReadOnlyList<Token> tokens)
             return new ParseStatementFailure(err);
         }
 
-        Advance(); //consume value
-
         return new ParseStatementSuccess(
             new LetStatement(
                 new Token(TokenType.Identifier, ident, identLoc.Line, identLoc.Col),
@@ -154,7 +151,47 @@ public class Parser(IReadOnlyList<Token> tokens)
         );
     }
 
-    private Expression? ParseExpression()
+    private Expression? ParseExpression(int minBindingPower = 0)
+    {
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        //Parse the left-hand side (a "prefix" - literal, identifier or grouped expr)
+        Expression? left;
+
+        if (Current.Type == TokenType.LParen)
+        {
+            Advance(); // consume (
+            left = ParseExpression(0); //parse inner expression with reset binding power
+            if (Current.Type != TokenType.RParen)
+                return null; //unmatched paren - error
+            Advance(); //consume )
+        }
+        else
+        {
+            left = ParsePrimary();
+            if (left is null) return null;
+            Advance(); //consume the primary token
+        }
+
+        //Pratt loop - keep consuming operators while they bind tighter than minBindingPower
+        while (true)
+        {
+            var bp = BindingPower(Current.Type);
+            if (bp <= minBindingPower) break;
+
+            var op = Current;
+            Advance(); //consume operator
+            var right = ParseExpression(bp); // recurse with THIS operator's binding power
+            if (right is null) return null;
+
+            left = new BinaryExpression(left!, op, right, loc);
+        }
+
+        return left;
+
+    }
+
+    private Expression? ParsePrimary()
     {
         var loc = new SourceLocation(Current.Line, Current.Column);
 
@@ -172,4 +209,11 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         return null;
     }
+
+    private static int BindingPower(TokenType type) => type switch
+    {
+        TokenType.Plus or TokenType.Minus => 10,
+        TokenType.Multiply or TokenType.Divide => 20,
+        _ => 0
+    };
 }
