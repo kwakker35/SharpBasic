@@ -29,7 +29,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parser_Genrates_ParseError_When_Invalid_Token_Follows_Print()
+    public void Parser_Generates_ParseError_When_Invalid_Token_Follows_Print()
     {
         var tokens = new List<Token>
         {
@@ -66,7 +66,7 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parser_Correctly_Generates_Let_Program()
+    public void Parser_Correctly_Generates_Let_Program_String()
     {
         var tokens = new List<Token>
         {
@@ -92,7 +92,59 @@ public class ParserTests
     }
 
     [Fact]
-    public void Parser_Genrates_ParseError_When_Invalid_Token_Follows_Let()
+    public void Parser_Correctly_Generates_Let_Program_Int()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.IntLiteral,"42",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<LetStatement>(program.Statements[0]);
+        Assert.Equal("X", stmt.Identifier.Value);
+        var expr = Assert.IsType<IntLiteralExpression>(stmt.Value);
+        Assert.Equal(42, expr.Value);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Let_Program_Float()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.FloatLiteral,"3.14",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<LetStatement>(program.Statements[0]);
+        Assert.Equal("X", stmt.Identifier.Value);
+        var expr = Assert.IsType<FloatLiteralExpression>(stmt.Value);
+        Assert.Equal(3.14f, expr.Value);
+    }
+
+    [Fact]
+    public void Parser_Generates_ParseError_When_Invalid_Token_Follows_Let()
     {
         var tokens = new List<Token>
         {
