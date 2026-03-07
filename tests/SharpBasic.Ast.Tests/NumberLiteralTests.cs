@@ -16,9 +16,9 @@ public class NumberLiteralTests
     [Fact]
     public void FloatLiteral_Holds_Value()
     {
-        var exp1 = new FloatLiteralExpression(3.14f, new SourceLocation(1, 1));
+        var exp1 = new FloatLiteralExpression(3.14, new SourceLocation(1, 1));
 
-        Assert.Equal(3.14f, exp1.Value);
+        Assert.Equal(3.14, exp1.Value);
     }
 
 }

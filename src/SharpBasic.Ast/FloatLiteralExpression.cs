@@ -1,4 +1,4 @@
 namespace SharpBasic.Ast;
 
-public record FloatLiteralExpression(float Value, SourceLocation Location)
+public record FloatLiteralExpression(double Value, SourceLocation Location)
     : Expression(Location);

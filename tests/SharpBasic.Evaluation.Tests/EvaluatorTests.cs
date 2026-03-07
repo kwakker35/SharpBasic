@@ -71,4 +71,109 @@ public class EvaluatorTests
         Assert.NotNull(output);
         Assert.Equal("Hello World!", output);
     }
+
+    [Fact]
+    public void Evaluator_Generates_Correct_Value_Simple_Add()
+    {
+        var loc = new SourceLocation(1, 1);
+        var id = new Token(TokenType.Identifier, "X", 1, 1);
+        var expr = new BinaryExpression(
+                    new IntLiteralExpression(1, loc),
+                    new Token(TokenType.Plus, "", 1, 1),
+                    new IntLiteralExpression(2, loc),
+                    loc
+        );
+
+        var input = new Program(
+            [
+                new LetStatement(id,expr,loc)
+            ]);
+
+        var evaluator = new Evaluator(input);
+        var result = evaluator.Evaluate();
+
+        Assert.NotNull(result);
+        Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Generates_Correct_Value_Simple_Divide()
+    {
+        var loc = new SourceLocation(1, 1);
+        var id = new Token(TokenType.Identifier, "X", 1, 1);
+        var expr = new BinaryExpression(
+                    new IntLiteralExpression(10, loc),
+                    new Token(TokenType.Divide, "", 1, 1),
+                    new IntLiteralExpression(2, loc),
+                    loc
+        );
+
+        var input = new Program(
+            [
+                new LetStatement(id,expr,loc)
+            ]);
+
+        var evaluator = new Evaluator(input);
+        var result = evaluator.Evaluate();
+
+        Assert.NotNull(result);
+        Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Generates_Correct_Value_Complex_Sum()
+    {
+        var loc = new SourceLocation(1, 1);
+        var id = new Token(TokenType.Identifier, "X", 1, 1);
+        var rExpr = new BinaryExpression(
+                    new IntLiteralExpression(2, loc),
+                    new Token(TokenType.Multiply, "", 1, 1),
+                    new IntLiteralExpression(3, loc),
+                    loc
+        );
+
+        var expr = new BinaryExpression(
+                    new IntLiteralExpression(1, loc),
+                    new Token(TokenType.Plus, "", 1, 1),
+                    rExpr,
+                    loc
+        );
+
+        var input = new Program(
+            [
+                new LetStatement(id,expr,loc),
+                new PrintStatement(new IdentifierExpression("X", loc), loc)
+            ]);
+
+        var evaluator = new Evaluator(input);
+        var result = evaluator.Evaluate();
+
+        Assert.NotNull(result);
+        Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Int()
+    {
+        var output = RunHelper.Run("LET X = 1 + 2\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("3", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Float_Ends_In_Zero()
+    {
+        var output = RunHelper.Run("LET X = 1.5 + 2.5\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("4", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Float_Ends_In_NonZero()
+    {
+        var output = RunHelper.Run("LET X = 1.7 + 2.5\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("4.2", output);
+    }
+
 }

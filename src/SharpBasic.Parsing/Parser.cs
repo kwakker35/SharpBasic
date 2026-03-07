@@ -201,7 +201,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (Current.Type == TokenType.IntLiteral && int.TryParse(Current.Value, out var i))
             return new IntLiteralExpression(i, loc);
 
-        if (Current.Type == TokenType.FloatLiteral && float.TryParse(Current.Value, out var f))
+        if (Current.Type == TokenType.FloatLiteral && double.TryParse(Current.Value, out var f))
             return new FloatLiteralExpression(f, loc);
 
         if (Current.Type == TokenType.Identifier)
