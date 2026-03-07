@@ -1,3 +1,4 @@
+using System.Collections;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Evaluation;
@@ -49,18 +50,9 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         var result = EvaluateExpression(p.Value);
         if (result is EvalFailure)
             return result;
-        if (
-            p.Value is StringLiteralExpression
-            && result is EvalSuccess es
-            && es.Value is StringValue sv
-        )
-            Console.WriteLine(sv.V);
-        if (
-            p.Value is IdentifierExpression
-            && result is EvalSuccess esx
-            && esx.Value is StringValue svx
-        )
-            Console.WriteLine(svx.V);
+
+        if (result is EvalSuccess es)
+            Console.WriteLine(es.Value?.ToString() ?? string.Empty);
 
         return new EvalSuccess(new VoidValue());
     }
@@ -90,11 +82,65 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         );
     }
 
+    private EvalResult EvaluateBinaryExpression(BinaryExpression expr)
+    {
+        var leftRes = EvaluateExpression(expr.Left);
+        if (leftRes is EvalFailure) return leftRes;
+        var left = ((EvalSuccess)leftRes).Value as IntValue;
+
+        var rightRes = EvaluateExpression(expr.Right);
+        if (rightRes is EvalFailure) return rightRes;
+        var right = ((EvalSuccess)rightRes).Value as IntValue;
+
+        if (expr.Operator.Type is TokenType.Divide
+                && right.V == 0)
+        {
+            return new EvalFailure(
+                [
+                    new EvalError(
+                        new DivideByZeroException(),
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0
+                    )
+                ]
+            );
+        }
+
+        int? result = expr.Operator.Type switch
+        {
+            TokenType.Plus => left.V + right.V,
+            TokenType.Minus => left.V - right.V,
+            TokenType.Multiply => left.V * right.V,
+            TokenType.Divide => left.V / right.V,
+            _ => null
+        };
+
+        if (result is null)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException(
+                                $"Unknown statement type: {expr.Operator.GetType().Name}"
+                            ),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+
+        return new EvalSuccess(new IntValue(result.Value));
+    }
+
     private EvalResult EvaluateExpression(Expression expr)
     {
         return expr switch
         {
             StringLiteralExpression sl => new EvalSuccess(new StringValue(sl.Value)),
+            IntLiteralExpression il => new EvalSuccess(new IntValue(il.Value)),
+            FloatLiteralExpression fl => new EvalSuccess(new FloatValue(fl.Value)),
+            BinaryExpression be => EvaluateBinaryExpression(be),
             IdentifierExpression id when _table.Get(id.Name) is { } val => new EvalSuccess(val),
             IdentifierExpression id
                 => new EvalFailure(
