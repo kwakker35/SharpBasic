@@ -5,7 +5,10 @@ namespace SharpBasic.Parsing;
 public class Parser(IReadOnlyList<Token> tokens)
 {
     private readonly IReadOnlyList<Token> _tokens = tokens;
-    private int _pos;
+    private int _pos = 0;
+
+    List<ParseError> errors = [];
+
     private Token Eof = new(TokenType.Eof, "", 1, 1);
 
     private Token Current => _pos < _tokens.Count ? _tokens[_pos] : Eof;
@@ -16,59 +19,71 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     public ParseResult Parse()
     {
-        var statements = new List<Statement>();
-        var errors = new List<ParseError>();
+        List<Statement> statements = [];
 
-        _pos = 0;
         while (Current.Type != TokenType.Eof)
         {
-            switch (Current.Type)
-            {
-                case TokenType.NewLine:
-                    Advance(); //consume token
-                    break;
-                case TokenType.Print:
-                    var ppsRes = ParsePrintStatement();
-                    if (ppsRes is ParseStatementSuccess ps)
-                    {
-                        statements.Add(ps.Statement);
-                    }
-                    else if (ppsRes is ParseStatementFailure pf)
-                    {
-                        errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
-                    }
-                    break;
-                case TokenType.Let:
-                    var plsRes = ParseLetStatement();
-                    if (plsRes is ParseStatementSuccess ls)
-                    {
-                        statements.Add(ls.Statement);
-                    }
-                    else if (plsRes is ParseStatementFailure lf)
-                    {
-                        errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
-                    }
-                    break;
-                default:
-                    errors.Add(
-                        new ParseError(
-                            new InvalidOperationException(
-                                $"Unexpected token '{Current.Value}' ({Current.Type})"
-                            ),
-                            Current.Line,
-                            Current.Column
-                        )
-                    );
-                    Advance();
-                    break;
-            }
+            ParseStatement(statements);
         }
 
         return errors.Count > 0
             ? new ParseFailure(errors)
             : new ParseSuccess(new Program(statements));
     }
-
+    private void ParseStatement(List<Statement> target)
+    {
+        switch (Current.Type)
+        {
+            case TokenType.NewLine:
+                Advance(); //consume token
+                break;
+            case TokenType.Print:
+                var ppsRes = ParsePrintStatement();
+                if (ppsRes is ParseStatementSuccess ps)
+                {
+                    target.Add(ps.Statement);
+                }
+                else if (ppsRes is ParseStatementFailure pf)
+                {
+                    errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
+                }
+                break;
+            case TokenType.Let:
+                var plsRes = ParseLetStatement();
+                if (plsRes is ParseStatementSuccess ls)
+                {
+                    target.Add(ls.Statement);
+                }
+                else if (plsRes is ParseStatementFailure lf)
+                {
+                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
+                }
+                break;
+            case TokenType.If:
+                var pisRes = ParseIfStatement();
+                if (pisRes is ParseStatementSuccess ifs)
+                {
+                    target.Add(ifs.Statement);
+                }
+                else if (pisRes is ParseStatementFailure lf)
+                {
+                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
+                }
+                break;
+            default:
+                errors.Add(
+                    new ParseError(
+                        new InvalidOperationException(
+                            $"Unexpected token '{Current.Value}' ({Current.Type})"
+                        ),
+                        Current.Line,
+                        Current.Column
+                    )
+                );
+                Advance();
+                break;
+        }
+    }
     private ParseStatementResult ParsePrintStatement()
     {
         var loc = new SourceLocation(Current.Line, Current.Column);
@@ -88,6 +103,79 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
 
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
+    }
+
+    private ParseStatementResult ParseIfStatement()
+    {
+        var ifLoc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //consume IF
+
+        var condition = ParseExpression();
+
+        if (condition is null)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected condition after IF but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(err);
+        }
+
+        List<Statement> thenBlock = [];
+        List<Statement> elseBlock = [];
+
+        Advance(); //consume Then
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        //break on ELSE or END
+        while (Current.Type is not TokenType.Else && Current.Type is not TokenType.End)
+        {
+            ParseStatement(thenBlock);
+        }
+
+        //ELSE Block
+        if (Current.Type is TokenType.Else)
+        {
+            Advance(); //consume Else
+            if (Current.Type is TokenType.NewLine)
+                Advance(); //consume NewLine
+
+            //break on END
+            while (Current.Type is not TokenType.End)
+            {
+                ParseStatement(elseBlock);
+            }
+        }
+
+        //expecting END IF
+        if (Current.Type is TokenType.End && Peek().Type is not TokenType.If)
+        {
+            var err = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected IF after END but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(err);
+        }
+
+        Advance(); //consume END
+        Advance(); //consume IF
+
+        return new ParseStatementSuccess(
+            new IfStatement(
+                condition,
+                thenBlock,
+                elseBlock.Count > 0 ? elseBlock : null,
+                ifLoc
+                )
+        );
     }
 
     private ParseStatementResult ParseLetStatement()
@@ -212,6 +300,8 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private static int BindingPower(TokenType type) => type switch
     {
+        TokenType.Eq or TokenType.NotEq or TokenType.Lt or
+            TokenType.Gt or TokenType.LtEq or TokenType.GtEq => 5,
         TokenType.Plus or TokenType.Minus => 10,
         TokenType.Multiply or TokenType.Divide => 20,
         _ => 0

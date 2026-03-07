@@ -257,4 +257,119 @@ public class ParserTests
         Assert.Single(errors);
         Assert.IsType<InvalidOperationException>(errors[0].Exception);
     }
+
+    [Fact]
+    public void Parser_Correctly_Generates_If_Then_End_Simple()
+    {
+        // IF 1 = 1 THEN
+        //     PRINT "yes"
+        // END IF
+
+        var tokens = new List<Token>
+        {
+            new(TokenType.If,"",1,1),
+            new(TokenType.IntLiteral,"1",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.IntLiteral,"1",1,1),
+            new(TokenType.Then,"",1,1),
+            new(TokenType.Print,"",1,1),
+            new(TokenType.StringLiteral,"yes",1,1),
+            new(TokenType.End,"",1,1),
+            new(TokenType.If,"",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<IfStatement>(program.Statements[0]);
+
+        var binExpr = Assert.IsType<BinaryExpression>(stmt.Condition);
+
+        //LEFT side
+        var left = Assert.IsType<IntLiteralExpression>(binExpr.Left);
+        Assert.Equal(1, left.Value);
+
+        //Operator
+        Assert.Equal(TokenType.Eq, binExpr.Operator.Type);
+
+        //RIGHT side
+        var right = Assert.IsType<IntLiteralExpression>(binExpr.Right);
+        Assert.Equal(1, right.Value);
+
+        //THEN block
+        var thenBlock = Assert.IsType<List<Statement>>(stmt.ThenBlock);
+        Assert.Equal(1, thenBlock.Count);
+        var thenStmt = Assert.IsType<PrintStatement>(thenBlock[0]);
+        var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
+        Assert.Equal("yes", strLit.Value);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_If_Then_Else_End_Simple()
+    {
+        // IF 1 = 1 THEN
+        //     PRINT "yes"
+        // ELSE
+        //      PRINT "no"
+        // END IF
+
+        var tokens = new List<Token>
+        {
+            new(TokenType.If,"",1,1),
+            new(TokenType.IntLiteral,"1",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.IntLiteral,"1",1,1),
+            new(TokenType.Then,"",1,1),
+            new(TokenType.Print,"",1,1),
+            new(TokenType.StringLiteral,"yes",1,1),
+            new(TokenType.Else,"",1,1),
+            new(TokenType.Print,"",1,1),
+            new(TokenType.StringLiteral,"no",1,1),
+            new(TokenType.End,"",1,1),
+            new(TokenType.If,"",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<IfStatement>(program.Statements[0]);
+
+        var binExpr = Assert.IsType<BinaryExpression>(stmt.Condition);
+
+        //LEFT side
+        var left = Assert.IsType<IntLiteralExpression>(binExpr.Left);
+        Assert.Equal(1, left.Value);
+
+        //Operator
+        Assert.Equal(TokenType.Eq, binExpr.Operator.Type);
+
+        //RIGHT side
+        var right = Assert.IsType<IntLiteralExpression>(binExpr.Right);
+        Assert.Equal(1, right.Value);
+
+        //THEN block
+        var thenBlock = Assert.IsType<List<Statement>>(stmt.ThenBlock);
+        Assert.Equal(1, thenBlock.Count);
+        var thenStmt = Assert.IsType<PrintStatement>(thenBlock[0]);
+        var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
+        Assert.Equal("yes", strLit.Value);
+
+        //ELSE block
+        Assert.NotNull(stmt.ElseBlock);
+        var elseBlock = Assert.IsType<List<Statement>>(stmt.ElseBlock);
+        Assert.Equal(1, elseBlock.Count);
+        var elseStmt = Assert.IsType<PrintStatement>(elseBlock[0]);
+        var strLit2 = Assert.IsType<StringLiteralExpression>(elseStmt.Value);
+        Assert.Equal("no", strLit2.Value);
+    }
 }
