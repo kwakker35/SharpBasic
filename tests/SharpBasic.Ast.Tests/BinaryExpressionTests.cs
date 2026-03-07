@@ -1,6 +1,9 @@
 using SharpBasic.Ast;
 using Xunit;
 
+namespace SharpBasic.Ast.Tests;
+
+
 public class BinaryExpressionTests()
 {
   [Fact]

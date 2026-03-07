@@ -140,7 +140,7 @@ public class ParserTests
         var stmt = Assert.IsType<LetStatement>(program.Statements[0]);
         Assert.Equal("X", stmt.Identifier.Value);
         var expr = Assert.IsType<FloatLiteralExpression>(stmt.Value);
-        Assert.Equal(3.14f, expr.Value);
+        Assert.Equal(3.14, expr.Value);
     }
 
     [Fact]
