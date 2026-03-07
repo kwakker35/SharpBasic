@@ -82,40 +82,19 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         );
     }
 
+    private static double ToFloat(Value v) => v switch
+    {
+        IntValue iv => iv.V,
+        FloatValue fv => fv.V,
+        _ => throw new InvalidOperationException($"Cannot convert {v.GetType().Name} to float")
+    };
+
     private EvalResult EvaluateBinaryExpression(BinaryExpression expr)
     {
-        var leftRes = EvaluateExpression(expr.Left);
-        if (leftRes is EvalFailure) return leftRes;
-        var left = ((EvalSuccess)leftRes).Value as IntValue;
-
-        var rightRes = EvaluateExpression(expr.Right);
-        if (rightRes is EvalFailure) return rightRes;
-        var right = ((EvalSuccess)rightRes).Value as IntValue;
-
-        if (expr.Operator.Type is TokenType.Divide
-                && right.V == 0)
-        {
-            return new EvalFailure(
-                [
-                    new EvalError(
-                        new DivideByZeroException(),
-                        expr.Location?.Line ?? 0,
-                        expr.Location?.Col ?? 0
-                    )
-                ]
-            );
-        }
-
-        int? result = expr.Operator.Type switch
-        {
-            TokenType.Plus => left.V + right.V,
-            TokenType.Minus => left.V - right.V,
-            TokenType.Multiply => left.V * right.V,
-            TokenType.Divide => left.V / right.V,
-            _ => null
-        };
-
-        if (result is null)
+        if (expr.Operator.Type is not (TokenType.Plus or
+                                        TokenType.Minus or
+                                        TokenType.Multiply or
+                                        TokenType.Divide))
         {
             return new EvalFailure(
                     [
@@ -130,7 +109,47 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                 );
         }
 
-        return new EvalSuccess(new IntValue(result.Value));
+        var leftRes = EvaluateExpression(expr.Left);
+        if (leftRes is EvalFailure) return leftRes;
+        var leftES = (EvalSuccess)leftRes;
+        var rightRes = EvaluateExpression(expr.Right);
+        if (rightRes is EvalFailure) return rightRes;
+        var rightES = (EvalSuccess)rightRes;
+
+        var isFloat = leftES.Value is FloatValue || rightES.Value is FloatValue;
+
+        double left = ToFloat(leftES.Value);
+        double right = ToFloat(rightES.Value);
+
+        if (expr.Operator.Type is TokenType.Divide
+                && right == 0f)
+        {
+            return new EvalFailure(
+                [
+                    new EvalError(
+                        new DivideByZeroException(),
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0
+                    )
+                ]
+            );
+        }
+
+        double result = expr.Operator.Type switch
+        {
+            TokenType.Plus => left + right,
+            TokenType.Minus => left - right,
+            TokenType.Multiply => left * right,
+            TokenType.Divide => left / right,
+            _ => throw new InvalidOperationException("Unreachable")
+        };
+
+        Value output = isFloat ? new FloatValue(result) :
+                double.IsInteger(result) ?
+                    new IntValue((int)result) :
+                    new FloatValue(result);
+
+        return new EvalSuccess(output);
     }
 
     private EvalResult EvaluateExpression(Expression expr)

@@ -153,11 +153,27 @@ public class EvaluatorTests
     }
 
     [Fact]
-    public void RunHelper_Generates_Correct_Output_For_Simple_Sum()
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Int()
     {
         var output = RunHelper.Run("LET X = 1 + 2\nPRINT X");
         Assert.NotNull(output);
         Assert.Equal("3", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Float_Ends_In_Zero()
+    {
+        var output = RunHelper.Run("LET X = 1.5 + 2.5\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("4", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_Sum_Float_Ends_In_NonZero()
+    {
+        var output = RunHelper.Run("LET X = 1.7 + 2.5\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("4.2", output);
     }
 
 }
