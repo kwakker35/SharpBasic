@@ -63,6 +63,15 @@ public class Lexer
                 case ')':
                     tokens.Add(new Token(TokenType.RParen, "", 1, _pos));
                     break;
+                case '<':
+                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.LtEq, "", 1, _pos)); }
+                    else if (Peek() == '>') { Advance(); tokens.Add(new Token(TokenType.NotEq, "", 1, _pos)); }
+                    else tokens.Add(new Token(TokenType.Lt, "", 1, _pos));
+                    break;
+                case '>':
+                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.GtEq, "", 1, _pos)); }
+                    else tokens.Add(new Token(TokenType.Gt, "", 1, _pos));
+                    break;
                 default:
                     if (char.IsDigit(Current))
                     {
@@ -92,6 +101,10 @@ public class Lexer
             "PRINT" => TokenType.Print,
             "LET" => TokenType.Let,
             "=" => TokenType.Eq,
+            "IF" => TokenType.If,
+            "THEN" => TokenType.Then,
+            "ELSE" => TokenType.Else,
+            "END" => TokenType.End,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

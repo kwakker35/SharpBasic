@@ -221,7 +221,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Backeted_Simple_Sum_Returns_Correct_Tokens_And_Value()
+    private void Lex_Bracketed_Simple_Sum_Returns_Correct_Tokens_And_Value()
     {
         var input = "(10 * 3)";
 
@@ -236,6 +236,47 @@ public class LexerTests
         Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
         Assert.Equal("3", tokens[3].Value);
         Assert.Equal(TokenType.RParen, tokens[4].Type);
+        Assert.Equal(TokenType.Eof, tokens[5].Type);
+    }
+
+    [Theory]
+    [InlineData("IF", TokenType.If)]
+    [InlineData("THEN", TokenType.Then)]
+    [InlineData("ELSE", TokenType.Else)]
+    [InlineData("END", TokenType.End)]
+    [InlineData("=", TokenType.Eq)]
+    [InlineData("<", TokenType.Lt)]
+    [InlineData(">", TokenType.Gt)]
+    public void Lexer_Tokenises_Single_Token(string input, TokenType expected)
+    {
+        var tokens = new Lexer(input).Tokenise();
+        Assert.Equal(expected, tokens[0].Type);
+    }
+
+    [Theory]
+    [InlineData("<>", TokenType.NotEq)]
+    [InlineData("<=", TokenType.LtEq)]
+    [InlineData(">=", TokenType.GtEq)]
+    public void Lexer_Tokenises_Double_Token(string input, TokenType expected)
+    {
+        var tokens = new Lexer(input).Tokenise();
+        Assert.Equal(expected, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Multiple_Token_If_Correctly()
+    {
+        var input = "IF X > 5 THEN";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(6, tokens.Count);
+        Assert.Equal(TokenType.If, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("X", tokens[1].Value);
+        Assert.Equal(TokenType.Gt, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal("5", tokens[3].Value);
+        Assert.Equal(TokenType.Then, tokens[4].Type);
         Assert.Equal(TokenType.Eof, tokens[5].Type);
     }
 }
