@@ -3,14 +3,14 @@ namespace SharpBasic.Ast;
 public enum TokenType
 {
     //Keywords
-    Print, Let,
+    Print, Let, If, Then, Else, End,
 
     //Identifiers and Literals
     Identifier, StringLiteral, IntLiteral, FloatLiteral,
     Plus, Minus, Multiply, Divide, LParen, RParen,
 
     //Operators and Punctuation
-    Eq,
+    Eq, NotEq, Lt, Gt, LtEq, GtEq,
 
     //structural
     NewLine, Eof, Unknown

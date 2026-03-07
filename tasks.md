@@ -4,16 +4,27 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 4 — Expressions & Arithmetic
+## Current Phase: 5 — Control Flow: IF / THEN / ELSE / END IF
 
-**Goal:** `LET x = 1 + 2 * 3` evaluates correctly using Pratt parsing.
+**Goal:** Structured conditionals work, including optional ELSE block.
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
-| 1 | `feat/lexer-numbers-operators` | Lexer recognises integer literals and `+` `-` `*` `/` `(` `)` | ⬜ |
-| 2 | `feat/ast-expressions` | `IntLiteralExpression`, `BinaryExpression` AST nodes | ⬜ |
-| 3 | `feat/parser-pratt` | Pratt expression parser — precedence, associativity | ⬜ |
-| 4 | `feat/evaluator-arithmetic` | Evaluator handles `BinaryExpression` and `IntLiteralExpression` | ⬜ |
+| 1 | `feat/lexer-comparison-operators` | Lexer recognises `=` (equality), `<>`, `<`, `>`, `<=`, `>=`, `IF`, `THEN`, `ELSE`, `END` | ⬜ |
+| 2 | `feat/ast-if-statement` | `IfStatement(Condition, ThenBlock, ElseBlock?)` AST node | ⬜ |
+| 3 | `feat/parser-if` | Parser parses `IF <expr> THEN ... [ELSE ...] END IF` into `IfStatement` | ⬜ |
+| 4 | `feat/evaluator-if` | Evaluator executes `IfStatement` — BoolValue, comparison operators | ⬜ |
+
+---
+
+## Completed — Phase 4
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/lexer-numbers-operators` | Lexer recognises integer literals and `+` `-` `*` `/` `(` `)` | ✅ Complete — merged to `main` |
+| 2 | `feat/ast-expressions` | `IntLiteralExpression`, `FloatLiteralExpression`, `BinaryExpression` AST nodes | ✅ Complete — merged to `main` |
+| 3 | `feat/parser-pratt` | Pratt expression parser — precedence, associativity | ✅ Complete — merged to `main` |
+| 4 | `feat/evaluator-arithmetic` | Evaluator handles `BinaryExpression`, int and float arithmetic, unified promotion path | ✅ Complete — merged to `main` |
 
 ---
 
