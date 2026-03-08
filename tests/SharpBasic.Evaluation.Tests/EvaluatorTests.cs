@@ -191,11 +191,28 @@ public class EvaluatorTests
         Assert.NotNull(output);
         Assert.Equal("yes", output);
     }
+
     [Fact]
     public void RunHelper_Generates_Correct_Output_For_Simple_If_Then_Else_Else_Branch()
     {
         var output = RunHelper.Run("IF 1 = 2 THEN\nPRINT \"yes\"\nELSE\nPRINT \"no\"\nEND IF");
         Assert.NotNull(output);
         Assert.Equal("no", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_While_Loop()
+    {
+        var output = RunHelper.Run("LET X = 1\nWHILE X < 5\nLET X = X + 1\nWEND\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("5", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_While_Loop_No_Run()
+    {
+        var output = RunHelper.Run("LET X = 6\nWHILE X < 5\nLET X = X + 1\nWEND\nPRINT X");
+        Assert.NotNull(output);
+        Assert.Equal("6", output);
     }
 }

@@ -141,7 +141,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (Current.Type is TokenType.NewLine)
             Advance(); //consume NewLine
 
-        //break on ELSE or END
+        //break on WEND
         while (Current.Type is not TokenType.Wend &&
                 Current.Type is not TokenType.Eof)
         {

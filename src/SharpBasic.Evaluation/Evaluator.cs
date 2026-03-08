@@ -1,4 +1,3 @@
-using System.Collections;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Evaluation;
@@ -6,7 +5,7 @@ namespace SharpBasic.Evaluation;
 public class Evaluator(Program _program, SymbolTable? table = null)
 {
     private SymbolTable _table = table ?? new();
-    List<EvalError> errors = [];
+    private List<EvalError> errors = [];
 
     public EvalResult Evaluate()
     {
@@ -30,6 +29,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             PrintStatement p => EvaluatePrintStatement(p),
             LetStatement l => EvaluateLetStatement(l),
             IfStatement i => EvaluateIfStatement(i),
+            WhileStatement w => EvaluateWhileStatement(w),
             _
                 => new EvalFailure(
                     [
@@ -84,19 +84,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
 
     private EvalResult EvaluateIfStatement(IfStatement stmt)
     {
-        var result = stmt.Condition switch
-        {
-            BinaryExpression be => EvaluateBinaryExpression(be),
-            _ => new EvalFailure(
-                    [
-                        new EvalError(
-                            new InvalidOperationException($"Unknown Expression: {stmt.Condition.GetType()}"),
-                            stmt.Condition.Location?.Line ?? 0,
-                            stmt.Condition.Location?.Col ?? 0
-                        )
-                    ]
-                )
-        };
+        var result = EvaluateExpression(stmt.Condition);
 
         if (result is EvalFailure) return result;
 
@@ -112,7 +100,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             return new EvalFailure(
                     [
                         new EvalError(
-                            new InvalidOperationException("IF condition must evalute to a boolean value."),
+                            new InvalidOperationException("IF condition must evaluate to a boolean value."),
                             stmt.Condition.Location?.Line ?? 0,
                             stmt.Condition.Location?.Col ?? 0
                         )
@@ -133,7 +121,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                 }
             }
         }
-        else if (!value && stmt.ElseBlock is not null)
+        else if (stmt.ElseBlock is not null)
         {
             foreach (Statement elseStmt in stmt.ElseBlock)
             {
@@ -150,6 +138,52 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                 new EvalFailure(localErrors) :
                 new EvalSuccess(new VoidValue());
 
+    }
+
+    private EvalResult EvaluateWhileStatement(WhileStatement stmt)
+    {
+        List<EvalError> localErrors = [];
+
+        while (true)
+        {
+            bool loop = false;
+            var result = EvaluateExpression(stmt.Condition);
+
+            if (result is EvalFailure) return result;
+
+            if (result is EvalSuccess es && es.Value is BoolValue bv)
+            {
+                loop = bv.V;
+            }
+            else
+            {
+                return new EvalFailure(
+                        [
+                            new EvalError(
+                            new InvalidOperationException("WHILE condition must evaluate to a boolean value."),
+                            stmt.Condition.Location?.Line ?? 0,
+                            stmt.Condition.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+            }
+
+            if (!loop) break;
+
+            foreach (Statement bodyStmt in stmt.Body)
+            {
+                var bodyResult = EvaluateStatement(bodyStmt);
+
+                if (bodyResult is EvalFailure failure)
+                {
+                    localErrors.AddRange(failure.Errors);
+                }
+            }
+        }
+
+        return localErrors.Count > 0 ?
+                new EvalFailure(localErrors) :
+                new EvalSuccess(new VoidValue());
     }
 
     private static double ToFloat(Value v) => v switch
@@ -198,7 +232,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         double right = ToFloat(rightES.Value);
 
         if (expr.Operator.Type is TokenType.Divide
-                && right == 0f)
+                && right == 0)
         {
             return new EvalFailure(
                 [
