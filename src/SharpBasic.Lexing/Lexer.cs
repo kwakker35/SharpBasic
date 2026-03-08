@@ -99,7 +99,7 @@ public class Lexer
         return tokens;
     }
 
-    private TokenType GetTokenType(string token)
+    private static TokenType GetTokenType(string token)
     {
         return token.ToUpper() switch
         {
@@ -112,6 +112,10 @@ public class Lexer
             "END" => TokenType.End,
             "WHILE" => TokenType.While,
             "WEND" => TokenType.Wend,
+            "FOR" => TokenType.For,
+            "TO" => TokenType.To,
+            "STEP" => TokenType.Step,
+            "NEXT" => TokenType.Next,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }
