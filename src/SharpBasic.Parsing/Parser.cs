@@ -30,6 +30,79 @@ public class Parser(IReadOnlyList<Token> tokens)
             ? new ParseFailure(errors)
             : new ParseSuccess(new Program(statements));
     }
+
+    private static int BindingPower(TokenType type) => type switch
+    {
+        TokenType.Eq or TokenType.NotEq or TokenType.Lt or
+            TokenType.Gt or TokenType.LtEq or TokenType.GtEq => 5,
+        TokenType.Plus or TokenType.Minus => 10,
+        TokenType.Multiply or TokenType.Divide => 20,
+        _ => 0
+    };
+
+    private Expression? ParsePrimary()
+    {
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        if (Current.Type == TokenType.StringLiteral)
+            return new StringLiteralExpression(Current.Value, loc);
+
+        if (Current.Type == TokenType.IntLiteral && int.TryParse(Current.Value, out var i))
+            return new IntLiteralExpression(i, loc);
+
+        if (Current.Type == TokenType.FloatLiteral && double.TryParse(Current.Value, out var f))
+            return new FloatLiteralExpression(f, loc);
+
+        if (Current.Type == TokenType.Identifier)
+        {
+            var identExpr = new IdentifierExpression(Current.Value, loc);
+            // Phase 7: peek ahead — if next token is (, parse call expression
+            return identExpr;
+        }
+
+        return null;
+    }
+
+    private Expression? ParseExpression(int minBindingPower = 0)
+    {
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        //Parse the left-hand side (a "prefix" - literal, identifier or grouped expr)
+        Expression? left;
+
+        if (Current.Type == TokenType.LParen)
+        {
+            Advance(); // consume (
+            left = ParseExpression(0); //parse inner expression with reset binding power
+            if (Current.Type != TokenType.RParen)
+                return null; //unmatched paren - error
+            Advance(); //consume )
+        }
+        else
+        {
+            left = ParsePrimary();
+            if (left is null) return null;
+            Advance(); //consume the primary token
+        }
+
+        //Pratt loop - keep consuming operators while they bind tighter than minBindingPower
+        while (true)
+        {
+            var bp = BindingPower(Current.Type);
+            if (bp <= minBindingPower) break;
+
+            var op = Current;
+            Advance(); //consume operator
+            var right = ParseExpression(bp); // recurse with THIS operator's binding power
+            if (right is null) return null;
+
+            left = new BinaryExpression(left!, op, right, loc);
+        }
+
+        return left;
+
+    }
+
     private void ParseStatement(List<Statement> target)
     {
         switch (Current.Type)
@@ -119,16 +192,96 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private ParseStatementResult ParseForStatement()
     {
-        //ParseStatementFailure? err;
-        //temp
-        var err = new ParseStatementError(
+        ParseStatementFailure? err;
+        Expression? stepExpression = null; //optional
+        Token? nextVar = null; //optional
+        List<Statement> body = [];
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //Consume FOR
+
+        //expecting LoopVar Identifier
+        err = ExpectToken(TokenType.Identifier, "after FOR");
+        if (err is not null) return err;
+
+        var loopVar = Current;
+        Advance(); //consume Identifier
+
+        //expecting =
+        err = ExpectToken(TokenType.Eq, "after Loop Variable Indendifier");
+        if (err is not null) return err;
+
+        Advance(); //consume =
+
+        var startExpr = ParseExpression();
+
+        //expecting Start expression
+        err = ExpectExpression(startExpr, "Start expression after =");
+        if (err is not null) return err;
+
+        //expecting To
+        err = ExpectToken(TokenType.To, "after Start expression");
+        if (err is not null) return err;
+
+        Advance(); //consume To
+
+        var limitExpr = ParseExpression();
+
+        //expecting Limit expression
+        err = ExpectExpression(limitExpr, "Limit expression after To");
+        if (err is not null) return err;
+
+        //optional STEP
+        if (Current.Type is TokenType.Step)
+        {
+            Advance(); //consume STEP
+            stepExpression = ParseExpression();
+
+            //expecting STEP expression
+            err = ExpectExpression(stepExpression, "value after STEP");
+            if (err is not null) return err;
+        }
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        //break on NEXT
+        while (Current.Type is not TokenType.Next &&
+                Current.Type is not TokenType.Eof)
+        {
+            ParseStatement(body);
+        }
+
+        Advance(); //consume NEXT
+
+        if (Current.Type is TokenType.Identifier)
+        {
+            if (Current != loopVar)
+            {
+                var errVar = new ParseStatementError(
                 new InvalidOperationException(
-                    $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}"
+                    $"Expected {loopVar.Value} but got {Current.Value} at {Current.Line}:{Current.Column}"
                 ),
                 Current.Line,
                 Current.Column
             );
-        return new ParseStatementFailure(err);
+                return new ParseStatementFailure(errVar);
+            }
+
+            nextVar = Current;
+            Advance();// consume Identifer after NEXT
+        }
+
+        return new ParseStatementSuccess(
+            new ForStatement(
+                loopVar,
+                startExpr,
+                limitExpr,
+                stepExpression,
+                nextVar,
+                body,
+                loc
+                )
+        );
     }
 
     private ParseStatementResult ParsePrintStatement()
@@ -259,8 +412,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         err = ExpectToken(TokenType.Identifier, "after LET");
         if (err is not null) return err;
 
-        var ident = Current.Value;
-        var identLoc = new SourceLocation(Current.Line, Current.Column);
+        var ident = Current;
         Advance(); //consume Identifier
 
         err = ExpectToken(TokenType.Eq, "after LET <identifier>");
@@ -275,82 +427,11 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         return new ParseStatementSuccess(
             new LetStatement(
-                new Token(TokenType.Identifier, ident, identLoc.Line, identLoc.Col),
+                ident,
                 expr,
                 letLoc
             )
         );
     }
 
-    private Expression? ParseExpression(int minBindingPower = 0)
-    {
-        var loc = new SourceLocation(Current.Line, Current.Column);
-
-        //Parse the left-hand side (a "prefix" - literal, identifier or grouped expr)
-        Expression? left;
-
-        if (Current.Type == TokenType.LParen)
-        {
-            Advance(); // consume (
-            left = ParseExpression(0); //parse inner expression with reset binding power
-            if (Current.Type != TokenType.RParen)
-                return null; //unmatched paren - error
-            Advance(); //consume )
-        }
-        else
-        {
-            left = ParsePrimary();
-            if (left is null) return null;
-            Advance(); //consume the primary token
-        }
-
-        //Pratt loop - keep consuming operators while they bind tighter than minBindingPower
-        while (true)
-        {
-            var bp = BindingPower(Current.Type);
-            if (bp <= minBindingPower) break;
-
-            var op = Current;
-            Advance(); //consume operator
-            var right = ParseExpression(bp); // recurse with THIS operator's binding power
-            if (right is null) return null;
-
-            left = new BinaryExpression(left!, op, right, loc);
-        }
-
-        return left;
-
-    }
-
-    private Expression? ParsePrimary()
-    {
-        var loc = new SourceLocation(Current.Line, Current.Column);
-
-        if (Current.Type == TokenType.StringLiteral)
-            return new StringLiteralExpression(Current.Value, loc);
-
-        if (Current.Type == TokenType.IntLiteral && int.TryParse(Current.Value, out var i))
-            return new IntLiteralExpression(i, loc);
-
-        if (Current.Type == TokenType.FloatLiteral && double.TryParse(Current.Value, out var f))
-            return new FloatLiteralExpression(f, loc);
-
-        if (Current.Type == TokenType.Identifier)
-        {
-            var identExpr = new IdentifierExpression(Current.Value, loc);
-            // Phase 7: peek ahead — if next token is (, parse call expression
-            return identExpr;
-        }
-
-        return null;
-    }
-
-    private static int BindingPower(TokenType type) => type switch
-    {
-        TokenType.Eq or TokenType.NotEq or TokenType.Lt or
-            TokenType.Gt or TokenType.LtEq or TokenType.GtEq => 5,
-        TokenType.Plus or TokenType.Minus => 10,
-        TokenType.Multiply or TokenType.Divide => 20,
-        _ => 0
-    };
 }
