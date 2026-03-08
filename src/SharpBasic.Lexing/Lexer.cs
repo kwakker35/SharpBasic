@@ -110,6 +110,8 @@ public class Lexer
             "THEN" => TokenType.Then,
             "ELSE" => TokenType.Else,
             "END" => TokenType.End,
+            "WHILE" => TokenType.While,
+            "WEND" => TokenType.Wend,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

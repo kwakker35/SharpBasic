@@ -265,6 +265,8 @@ public class LexerTests
     [InlineData("=", TokenType.Eq)]
     [InlineData("<", TokenType.Lt)]
     [InlineData(">", TokenType.Gt)]
+    [InlineData("WHILE", TokenType.While)]
+    [InlineData("WEND", TokenType.Wend)]
     public void Lexer_Tokenises_Single_Token(string input, TokenType expected)
     {
         var tokens = new Lexer(input).Tokenise();
