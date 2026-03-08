@@ -70,6 +70,17 @@ public class Parser(IReadOnlyList<Token> tokens)
                     errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
                 }
                 break;
+            case TokenType.While:
+                var pwsRes = ParseWhileStatement();
+                if (pwsRes is ParseStatementSuccess ws)
+                {
+                    target.Add(ws.Statement);
+                }
+                else if (pwsRes is ParseStatementFailure lf)
+                {
+                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
+                }
+                break;
             default:
                 errors.Add(
                     new ParseError(
@@ -103,6 +114,49 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
 
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
+    }
+
+    private ParseStatementResult ParseWhileStatement()
+    {
+        var wLoc = new SourceLocation(Current.Line, Current.Column);
+        List<Statement> body = [];
+
+        Advance(); //consume WHILE
+
+        var condition = ParseExpression();
+
+        if (condition is null)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected condition after WHILE but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(err);
+        }
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        //break on ELSE or END
+        while (Current.Type is not TokenType.Wend &&
+                Current.Type is not TokenType.Eof)
+        {
+            ParseStatement(body);
+        }
+
+        Advance(); //consume WEND
+
+        return new ParseStatementSuccess(
+            new WhileStatement(
+                condition,
+                body,
+                wLoc
+                )
+        );
     }
 
     private ParseStatementResult ParseIfStatement()
