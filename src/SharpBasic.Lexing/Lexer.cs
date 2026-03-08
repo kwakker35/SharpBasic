@@ -35,6 +35,11 @@ public class Lexer
                     }
                     break;
                 case '"':
+                    if (token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        token = new();
+                    }
                     tokens.Add(GetStringLiteral());
                     break;
                 case '\n':

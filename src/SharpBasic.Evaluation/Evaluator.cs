@@ -6,11 +6,10 @@ namespace SharpBasic.Evaluation;
 public class Evaluator(Program _program, SymbolTable? table = null)
 {
     private SymbolTable _table = table ?? new();
+    List<EvalError> errors = [];
 
     public EvalResult Evaluate()
     {
-        var errors = new List<EvalError>();
-
         foreach (Statement stmt in _program.Statements)
         {
             var result = EvaluateStatement(stmt);
@@ -30,6 +29,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         {
             PrintStatement p => EvaluatePrintStatement(p),
             LetStatement l => EvaluateLetStatement(l),
+            IfStatement i => EvaluateIfStatement(i),
             _
                 => new EvalFailure(
                     [
@@ -82,6 +82,76 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         );
     }
 
+    private EvalResult EvaluateIfStatement(IfStatement stmt)
+    {
+        var result = stmt.Condition switch
+        {
+            BinaryExpression be => EvaluateBinaryExpression(be),
+            _ => new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Unknown Expression: {stmt.Condition.GetType()}"),
+                            stmt.Condition.Location?.Line ?? 0,
+                            stmt.Condition.Location?.Col ?? 0
+                        )
+                    ]
+                )
+        };
+
+        if (result is EvalFailure) return result;
+
+        bool value = false;
+        List<EvalError> localErrors = [];
+
+        if (result is EvalSuccess es && es.Value is BoolValue bv)
+        {
+            value = bv.V;
+        }
+        else
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException("IF condition must evalute to a boolean value."),
+                            stmt.Condition.Location?.Line ?? 0,
+                            stmt.Condition.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+
+
+        if (value)
+        {
+            foreach (Statement thenStmt in stmt.ThenBlock)
+            {
+                var thenResult = EvaluateStatement(thenStmt);
+
+                if (thenResult is EvalFailure failure)
+                {
+                    localErrors.AddRange(failure.Errors);
+                }
+            }
+        }
+        else if (!value && stmt.ElseBlock is not null)
+        {
+            foreach (Statement elseStmt in stmt.ElseBlock)
+            {
+                var elseResult = EvaluateStatement(elseStmt);
+
+                if (elseResult is EvalFailure failure)
+                {
+                    localErrors.AddRange(failure.Errors);
+                }
+            }
+        }
+
+        return localErrors.Count > 0 ?
+                new EvalFailure(localErrors) :
+                new EvalSuccess(new VoidValue());
+
+    }
+
     private static double ToFloat(Value v) => v switch
     {
         IntValue iv => iv.V,
@@ -94,7 +164,13 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         if (expr.Operator.Type is not (TokenType.Plus or
                                         TokenType.Minus or
                                         TokenType.Multiply or
-                                        TokenType.Divide))
+                                        TokenType.Divide or
+                                        TokenType.Eq or
+                                        TokenType.NotEq or
+                                        TokenType.Lt or
+                                        TokenType.Gt or
+                                        TokenType.LtEq or
+                                        TokenType.GtEq))
         {
             return new EvalFailure(
                     [
@@ -135,21 +211,58 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             );
         }
 
-        double result = expr.Operator.Type switch
+        //Arithmetic
+        if (expr.Operator.Type is TokenType.Plus or
+                                        TokenType.Minus or
+                                        TokenType.Multiply or
+                                        TokenType.Divide)
         {
-            TokenType.Plus => left + right,
-            TokenType.Minus => left - right,
-            TokenType.Multiply => left * right,
-            TokenType.Divide => left / right,
-            _ => throw new InvalidOperationException("Unreachable")
-        };
+            double result = expr.Operator.Type switch
+            {
+                TokenType.Plus => left + right,
+                TokenType.Minus => left - right,
+                TokenType.Multiply => left * right,
+                TokenType.Divide => left / right,
+                _ => throw new InvalidOperationException("Unreachable")
+            };
 
-        Value output = isFloat ? new FloatValue(result) :
-                double.IsInteger(result) ?
-                    new IntValue((int)result) :
-                    new FloatValue(result);
+            Value output = isFloat ? new FloatValue(result) :
+                    double.IsInteger(result) ?
+                        new IntValue((int)result) :
+                        new FloatValue(result);
 
-        return new EvalSuccess(output);
+            return new EvalSuccess(output);
+        } //Boolean
+        else if (expr.Operator.Type is TokenType.Eq or
+                                        TokenType.NotEq or
+                                        TokenType.Lt or
+                                        TokenType.Gt or
+                                        TokenType.LtEq or
+                                        TokenType.GtEq)
+        {
+            bool result = expr.Operator.Type switch
+            {
+                TokenType.Eq => left == right,
+                TokenType.NotEq => left != right,
+                TokenType.Lt => left < right,
+                TokenType.Gt => left > right,
+                TokenType.LtEq => left <= right,
+                TokenType.GtEq => left >= right,
+                _ => throw new InvalidOperationException("Unreachable")
+            };
+
+            return new EvalSuccess(new BoolValue(result));
+        }
+
+        return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                );
     }
 
     private EvalResult EvaluateExpression(Expression expr)

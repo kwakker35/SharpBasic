@@ -176,4 +176,26 @@ public class EvaluatorTests
         Assert.Equal("4.2", output);
     }
 
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_If_Then()
+    {
+        var output = RunHelper.Run("IF 1 = 1 THEN\nPRINT \"yes\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_If_Then_Else_Then_Branch()
+    {
+        var output = RunHelper.Run("IF 1 = 1 THEN\nPRINT \"yes\"\nELSE\nPRINT \"no\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Simple_If_Then_Else_Else_Branch()
+    {
+        var output = RunHelper.Run("IF 1 = 2 THEN\nPRINT \"yes\"\nELSE\nPRINT \"no\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("no", output);
+    }
 }

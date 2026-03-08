@@ -23,6 +23,24 @@ public class LexerTests
     }
 
     [Fact]
+    public void Lex_Print_ReturnsCorrectTokens_When_Space_Is_Missing()
+    {
+        //Arange
+        var input = "PRINT\"hello\"";
+        var lexer = new Lexer(input);
+
+        //Act
+        var tokens = lexer.Tokenise();
+
+        //Assert
+        Assert.NotNull(tokens);
+        Assert.Equal(3, tokens.Count);
+        Assert.Equal(TokenType.Print, tokens[0].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[1].Type);
+        Assert.Equal(TokenType.Eof, tokens[2].Type);
+    }
+
+    [Fact]
     public void Lex_LetKeyword_ReturnsCorrectToken()
     {
         //Arange

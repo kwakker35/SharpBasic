@@ -133,13 +133,16 @@ public class Parser(IReadOnlyList<Token> tokens)
             Advance(); //consume NewLine
 
         //break on ELSE or END
-        while (Current.Type is not TokenType.Else && Current.Type is not TokenType.End)
+        while (Current.Type is not TokenType.Else &&
+                Current.Type is not TokenType.End &&
+                Current.Type is not TokenType.Eof)
         {
             ParseStatement(thenBlock);
         }
 
         //ELSE Block
-        if (Current.Type is TokenType.Else)
+        if (Current.Type is TokenType.Else &&
+                Current.Type is not TokenType.Eof)
         {
             Advance(); //consume Else
             if (Current.Type is TokenType.NewLine)
