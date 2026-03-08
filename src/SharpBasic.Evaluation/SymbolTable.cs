@@ -1,14 +1,11 @@
 namespace SharpBasic.Evaluation;
 
-public class SymbolTable
+public class SymbolTable(SymbolTable? parent = null)
 {
-    private Dictionary<string, Value> _symbolTable;
+    private readonly Dictionary<string, Value> _store = new();
 
-    public SymbolTable()
-    {
-        _symbolTable = new();
-    }
-    public Value? Get(string name) => _symbolTable.TryGetValue(name, out var val) ? val : null;
+    public Value? Get(string name) =>
+        _store.TryGetValue(name, out var val) ? val : parent?.Get(name);
 
-    public void Set(string name, Value value) => _symbolTable[name] = value;
+    public void Set(string name, Value value) => _store[name] = value;
 }

@@ -49,6 +49,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.While:
                 AddStatement(target, ParseWhileStatement());
                 break;
+            case TokenType.For:
+                AddStatement(target, ParseForStatement());
+                break;
             default:
                 errors.Add(
                     new ParseError(
@@ -76,48 +79,83 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
     }
 
-    private ParseStatementResult ParsePrintStatement()
+    private ParseStatementFailure? ExpectToken(TokenType expected, string context)
     {
-        var loc = new SourceLocation(Current.Line, Current.Column);
-        Advance(); //Consume PRINT
-
-        var expr = ParseExpression();
-
-        if (expr is null)
-        {
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected expression after PRINT but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line, Current.Column
-            );
-            return new ParseStatementFailure(err);
-        }
-
-        return new ParseStatementSuccess(new PrintStatement(expr, loc));
-    }
-
-    private ParseStatementResult ParseWhileStatement()
-    {
-        var wLoc = new SourceLocation(Current.Line, Current.Column);
-        List<Statement> body = [];
-
-        Advance(); //consume WHILE
-
-        var condition = ParseExpression();
-
-        if (condition is null)
+        if (Current.Type != expected)
         {
             Advance();
             var err = new ParseStatementError(
                 new InvalidOperationException(
-                    $"Expected condition after WHILE but got {Current.Type} at {Current.Line}:{Current.Column}"
+                    $"Expected {expected} {context} but got {Current.Type} at {Current.Line}:{Current.Column}"
                 ),
                 Current.Line,
                 Current.Column
             );
             return new ParseStatementFailure(err);
         }
+
+        //success
+        return null;
+    }
+
+    private ParseStatementFailure? ExpectExpression(Expression? expected, string context)
+    {
+        if (expected is null)
+        {
+            Advance();
+            var err = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected {context} but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(err);
+        }
+
+        //success
+        return null;
+    }
+
+    private ParseStatementResult ParseForStatement()
+    {
+        //ParseStatementFailure? err;
+        //temp
+        var err = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+        return new ParseStatementFailure(err);
+    }
+
+    private ParseStatementResult ParsePrintStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //Consume PRINT
+
+        var expr = ParseExpression();
+
+        err = ExpectExpression(expr, "expression after PRINT");
+        if (err is not null) return err;
+
+        return new ParseStatementSuccess(new PrintStatement(expr, loc));
+    }
+
+    private ParseStatementResult ParseWhileStatement()
+    {
+        ParseStatementFailure? err;
+        var wLoc = new SourceLocation(Current.Line, Current.Column);
+        List<Statement> body = [];
+
+        Advance(); //consume WHILE
+
+        var condition = ParseExpression();
+        err = ExpectExpression(condition, "condition after WHILE");
+        if (err is not null) return err;
 
         if (Current.Type is TokenType.NewLine)
             Advance(); //consume NewLine
@@ -142,28 +180,24 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private ParseStatementResult ParseIfStatement()
     {
+        ParseStatementFailure? err;
         var ifLoc = new SourceLocation(Current.Line, Current.Column);
         Advance(); //consume IF
 
         var condition = ParseExpression();
 
-        if (condition is null)
-        {
-            Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected condition after IF but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-            return new ParseStatementFailure(err);
-        }
+        err = ExpectExpression(condition, "condition after IF");
+        if (err is not null) return err;
 
         List<Statement> thenBlock = [];
         List<Statement> elseBlock = [];
 
+        //expecting THEN
+        err = ExpectToken(TokenType.Then, "after condition");
+        if (err is not null) return err;
+
         Advance(); //consume Then
+
         if (Current.Type is TokenType.NewLine)
             Advance(); //consume NewLine
 
@@ -193,14 +227,14 @@ public class Parser(IReadOnlyList<Token> tokens)
         //expecting END IF
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.If)
         {
-            var err = new ParseStatementError(
+            var errEnd = new ParseStatementError(
                 new InvalidOperationException(
                     $"Expected IF after END but got {Current.Type} at {Current.Line}:{Current.Column}"
                 ),
                 Current.Line,
                 Current.Column
             );
-            return new ParseStatementFailure(err);
+            return new ParseStatementFailure(errEnd);
         }
 
         Advance(); //consume END
@@ -218,55 +252,26 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private ParseStatementResult ParseLetStatement()
     {
+        ParseStatementFailure? err;
         var letLoc = new SourceLocation(Current.Line, Current.Column);
         Advance(); //consume LET
 
-        if (Current.Type is not TokenType.Identifier)
-        {
-            Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected Identifier after LET but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-            return new ParseStatementFailure(err);
-        }
+        err = ExpectToken(TokenType.Identifier, "after LET");
+        if (err is not null) return err;
 
         var ident = Current.Value;
         var identLoc = new SourceLocation(Current.Line, Current.Column);
         Advance(); //consume Identifier
 
-        if (Current.Type is not TokenType.Eq)
-        {
-            Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected = after LET <identifier> but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-            return new ParseStatementFailure(err);
-        }
+        err = ExpectToken(TokenType.Eq, "after LET <identifier>");
+        if (err is not null) return err;
 
         Advance(); //consume =
 
         var expr = ParseExpression();
 
-        if (expr is null)
-        {
-            Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected value after LET <identifier> = but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-            return new ParseStatementFailure(err);
-        }
+        err = ExpectExpression(expr, "value after LET <identifier> =");
+        if (err is not null) return err;
 
         return new ParseStatementSuccess(
             new LetStatement(
@@ -331,7 +336,11 @@ public class Parser(IReadOnlyList<Token> tokens)
             return new FloatLiteralExpression(f, loc);
 
         if (Current.Type == TokenType.Identifier)
-            return new IdentifierExpression(Current.Value, loc);
+        {
+            var identExpr = new IdentifierExpression(Current.Value, loc);
+            // Phase 7: peek ahead — if next token is (, parse call expression
+            return identExpr;
+        }
 
         return null;
     }
