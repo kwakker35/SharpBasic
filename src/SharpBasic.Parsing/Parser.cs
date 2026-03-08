@@ -38,48 +38,16 @@ public class Parser(IReadOnlyList<Token> tokens)
                 Advance(); //consume token
                 break;
             case TokenType.Print:
-                var ppsRes = ParsePrintStatement();
-                if (ppsRes is ParseStatementSuccess ps)
-                {
-                    target.Add(ps.Statement);
-                }
-                else if (ppsRes is ParseStatementFailure pf)
-                {
-                    errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
-                }
+                AddStatement(target, ParsePrintStatement());
                 break;
             case TokenType.Let:
-                var plsRes = ParseLetStatement();
-                if (plsRes is ParseStatementSuccess ls)
-                {
-                    target.Add(ls.Statement);
-                }
-                else if (plsRes is ParseStatementFailure lf)
-                {
-                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
-                }
+                AddStatement(target, ParseLetStatement());
                 break;
             case TokenType.If:
-                var pisRes = ParseIfStatement();
-                if (pisRes is ParseStatementSuccess ifs)
-                {
-                    target.Add(ifs.Statement);
-                }
-                else if (pisRes is ParseStatementFailure lf)
-                {
-                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
-                }
+                AddStatement(target, ParseIfStatement());
                 break;
             case TokenType.While:
-                var pwsRes = ParseWhileStatement();
-                if (pwsRes is ParseStatementSuccess ws)
-                {
-                    target.Add(ws.Statement);
-                }
-                else if (pwsRes is ParseStatementFailure lf)
-                {
-                    errors.Add(new ParseError(lf.Error.Exception, lf.Error.Line, lf.Error.Col));
-                }
+                AddStatement(target, ParseWhileStatement());
                 break;
             default:
                 errors.Add(
@@ -95,6 +63,19 @@ public class Parser(IReadOnlyList<Token> tokens)
                 break;
         }
     }
+
+    private void AddStatement(List<Statement> target, ParseStatementResult ppsRes)
+    {
+        if (ppsRes is ParseStatementSuccess ps)
+        {
+            target.Add(ps.Statement);
+        }
+        else if (ppsRes is ParseStatementFailure pf)
+        {
+            errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
+        }
+    }
+
     private ParseStatementResult ParsePrintStatement()
     {
         var loc = new SourceLocation(Current.Line, Current.Column);
