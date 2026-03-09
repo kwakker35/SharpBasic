@@ -5,7 +5,9 @@
   },
   "github.copilot.nextEditSuggestions.enabled": false,
   "chat.tools.terminal.autoApprove": {
-    "dotnet test": true
+    "dotnet test": true,
+    "git add": true,
+    "git commit": true
   },
   "editor.codeActionsOnSave": {
     "source.organizeImports": "never"
