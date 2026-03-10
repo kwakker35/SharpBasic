@@ -303,4 +303,20 @@ public class LexerTests
         Assert.Equal(TokenType.Then, tokens[4].Type);
         Assert.Equal(TokenType.Eof, tokens[5].Type);
     }
+
+    [Fact]
+    public void Lexer_Tokenises_Ampersand_Correctly()
+    {
+        var input = "\"hello\" & \"world\"";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.StringLiteral, tokens[0].Type);
+        Assert.Equal("hello", tokens[0].Value);
+        Assert.Equal(TokenType.Ampersand, tokens[1].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[2].Type);
+        Assert.Equal("world", tokens[2].Value);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
 }

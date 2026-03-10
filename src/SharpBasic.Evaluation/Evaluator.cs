@@ -204,7 +204,8 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                                         TokenType.Lt or
                                         TokenType.Gt or
                                         TokenType.LtEq or
-                                        TokenType.GtEq))
+                                        TokenType.GtEq or
+                                        TokenType.Ampersand))
         {
             return new EvalFailure(
                     [
@@ -240,6 +241,11 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                 };
 
                 return new EvalSuccess(new BoolValue(true));
+            } // string concatenation
+            else if (expr.Operator.Type is TokenType.Ampersand)
+            {
+                string result = string.Concat(lsv, rsv);
+                return new EvalSuccess(new StringValue(result));
             }
             else
             {

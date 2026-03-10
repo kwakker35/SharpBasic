@@ -77,6 +77,9 @@ public class Lexer
                     if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.GtEq, "", 1, _pos)); }
                     else tokens.Add(new Token(TokenType.Gt, "", 1, _pos));
                     break;
+                case '&':
+                    tokens.Add(new Token(TokenType.Ampersand, "", 1, _pos));
+                    break;
                 default:
                     if (char.IsDigit(Current))
                     {
