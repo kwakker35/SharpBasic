@@ -226,6 +226,35 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         if (rightRes is EvalFailure) return rightRes;
         var rightES = (EvalSuccess)rightRes;
 
+        if (leftES.Value is StringValue lsv && rightES.Value is StringValue rsv)
+        {
+            //string comparison
+            if (expr.Operator.Type is TokenType.Eq or
+                                        TokenType.NotEq)
+            {
+                bool result = expr.Operator.Type switch
+                {
+                    TokenType.Eq => lsv == rsv,
+                    TokenType.NotEq => lsv != rsv,
+                    _ => throw new InvalidOperationException("Unreachable")
+                };
+
+                return new EvalSuccess(new BoolValue(true));
+            }
+            else
+            {
+                return new EvalFailure(
+                    [
+                        new EvalError(
+                        new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0
+                    )
+                    ]
+                );
+            }
+        }
+
         var isFloat = leftES.Value is FloatValue || rightES.Value is FloatValue;
 
         double left = ToFloat(leftES.Value);
