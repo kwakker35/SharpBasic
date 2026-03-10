@@ -215,4 +215,30 @@ public class EvaluatorTests
         Assert.NotNull(output);
         Assert.Equal("6", output);
     }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Equality()
+    {
+        var output = RunHelper.Run("LET n = \"Alice\"\nIF n = \"Alice\" THEN\nPRINT \"yes\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Inequality()
+    {
+        var output = RunHelper.Run("LET n = \"Bob\"\nIF n <> \"Alice\" THEN\nPRINT \"yes\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void Evaluator_Returns_EvalFailure_For_Unsupported_String_Operator()
+    {
+        var tokens = new SharpBasic.Lexing.Lexer("LET a = \"x\"\nLET b = \"y\"\nIF a < b THEN\nPRINT \"yes\"\nEND IF").Tokenise();
+        var parseResult = new Parser(tokens).Parse();
+        var ps = Assert.IsType<ParseSuccess>(parseResult);
+        var result = new Evaluator(ps.Program).Evaluate();
+        Assert.IsType<EvalFailure>(result);
+    }
 }
