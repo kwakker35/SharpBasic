@@ -241,4 +241,20 @@ public class EvaluatorTests
         var result = new Evaluator(ps.Program).Evaluate();
         Assert.IsType<EvalFailure>(result);
     }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Concatination()
+    {
+        var output = RunHelper.Run("LET g = \"Hello\" & \" \" & \"World\"\nPRINT g");
+        Assert.NotNull(output);
+        Assert.Equal("Hello World", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Concatination_With_Var()
+    {
+        var output = RunHelper.Run("LET x = \"Alice\"\nPRINT \"Hello: \" & x");
+        Assert.NotNull(output);
+        Assert.Equal("Hello: Alice", output);
+    }
 }

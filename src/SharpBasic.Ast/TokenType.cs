@@ -10,7 +10,7 @@ public enum TokenType
     Plus, Minus, Multiply, Divide, LParen, RParen,
 
     //Operators and Punctuation
-    Eq, NotEq, Lt, Gt, LtEq, GtEq,
+    Eq, NotEq, Lt, Gt, LtEq, GtEq, Ampersand,
 
     //structural
     NewLine, Eof, Unknown
