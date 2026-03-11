@@ -80,6 +80,9 @@ public class Lexer
                 case '&':
                     tokens.Add(new Token(TokenType.Ampersand, "", 1, _pos));
                     break;
+                case ',':
+                    tokens.Add(new Token(TokenType.Comma, "", 1, _pos));
+                    break;
                 default:
                     if (char.IsDigit(Current))
                     {
@@ -119,6 +122,20 @@ public class Lexer
             "TO" => TokenType.To,
             "STEP" => TokenType.Step,
             "NEXT" => TokenType.Next,
+            "FUNCTION" => TokenType.Function,
+            "SUB" => TokenType.Sub,
+            "RETURN" => TokenType.Return,
+            "CALL" => TokenType.Call,
+            "AS" => TokenType.As,
+            "AND" => TokenType.And,
+            "OR" => TokenType.Or,
+            "NOT" => TokenType.Not,
+            "INTEGER" => TokenType.Integer,
+            "FLOAT" => TokenType.Float,
+            "STRING" => TokenType.String,
+            "BOOLEAN" => TokenType.Boolean,
+            "TRUE" => TokenType.True,
+            "FALSE" => TokenType.False,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

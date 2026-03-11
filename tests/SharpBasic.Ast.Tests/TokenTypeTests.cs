@@ -24,6 +24,21 @@ public class TokenTypeTests
     [InlineData(TokenType.To, "To")]
     [InlineData(TokenType.Step, "Step")]
     [InlineData(TokenType.Next, "Next")]
+    [InlineData(TokenType.Function, "Function")]
+    [InlineData(TokenType.Sub, "Sub")]
+    [InlineData(TokenType.Return, "Return")]
+    [InlineData(TokenType.Call, "Call")]
+    [InlineData(TokenType.As, "As")]
+    [InlineData(TokenType.And, "And")]
+    [InlineData(TokenType.Or, "Or")]
+    [InlineData(TokenType.Not, "Not")]
+    [InlineData(TokenType.Integer, "Integer")]
+    [InlineData(TokenType.Float, "Float")]
+    [InlineData(TokenType.String, "String")]
+    [InlineData(TokenType.Boolean, "Boolean")]
+    [InlineData(TokenType.True, "True")]
+    [InlineData(TokenType.False, "False")]
+    [InlineData(TokenType.Comma, "Comma")]
     public void TokenType_ToString_Returns_Expected_Type(TokenType tokenType, string expectedType)
     {
         Assert.Equal(expectedType, tokenType.ToString());
