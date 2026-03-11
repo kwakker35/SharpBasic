@@ -4,16 +4,16 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 5 — Control Flow: IF / THEN / ELSE / END IF
+## Current Phase: 7 — Subroutines & Functions
 
-**Goal:** Structured conditionals work, including optional ELSE block.
+**Goal:** `SUB`/`FUNCTION` declarations, `CALL`, `RETURN`, argument passing, hoisted declarations.
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
-| 1 | `feat/lexer-comparison-operators` | Lexer recognises `=` (equality), `<>`, `<`, `>`, `<=`, `>=`, `IF`, `THEN`, `ELSE`, `END` | ⬜ |
-| 2 | `feat/ast-if-statement` | `IfStatement(Condition, ThenBlock, ElseBlock?)` AST node | ⬜ |
-| 3 | `feat/parser-if` | Parser parses `IF <expr> THEN ... [ELSE ...] END IF` into `IfStatement` | ⬜ |
-| 4 | `feat/evaluator-if` | Evaluator executes `IfStatement` — BoolValue, comparison operators | ⬜ |
+| 1 | `feat/phase7-tokens` | 14 new tokens: `Sub`, `Function`, `Return`, `Call`, `As`, `And`, `Or`, `Not`, `True`, `False`, `Comma`, `Integer`, `String`, `Boolean` | ✅ Complete — merged to `main` |
+| 2 | `feat/phase7-ast` | AST nodes: `Parameter`, `SubDeclaration`, `FunctionDeclaration`, `ReturnStatement`, `CallStatement`, `CallExpression` | ⬜ |
+| 3 | `feat/phase7-parser` | Parser: `ParseSubDeclaration`, `ParseFunctionDeclaration`, `ParseParameterList`, `ParseCallStatement`, `ParseCallExpression` | ⬜ |
+| 4 | `feat/phase7-evaluator` | Evaluator: two-pass hoisting, call frames (SymbolTable chain), `ReturnException`, argument binding | ⬜ |
 
 ---
 
