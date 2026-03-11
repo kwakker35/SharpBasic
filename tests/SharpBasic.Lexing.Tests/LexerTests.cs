@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestPlatform.CrossPlatEngine.Helpers;
 using SharpBasic.Ast;
 using SharpBasic.Lexing;
 using Xunit;
@@ -166,7 +167,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Eof_IsLastToken()
+    public void Lex_Eof_IsLastToken()
     {
         var input = "PRINT";
         var lexer = new Lexer(input);
@@ -179,7 +180,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Mulitple_Spaces_Skipped()
+    public void Lex_Mulitple_Spaces_Skipped()
     {
         var input = "PRINT  ##";
 
@@ -194,7 +195,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Integer_Returns_Correct_Tokens_And_Value()
+    public void Lex_Integer_Returns_Correct_Tokens_And_Value()
     {
         var input = "42";
 
@@ -208,7 +209,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Float_Returns_Correct_Tokens_And_Value()
+    public void Lex_Float_Returns_Correct_Tokens_And_Value()
     {
         var input = "3.14";
 
@@ -222,7 +223,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Simple_Sum_Returns_Correct_Tokens_And_Value()
+    public void Lex_Simple_Sum_Returns_Correct_Tokens_And_Value()
     {
         var input = "1 + 2";
 
@@ -239,7 +240,7 @@ public class LexerTests
     }
 
     [Fact]
-    private void Lex_Bracketed_Simple_Sum_Returns_Correct_Tokens_And_Value()
+    public void Lex_Bracketed_Simple_Sum_Returns_Correct_Tokens_And_Value()
     {
         var input = "(10 * 3)";
 
@@ -271,6 +272,21 @@ public class LexerTests
     [InlineData("TO", TokenType.To)]
     [InlineData("STEP", TokenType.Step)]
     [InlineData("NEXT", TokenType.Next)]
+    [InlineData("FUNCTION", TokenType.Function)]
+    [InlineData("SUB", TokenType.Sub)]
+    [InlineData("RETURN", TokenType.Return)]
+    [InlineData("CALL", TokenType.Call)]
+    [InlineData("AS", TokenType.As)]
+    [InlineData("AND", TokenType.And)]
+    [InlineData("OR", TokenType.Or)]
+    [InlineData("NOT", TokenType.Not)]
+    [InlineData("INTEGER", TokenType.Integer)]
+    [InlineData("FLOAT", TokenType.Float)]
+    [InlineData("STRING", TokenType.String)]
+    [InlineData("BOOLEAN", TokenType.Boolean)]
+    [InlineData("TRUE", TokenType.True)]
+    [InlineData("FALSE", TokenType.False)]
+    [InlineData(",", TokenType.Comma)]
     public void Lexer_Tokenises_Single_Token(string input, TokenType expected)
     {
         var tokens = new Lexer(input).Tokenise();
