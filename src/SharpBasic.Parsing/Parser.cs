@@ -290,10 +290,7 @@ public class Parser(IReadOnlyList<Token> tokens)
                 return new ParseStatementFailure(errVar);
             }
 
-            nextVar = new Token(TokenType.NextVar,
-                                Current.Value,
-                                Current.Line,
-                                Current.Column);
+            nextVar = Current;
 
             Advance();// consume Identifer after NEXT
         }

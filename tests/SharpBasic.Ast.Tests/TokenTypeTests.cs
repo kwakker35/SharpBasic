@@ -24,7 +24,6 @@ public class TokenTypeTests
     [InlineData(TokenType.To, "To")]
     [InlineData(TokenType.Step, "Step")]
     [InlineData(TokenType.Next, "Next")]
-    [InlineData(TokenType.NextVar, "NextVar")]
     public void TokenType_ToString_Returns_Expected_Type(TokenType tokenType, string expectedType)
     {
         Assert.Equal(expectedType, tokenType.ToString());
