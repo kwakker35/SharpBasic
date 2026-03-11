@@ -80,9 +80,32 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
         else
         {
-            left = ParsePrimary();
-            if (left is null) return null;
-            Advance(); //consume the primary token
+            if (Current.Type == TokenType.Minus)
+            {
+                Advance(); // consume -
+                if (Current.Type == TokenType.IntLiteral &&
+                        int.TryParse(Current.Value, out var n))
+                {
+                    left = new IntLiteralExpression(-n, loc);
+                    Advance(); // consume the literal
+                }
+                else if (Current.Type == TokenType.FloatLiteral &&
+                        double.TryParse(Current.Value, out var f))
+                {
+                    left = new FloatLiteralExpression(-f, loc);
+                    Advance(); // consume the literal
+                }
+                else
+                {
+                    return null; // unary minus on non-literal
+                }
+            }
+            else
+            {
+                left = ParsePrimary();
+                if (left is null) return null;
+                Advance(); //consume the primary token
+            }
         }
 
         //Pratt loop - keep consuming operators while they bind tighter than minBindingPower
