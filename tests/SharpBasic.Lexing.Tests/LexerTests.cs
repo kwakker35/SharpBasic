@@ -267,6 +267,10 @@ public class LexerTests
     [InlineData(">", TokenType.Gt)]
     [InlineData("WHILE", TokenType.While)]
     [InlineData("WEND", TokenType.Wend)]
+    [InlineData("FOR", TokenType.For)]
+    [InlineData("TO", TokenType.To)]
+    [InlineData("STEP", TokenType.Step)]
+    [InlineData("NEXT", TokenType.Next)]
     public void Lexer_Tokenises_Single_Token(string input, TokenType expected)
     {
         var tokens = new Lexer(input).Tokenise();
@@ -299,4 +303,20 @@ public class LexerTests
         Assert.Equal(TokenType.Then, tokens[4].Type);
         Assert.Equal(TokenType.Eof, tokens[5].Type);
     }
+
+    [Fact]
+    public void Lexer_Tokenises_Ampersand_Correctly()
+    {
+        var input = "\"hello\" & \"world\"";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.StringLiteral, tokens[0].Type);
+        Assert.Equal("hello", tokens[0].Value);
+        Assert.Equal(TokenType.Ampersand, tokens[1].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[2].Type);
+        Assert.Equal("world", tokens[2].Value);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
 }

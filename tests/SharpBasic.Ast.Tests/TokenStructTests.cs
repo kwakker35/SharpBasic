@@ -12,8 +12,6 @@ public class TokenStructTests
 
         yield return new object[] { baseline, new Token(TokenType.StringLiteral, "Hello, World!", 1, 1) };
         yield return new object[] { baseline, new Token(TokenType.Print, "Goodbye, World!", 1, 1) };
-        yield return new object[] { baseline, new Token(TokenType.Print, "Hello, World!", 2, 1) };
-        yield return new object[] { baseline, new Token(TokenType.Print, "Hello, World!", 1, 2) };
     }
 
     [Fact]
@@ -26,9 +24,9 @@ public class TokenStructTests
         var expectedColumn = 1;
 
         var token = new Token(
-                            expectedType, 
-                            expectedValue, 
-                            expectedLine, 
+                            expectedType,
+                            expectedValue,
+                            expectedLine,
                             expectedColumn);
 
         //Assert
@@ -52,11 +50,20 @@ public class TokenStructTests
     [Theory]
     [MemberData(nameof(GetTokenVariations))]
     public void Tokens_With_Different_Values_Should_Not_Be_Equal(
-        Token baseline, 
+        Token baseline,
         Token variation)
     {
         //Assert
         Assert.NotEqual(baseline, variation);
+    }
+
+    [Fact]
+    public void Tokens_With_Same_Type_And_Value_Are_Equal_Regardless_Of_Position()
+    {
+        var token1 = new Token(TokenType.Identifier, "I", 1, 5);
+        var token2 = new Token(TokenType.Identifier, "I", 9, 1);
+
+        Assert.Equal(token1, token2);
     }
 
     [Fact]
@@ -66,7 +73,7 @@ public class TokenStructTests
         var token = new Token(TokenType.Print, "Hello, World!", 1, 1);
         var newToken = token with { Value = "Goodbye, World!" };
         //Assert
-        Assert.True(newToken.Value == "Goodbye, World!");       
+        Assert.True(newToken.Value == "Goodbye, World!");
     }
 
 }

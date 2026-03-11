@@ -77,6 +77,9 @@ public class Lexer
                     if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.GtEq, "", 1, _pos)); }
                     else tokens.Add(new Token(TokenType.Gt, "", 1, _pos));
                     break;
+                case '&':
+                    tokens.Add(new Token(TokenType.Ampersand, "", 1, _pos));
+                    break;
                 default:
                     if (char.IsDigit(Current))
                     {
@@ -99,7 +102,7 @@ public class Lexer
         return tokens;
     }
 
-    private TokenType GetTokenType(string token)
+    private static TokenType GetTokenType(string token)
     {
         return token.ToUpper() switch
         {
@@ -112,6 +115,10 @@ public class Lexer
             "END" => TokenType.End,
             "WHILE" => TokenType.While,
             "WEND" => TokenType.Wend,
+            "FOR" => TokenType.For,
+            "TO" => TokenType.To,
+            "STEP" => TokenType.Step,
+            "NEXT" => TokenType.Next,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

@@ -215,4 +215,86 @@ public class EvaluatorTests
         Assert.NotNull(output);
         Assert.Equal("6", output);
     }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Equality()
+    {
+        var output = RunHelper.Run("LET n = \"Alice\"\nIF n = \"Alice\" THEN\nPRINT \"yes\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Inequality()
+    {
+        var output = RunHelper.Run("LET n = \"Bob\"\nIF n <> \"Alice\" THEN\nPRINT \"yes\"\nEND IF");
+        Assert.NotNull(output);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void Evaluator_Returns_EvalFailure_For_Unsupported_String_Operator()
+    {
+        var tokens = new SharpBasic.Lexing.Lexer("LET a = \"x\"\nLET b = \"y\"\nIF a < b THEN\nPRINT \"yes\"\nEND IF").Tokenise();
+        var parseResult = new Parser(tokens).Parse();
+        var ps = Assert.IsType<ParseSuccess>(parseResult);
+        var result = new Evaluator(ps.Program).Evaluate();
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Concatination()
+    {
+        var output = RunHelper.Run("LET g = \"Hello\" & \" \" & \"World\"\nPRINT g");
+        Assert.NotNull(output);
+        Assert.Equal("Hello World", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_String_Concatination_With_Var()
+    {
+        var output = RunHelper.Run("LET x = \"Alice\"\nPRINT \"Hello: \" & x");
+        Assert.NotNull(output);
+        Assert.Equal("Hello: Alice", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_For_Next_No_Step()
+    {
+        var output = RunHelper.Run("FOR I = 1 TO 5\nPRINT I\nNEXT");
+        Assert.NotNull(output);
+        Assert.Equal("1\n2\n3\n4\n5", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_For_Next_With_Step()
+    {
+        var output = RunHelper.Run("FOR I = 1 TO 5 STEP 2\nPRINT I\nNEXT");
+        Assert.NotNull(output);
+        Assert.Equal("1\n3\n5", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_For_Next_With_Negative_Step()
+    {
+        var output = RunHelper.Run("FOR I = 5 TO 1 STEP -1\nPRINT I\nNEXT");
+        Assert.NotNull(output);
+        Assert.Equal("5\n4\n3\n2\n1", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_For_Next_Loop_Var_Visible_After()
+    {
+        var output = RunHelper.Run("FOR I = 1 TO 3\nPRINT I\nNEXT\nPRINT I");
+        Assert.NotNull(output);
+        Assert.Equal("1\n2\n3\n3", output);
+    }
+
+    [Fact]
+    public void RunHelper_Generates_Correct_Output_For_Nested_For_Next_Loop()
+    {
+        var output = RunHelper.Run("FOR I = 1 TO 3\nFOR J = 1 TO 2\nPRINT I & \" \" & J\nNEXT J\nNEXT I");
+        Assert.NotNull(output);
+        Assert.Equal("1 1\n1 2\n2 1\n2 2\n3 1\n3 2", output);
+    }
 }

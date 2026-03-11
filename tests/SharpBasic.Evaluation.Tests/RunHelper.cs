@@ -17,6 +17,6 @@ public static class RunHelper
             new Evaluator(ps.Program).Evaluate();
 
         Console.SetOut(currentOutputMethod);
-        return writer.ToString().Trim();
+        return writer.ToString().Trim().ReplaceLineEndings("\n");
     }
 }

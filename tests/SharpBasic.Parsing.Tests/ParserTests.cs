@@ -425,4 +425,62 @@ public class ParserTests
         var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
         Assert.Equal("Hello, World!", strLit.Value);
     }
+
+    [Fact]
+    public void Parser_Correctly_Generates_For_Next_With_Step_And_Explicit_Next()
+    {
+        // FOR X = 1 TO 10 STEP 2
+        //     PRINT X
+        // NEXT X
+
+        var tokens = new List<Token>
+        {
+            new(TokenType.For,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eq,"",1,1),
+            new(TokenType.IntLiteral,"1",1,1),
+            new(TokenType.To,"",1,1),
+            new(TokenType.IntLiteral,"10",1,1),
+            new(TokenType.Step,"",1,1),
+            new(TokenType.IntLiteral,"2",1,1),
+            new(TokenType.NewLine,"",1,1),
+            new(TokenType.Print,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.NewLine,"",1,1),
+            new(TokenType.Next,"",1,1),
+            new(TokenType.Identifier,"X",1,1),
+            new(TokenType.Eof,"",1,1)
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.NotNull(program);
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<ForStatement>(program.Statements[0]);
+
+        Assert.Equal(TokenType.Identifier, stmt.LoopVar.Type);
+        Assert.Equal("X", stmt.LoopVar.Value);
+
+        //Start
+        var start = Assert.IsType<IntLiteralExpression>(stmt.Start);
+        Assert.Equal(1, start.Value);
+
+        //Limit
+        var limit = Assert.IsType<IntLiteralExpression>(stmt.Limit);
+        Assert.Equal(10, limit.Value);
+
+        //Step
+        var step = Assert.IsType<IntLiteralExpression>(stmt.Step);
+        Assert.Equal(2, step.Value);
+
+        //BODY
+        var body = Assert.IsType<List<Statement>>(stmt.Body);
+        Assert.Equal(1, body.Count);
+        var printStmt = Assert.IsType<PrintStatement>(body[0]);
+        var id = Assert.IsType<IdentifierExpression>(printStmt.Value);
+        Assert.Equal("X", id.Name);
+    }
 }

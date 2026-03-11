@@ -30,6 +30,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             LetStatement l => EvaluateLetStatement(l),
             IfStatement i => EvaluateIfStatement(i),
             WhileStatement w => EvaluateWhileStatement(w),
+            ForStatement f => EvaluateForStatement(f),
             _
                 => new EvalFailure(
                     [
@@ -140,6 +141,93 @@ public class Evaluator(Program _program, SymbolTable? table = null)
 
     }
 
+    private EvalResult EvaluateForStatement(ForStatement stmt)
+    {
+        List<EvalError> localErrors = [];
+        var startEx = EvaluateExpression(stmt.Start);
+        var limitEx = EvaluateExpression(stmt.Limit);
+        var stepEx = stmt.Step is null ?
+                        new EvalSuccess(new FloatValue(1)) :
+                        EvaluateExpression(stmt.Step);
+
+
+        if (startEx is EvalFailure)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException("Invalid START expression or value"),
+                            stmt.Start.Location?.Line ?? 0,
+                            stmt.Start.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+        else if (limitEx is EvalFailure)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException("Invalid LIMIT expression or value"),
+                            stmt.Limit.Location?.Line ?? 0,
+                            stmt.Limit.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+        else if (stepEx is EvalFailure)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException("Invalid STEP expression or value"),
+                            stmt.Step?.Location?.Line ?? 0,
+                            stmt.Step?.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+
+
+        if (startEx is EvalSuccess startS &&
+            limitEx is EvalSuccess limitS &&
+            stepEx is EvalSuccess stepS)
+        {
+            // evaluated once before the loop
+            double i = ToFloat(startS.Value);
+            double limit = ToFloat(limitS.Value);
+            double step = ToFloat(stepS.Value);
+
+            _table.Set(stmt.LoopVar.Value, new IntValue((int)i));
+
+            while (true)
+            {
+                // condition depends on step direction
+                bool shouldRun = step > 0 ? i <= limit : i >= limit;
+                if (!shouldRun) break;
+
+                _table.Set(stmt.LoopVar.Value, new IntValue((int)i));
+
+                foreach (Statement bodyStmt in stmt.Body)
+                {
+                    var bodyResult = EvaluateStatement(bodyStmt);
+
+                    if (bodyResult is EvalFailure failure)
+                    {
+                        localErrors.AddRange(failure.Errors);
+                    }
+                }
+
+                // increment
+                i += step;
+            }
+        }
+
+        return localErrors.Count > 0 ?
+               new EvalFailure(localErrors) :
+               new EvalSuccess(new VoidValue());
+    }
+
     private EvalResult EvaluateWhileStatement(WhileStatement stmt)
     {
         List<EvalError> localErrors = [];
@@ -204,7 +292,8 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                                         TokenType.Lt or
                                         TokenType.Gt or
                                         TokenType.LtEq or
-                                        TokenType.GtEq))
+                                        TokenType.GtEq or
+                                        TokenType.Ampersand))
         {
             return new EvalFailure(
                     [
@@ -225,6 +314,43 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         var rightRes = EvaluateExpression(expr.Right);
         if (rightRes is EvalFailure) return rightRes;
         var rightES = (EvalSuccess)rightRes;
+
+        // string concatenation
+        if (expr.Operator.Type is TokenType.Ampersand)
+        {
+            return new EvalSuccess(new StringValue(
+                (leftES.Value?.ToString() ?? "") + (rightES.Value?.ToString() ?? "")
+            ));
+        }
+
+        if (leftES.Value is StringValue lsv && rightES.Value is StringValue rsv)
+        {
+            //string comparison
+            if (expr.Operator.Type is TokenType.Eq or
+                                        TokenType.NotEq)
+            {
+                bool result = expr.Operator.Type switch
+                {
+                    TokenType.Eq => lsv == rsv,
+                    TokenType.NotEq => lsv != rsv,
+                    _ => throw new InvalidOperationException("Unreachable")
+                };
+
+                return new EvalSuccess(new BoolValue(result));
+            }
+            else
+            {
+                return new EvalFailure(
+                    [
+                        new EvalError(
+                        new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0
+                    )
+                    ]
+                );
+            }
+        }
 
         var isFloat = leftES.Value is FloatValue || rightES.Value is FloatValue;
 
