@@ -335,4 +335,102 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[3].Type);
     }
 
+    [Fact]
+    public void Lexer_Tokenises_Sub_Signature_No_Params()
+    {
+        // SUB Greet()
+        var input = "SUB Greet()";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(5, tokens.Count);
+        Assert.Equal(TokenType.Sub, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("Greet", tokens[1].Value);
+        Assert.Equal(TokenType.LParen, tokens[2].Type);
+        Assert.Equal(TokenType.RParen, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Sub_Signature_With_Params()
+    {
+        // SUB Add(a As Integer, b As Integer)
+        var input = "SUB Add(a As Integer, b As Integer)";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(12, tokens.Count);
+        Assert.Equal(TokenType.Sub, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("Add", tokens[1].Value);
+        Assert.Equal(TokenType.LParen, tokens[2].Type);
+        Assert.Equal(TokenType.Identifier, tokens[3].Type);
+        Assert.Equal("a", tokens[3].Value);
+        Assert.Equal(TokenType.As, tokens[4].Type);
+        Assert.Equal(TokenType.Integer, tokens[5].Type);
+        Assert.Equal(TokenType.Comma, tokens[6].Type);
+        Assert.Equal(TokenType.Identifier, tokens[7].Type);
+        Assert.Equal("b", tokens[7].Value);
+        Assert.Equal(TokenType.As, tokens[8].Type);
+        Assert.Equal(TokenType.Integer, tokens[9].Type);
+        Assert.Equal(TokenType.RParen, tokens[10].Type);
+        Assert.Equal(TokenType.Eof, tokens[11].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Function_Signature_With_Return_Type()
+    {
+        // FUNCTION Add(a As Integer) As Integer
+        var input = "FUNCTION Add(a As Integer) As Integer";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(9, tokens.Count);
+        Assert.Equal(TokenType.Function, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("Add", tokens[1].Value);
+        Assert.Equal(TokenType.LParen, tokens[2].Type);
+        Assert.Equal(TokenType.Identifier, tokens[3].Type);
+        Assert.Equal("a", tokens[3].Value);
+        Assert.Equal(TokenType.As, tokens[4].Type);
+        Assert.Equal(TokenType.Integer, tokens[5].Type);
+        Assert.Equal(TokenType.RParen, tokens[6].Type);
+        Assert.Equal(TokenType.As, tokens[7].Type);
+        Assert.Equal(TokenType.Integer, tokens[8].Type);
+        // Note: no Eof here intentionally — just checking key tokens
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Call_Statement()
+    {
+        // CALL Greet("Alice")
+        var input = "CALL Greet(\"Alice\")";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(6, tokens.Count);
+        Assert.Equal(TokenType.Call, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("Greet", tokens[1].Value);
+        Assert.Equal(TokenType.LParen, tokens[2].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[3].Type);
+        Assert.Equal("Alice", tokens[3].Value);
+        Assert.Equal(TokenType.RParen, tokens[4].Type);
+        Assert.Equal(TokenType.Eof, tokens[5].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Return_With_Expression()
+    {
+        // RETURN a + b
+        var input = "RETURN a + b";
+        var tokens = new Lexer(input).Tokenise();
+
+        Assert.Equal(5, tokens.Count);
+        Assert.Equal(TokenType.Return, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("a", tokens[1].Value);
+        Assert.Equal(TokenType.Plus, tokens[2].Type);
+        Assert.Equal(TokenType.Identifier, tokens[3].Type);
+        Assert.Equal("b", tokens[3].Value);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
 }

@@ -148,6 +148,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.For:
                 AddStatement(target, ParseForStatement());
                 break;
+            case TokenType.Sub:
+                AddStatement(target, ParseSubDeclaration());
+                break;
             default:
                 errors.Add(
                     new ParseError(
@@ -351,6 +354,109 @@ public class Parser(IReadOnlyList<Token> tokens)
                 condition,
                 body,
                 wLoc
+                )
+        );
+    }
+
+    private ParseStatementResult ParseSubDeclaration()
+    {
+        ParseStatementFailure? err;
+
+        var name = string.Empty;
+        List<Parameter> parameters = [];
+        List<Statement> body = [];
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        Advance(); //consume SUB
+
+        err = ExpectToken(TokenType.Identifier, "Identifier after SUB");
+        if (err is not null) return err;
+
+        name = Current.Value;
+        Advance(); //consume sub name
+
+        err = ExpectToken(TokenType.LParen, "( after SUB <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume (
+
+        //loop though parameters
+        while (Current.Type is not TokenType.RParen)
+        {
+            var paramName = string.Empty;
+            var paramType = string.Empty;
+            var paramLoc = new SourceLocation(Current.Line, Current.Column);
+
+            err = ExpectToken(TokenType.Identifier, "Identifier at start of parameter");
+            if (err is not null) return err;
+
+            paramName = Current.Value;
+            Advance(); //consume param name
+
+            err = ExpectToken(TokenType.As, "As after parameter name");
+            if (err is not null) return err;
+            Advance(); //consume As
+
+            if (Current.Type is not TokenType.Integer &&
+                Current.Type is not TokenType.Float &&
+                Current.Type is not TokenType.String &&
+                Current.Type is not TokenType.Boolean)
+            {
+                var errEnd = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected TYPE after As but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+                return new ParseStatementFailure(errEnd);
+            }
+
+            paramType = Current.Type.ToString();
+            Advance(); //consume param type next char will be , or )
+
+            if (Current.Type == TokenType.Comma)
+                Advance(); //consume comma if it exsits
+
+            parameters.Add(
+                new Parameter(paramName, paramType, paramLoc)
+            );
+        }
+
+        if (Current.Type is TokenType.RParen)
+            Advance(); //consume )
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        //break on ELSE or END
+        while (Current.Type is not TokenType.End &&
+                Current.Type is not TokenType.Eof)
+        {
+            ParseStatement(body);
+        }
+
+        //expecting END SUB
+        if (Current.Type is TokenType.End && Peek().Type is not TokenType.Sub)
+        {
+            var errEnd = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected SUB after END but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(errEnd);
+        }
+
+        Advance(); //consume END
+        Advance(); //consume SUB
+
+        return new ParseStatementSuccess(
+            new SubDeclaration(
+                name,
+                parameters,
+                body,
+                loc
                 )
         );
     }
