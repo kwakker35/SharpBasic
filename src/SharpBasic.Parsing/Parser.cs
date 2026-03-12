@@ -151,6 +151,15 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Sub:
                 AddStatement(target, ParseSubDeclaration());
                 break;
+            case TokenType.Function:
+                AddStatement(target, ParseFunctionDeclaration());
+                break;
+            case TokenType.Return:
+                AddStatement(target, ParseReturnStatement());
+                break;
+            case TokenType.Call:
+                AddStatement(target, ParseCallStatement());
+                break;
             default:
                 errors.Add(
                     new ParseError(
@@ -325,6 +334,53 @@ public class Parser(IReadOnlyList<Token> tokens)
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
     }
 
+    private ParseStatementResult ParseCallStatement()
+    {
+        ParseStatementFailure? err;
+
+        var name = string.Empty;
+        List<Expression> arguments = [];
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        Advance(); //consume CALL
+
+        err = ExpectToken(TokenType.Identifier, "Identifier after CALL");
+        if (err is not null) return err;
+
+        name = Current.Value;
+        Advance(); //consume sub or function name
+
+        err = ExpectToken(TokenType.LParen, "( after <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume (
+
+        //loop though Aguments
+        while (Current.Type is not TokenType.RParen)
+        {
+            var expr = ParseExpression();
+
+            err = ExpectExpression(expr, "expression in arguments");
+            if (err is not null) return err;
+
+            if (Current.Type == TokenType.Comma)
+                Advance(); //consume comma if it exsits
+
+            arguments.Add(expr);
+        }
+
+        if (Current.Type is TokenType.RParen)
+            Advance(); //consume )
+
+        return new ParseStatementSuccess(
+           new CallStatement(
+                name,
+                arguments,
+                loc
+               )
+       );
+
+    }
+
     private ParseStatementResult ParseWhileStatement()
     {
         ParseStatementFailure? err;
@@ -354,6 +410,133 @@ public class Parser(IReadOnlyList<Token> tokens)
                 condition,
                 body,
                 wLoc
+                )
+        );
+    }
+
+    private ParseStatementResult ParseFunctionDeclaration()
+    {
+        ParseStatementFailure? err;
+
+        var name = string.Empty;
+        var returnType = string.Empty;
+        List<Parameter> parameters = [];
+        List<Statement> body = [];
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        Advance(); //consume FUNCTION
+
+        err = ExpectToken(TokenType.Identifier, "Identifier after FUNCTION");
+        if (err is not null) return err;
+
+        name = Current.Value;
+        Advance(); //consume sub name
+
+        err = ExpectToken(TokenType.LParen, "( after FUNCTION <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume (
+
+        //loop though parameters
+        while (Current.Type is not TokenType.RParen)
+        {
+            var paramName = string.Empty;
+            var paramType = string.Empty;
+            var paramLoc = new SourceLocation(Current.Line, Current.Column);
+
+            err = ExpectToken(TokenType.Identifier, "Identifier at start of parameter");
+            if (err is not null) return err;
+
+            paramName = Current.Value;
+            Advance(); //consume param name
+
+            err = ExpectToken(TokenType.As, "As after parameter name");
+            if (err is not null) return err;
+            Advance(); //consume As
+
+            if (Current.Type is not TokenType.Integer &&
+                Current.Type is not TokenType.Float &&
+                Current.Type is not TokenType.String &&
+                Current.Type is not TokenType.Boolean)
+            {
+                var errEnd = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+                return new ParseStatementFailure(errEnd);
+            }
+
+            paramType = Current.Type.ToString();
+            Advance(); //consume param type, next char will be , or )
+
+            if (Current.Type == TokenType.Comma)
+                Advance(); //consume comma if it exsits
+
+            parameters.Add(
+                new Parameter(paramName, paramType, paramLoc)
+            );
+        }
+
+        if (Current.Type is TokenType.RParen)
+            Advance(); //consume )
+
+        err = ExpectToken(TokenType.As, "AS after FUNCTION declaration");
+        if (err is not null) return err;
+        Advance(); //consume As
+
+        if (Current.Type is not TokenType.Integer &&
+                Current.Type is not TokenType.Float &&
+                Current.Type is not TokenType.String &&
+                Current.Type is not TokenType.Boolean)
+        {
+            var errEnd = new ParseStatementError(
+            new InvalidOperationException(
+                $"Expected return TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
+            ),
+            Current.Line,
+            Current.Column
+        );
+            return new ParseStatementFailure(errEnd);
+        }
+
+        returnType = Current.Type.ToString();
+        Advance(); //consume param type
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        //break on END
+        while (Current.Type is not TokenType.End &&
+                Current.Type is not TokenType.Eof)
+        {
+            ParseStatement(body);
+        }
+
+        //expecting END FUNCTION
+        if (Current.Type is TokenType.End && Peek().Type is not TokenType.Function)
+        {
+            var errEnd = new ParseStatementError(
+                new InvalidOperationException(
+                    $"Expected FUNCTION after END but got {Current.Type} at {Current.Line}:{Current.Column}"
+                ),
+                Current.Line,
+                Current.Column
+            );
+            return new ParseStatementFailure(errEnd);
+        }
+
+        Advance(); //consume END
+        Advance(); //consume SUB
+
+        return new ParseStatementSuccess(
+            new FunctionDeclaration(
+                name,
+                parameters,
+                body,
+                returnType,
+                loc
                 )
         );
     }
@@ -403,7 +586,7 @@ public class Parser(IReadOnlyList<Token> tokens)
             {
                 var errEnd = new ParseStatementError(
                 new InvalidOperationException(
-                    $"Expected TYPE after As but got {Current.Type} at {Current.Line}:{Current.Column}"
+                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
                 ),
                 Current.Line,
                 Current.Column
@@ -412,7 +595,7 @@ public class Parser(IReadOnlyList<Token> tokens)
             }
 
             paramType = Current.Type.ToString();
-            Advance(); //consume param type next char will be , or )
+            Advance(); //consume param type, next char will be , or )
 
             if (Current.Type == TokenType.Comma)
                 Advance(); //consume comma if it exsits
@@ -428,7 +611,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (Current.Type is TokenType.NewLine)
             Advance(); //consume NewLine
 
-        //break on ELSE or END
+        //break on END
         while (Current.Type is not TokenType.End &&
                 Current.Type is not TokenType.Eof)
         {
@@ -531,6 +714,38 @@ public class Parser(IReadOnlyList<Token> tokens)
                 ifLoc
                 )
         );
+    }
+
+    private ParseStatementResult ParseReturnStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //consume RETURN
+
+        if (Current.Type is TokenType.NewLine ||
+                Current.Type is TokenType.Eof)
+        {
+            if (Current.Type is TokenType.NewLine)
+                Advance(); //consume NewLine
+
+            // no expresstion so plain return statement
+            return new ParseStatementSuccess(
+                        new ReturnStatement(null, loc
+                        ));
+        }
+
+        var retVal = ParseExpression();
+        err = ExpectExpression(retVal, "expression after RETURN");
+        if (err is not null) return err;
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); //consume NewLine
+
+        // no expresstion so plain return statement
+        return new ParseStatementSuccess(
+                    new ReturnStatement(retVal, loc
+                    ));
+
     }
 
     private ParseStatementResult ParseLetStatement()

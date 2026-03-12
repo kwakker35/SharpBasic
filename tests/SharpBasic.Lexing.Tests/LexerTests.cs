@@ -383,7 +383,7 @@ public class LexerTests
         var input = "FUNCTION Add(a As Integer) As Integer";
         var tokens = new Lexer(input).Tokenise();
 
-        Assert.Equal(9, tokens.Count);
+        Assert.Equal(10, tokens.Count);
         Assert.Equal(TokenType.Function, tokens[0].Type);
         Assert.Equal(TokenType.Identifier, tokens[1].Type);
         Assert.Equal("Add", tokens[1].Value);
@@ -395,7 +395,7 @@ public class LexerTests
         Assert.Equal(TokenType.RParen, tokens[6].Type);
         Assert.Equal(TokenType.As, tokens[7].Type);
         Assert.Equal(TokenType.Integer, tokens[8].Type);
-        // Note: no Eof here intentionally — just checking key tokens
+        Assert.Equal(TokenType.Eof, tokens[9].Type);
     }
 
     [Fact]
