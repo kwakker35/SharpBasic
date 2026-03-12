@@ -483,4 +483,260 @@ public class ParserTests
         var id = Assert.IsType<IdentifierExpression>(printStmt.Value);
         Assert.Equal("X", id.Name);
     }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Sub_Declaration_No_Params_Empty_Body()
+    {
+        // SUB Greet()
+        // END SUB
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sub, "", 1, 1),
+            new(TokenType.Identifier, "Greet", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.End, "", 2, 1),
+            new(TokenType.Sub, "", 2, 1),
+            new(TokenType.Eof, "", 2, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<SubDeclaration>(program.Statements[0]);
+        Assert.Equal("Greet", stmt.Name);
+        Assert.Empty(stmt.Parameters);
+        Assert.Empty(stmt.Body);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Sub_Declaration_With_Params()
+    {
+        // SUB Add(a As Integer, b As Integer)
+        // END SUB
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sub, "", 1, 1),
+            new(TokenType.Identifier, "Add", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.Identifier, "a", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.Comma, "", 1, 1),
+            new(TokenType.Identifier, "b", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.End, "", 2, 1),
+            new(TokenType.Sub, "", 2, 1),
+            new(TokenType.Eof, "", 2, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<SubDeclaration>(program.Statements[0]);
+        Assert.Equal("Add", stmt.Name);
+        Assert.Equal(2, stmt.Parameters.Count);
+        Assert.Equal("a", stmt.Parameters[0].Name);
+        Assert.Equal("Integer", stmt.Parameters[0].TypeName);
+        Assert.Equal("b", stmt.Parameters[1].Name);
+        Assert.Equal("Integer", stmt.Parameters[1].TypeName);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Sub_Declaration_With_Body()
+    {
+        // SUB Greet()
+        //     PRINT "Hello"
+        // END SUB
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sub, "", 1, 1),
+            new(TokenType.Identifier, "Greet", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.Print, "", 2, 1),
+            new(TokenType.StringLiteral, "Hello", 2, 1),
+            new(TokenType.NewLine, "", 2, 1),
+            new(TokenType.End, "", 3, 1),
+            new(TokenType.Sub, "", 3, 1),
+            new(TokenType.Eof, "", 3, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<SubDeclaration>(program.Statements[0]);
+        Assert.Equal("Greet", stmt.Name);
+        Assert.Single(stmt.Body);
+        var print = Assert.IsType<PrintStatement>(stmt.Body[0]);
+        var str = Assert.IsType<StringLiteralExpression>(print.Value);
+        Assert.Equal("Hello", str.Value);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Function_Declaration_With_Return_Type()
+    {
+        // FUNCTION Add(a As Integer) As Integer
+        // END FUNCTION
+        var tokens = new List<Token>
+        {
+            new(TokenType.Function, "", 1, 1),
+            new(TokenType.Identifier, "Add", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.Identifier, "a", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.End, "", 2, 1),
+            new(TokenType.Function, "", 2, 1),
+            new(TokenType.Eof, "", 2, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<FunctionDeclaration>(program.Statements[0]);
+        Assert.Equal("Add", stmt.Name);
+        Assert.Equal("Integer", stmt.ReturnType);
+        Assert.Single(stmt.Parameters);
+        Assert.Equal("a", stmt.Parameters[0].Name);
+        Assert.Equal("Integer", stmt.Parameters[0].TypeName);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Return_Statement_No_Value()
+    {
+        // SUB Greet()
+        //     RETURN
+        // END SUB
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sub, "", 1, 1),
+            new(TokenType.Identifier, "Greet", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.Return, "", 2, 1),
+            new(TokenType.NewLine, "", 2, 1),
+            new(TokenType.End, "", 3, 1),
+            new(TokenType.Sub, "", 3, 1),
+            new(TokenType.Eof, "", 3, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        var sub = Assert.IsType<SubDeclaration>(program.Statements[0]);
+        var ret = Assert.IsType<ReturnStatement>(sub.Body[0]);
+        Assert.Null(ret.Value);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Return_Statement_With_Expression()
+    {
+        // FUNCTION GetOne() As Integer
+        //     RETURN 1
+        // END FUNCTION
+        var tokens = new List<Token>
+        {
+            new(TokenType.Function, "", 1, 1),
+            new(TokenType.Identifier, "GetOne", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.Return, "", 2, 1),
+            new(TokenType.IntLiteral, "1", 2, 1),
+            new(TokenType.NewLine, "", 2, 1),
+            new(TokenType.End, "", 3, 1),
+            new(TokenType.Function, "", 3, 1),
+            new(TokenType.Eof, "", 3, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        var fn = Assert.IsType<FunctionDeclaration>(program.Statements[0]);
+        var ret = Assert.IsType<ReturnStatement>(fn.Body[0]);
+        var lit = Assert.IsType<IntLiteralExpression>(ret.Value);
+        Assert.Equal(1, lit.Value);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Call_Statement_No_Args()
+    {
+        // CALL Greet()
+        var tokens = new List<Token>
+        {
+            new(TokenType.Call, "", 1, 1),
+            new(TokenType.Identifier, "Greet", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.Eof, "", 1, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<CallStatement>(program.Statements[0]);
+        Assert.Equal("Greet", stmt.Name);
+        Assert.Empty(stmt.Arguments);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Call_Statement_With_Args()
+    {
+        // CALL Add(1, 2)
+        var tokens = new List<Token>
+        {
+            new(TokenType.Call, "", 1, 1),
+            new(TokenType.Identifier, "Add", 1, 1),
+            new(TokenType.LParen, "", 1, 1),
+            new(TokenType.IntLiteral, "1", 1, 1),
+            new(TokenType.Comma, "", 1, 1),
+            new(TokenType.IntLiteral, "2", 1, 1),
+            new(TokenType.RParen, "", 1, 1),
+            new(TokenType.Eof, "", 1, 1),
+        };
+
+        var parser = new Parser(tokens);
+        var result = parser.Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var program = success.Program;
+
+        Assert.Single(program.Statements);
+        var stmt = Assert.IsType<CallStatement>(program.Statements[0]);
+        Assert.Equal("Add", stmt.Name);
+        Assert.Equal(2, stmt.Arguments.Count);
+        Assert.IsType<IntLiteralExpression>(stmt.Arguments[0]);
+        Assert.IsType<IntLiteralExpression>(stmt.Arguments[1]);
+    }
 }
