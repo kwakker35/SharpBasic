@@ -623,6 +623,83 @@ public class ParserTests
         Assert.Equal("Integer", stmt.Parameters[0].TypeName);
     }
 
+    // --- Phase 8: Arrays ---
+
+    [Fact]
+    public void Parser_Correctly_Generates_DimStatement()
+    {
+        // DIM scores[10] As Integer
+        var tokens = new List<Token>
+        {
+            new(TokenType.Dim, "", 1, 1),
+            new(TokenType.Identifier, "scores", 1, 1),
+            new(TokenType.LBracket, "", 1, 1),
+            new(TokenType.IntLiteral, "10", 1, 1),
+            new(TokenType.RBracket, "", 1, 1),
+            new(TokenType.As, "", 1, 1),
+            new(TokenType.Integer, "", 1, 1),
+            new(TokenType.Eof, "", 1, 1)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<DimStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("scores", stmt.Name);
+        Assert.Equal(10, stmt.Size);
+        Assert.Equal("Integer", stmt.TypeName);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_ArrayAccessExpression_In_Let()
+    {
+        // LET x = scores[2]
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let, "", 1, 1),
+            new(TokenType.Identifier, "x", 1, 1),
+            new(TokenType.Eq, "", 1, 1),
+            new(TokenType.Identifier, "scores", 1, 1),
+            new(TokenType.LBracket, "", 1, 1),
+            new(TokenType.IntLiteral, "2", 1, 1),
+            new(TokenType.RBracket, "", 1, 1),
+            new(TokenType.Eof, "", 1, 1)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<LetStatement>(success.Program.Statements[0]);
+        var expr = Assert.IsType<ArrayAccessExpression>(stmt.Value);
+
+        Assert.Equal("scores", expr.Name);
+        Assert.IsType<IntLiteralExpression>(expr.Index);
+    }
+
+    [Fact]
+    public void Parser_Correctly_Generates_Array_Assignment_In_Let()
+    {
+        // LET scores[0] = 42
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let, "", 1, 1),
+            new(TokenType.Identifier, "scores", 1, 1),
+            new(TokenType.LBracket, "", 1, 1),
+            new(TokenType.IntLiteral, "0", 1, 1),
+            new(TokenType.RBracket, "", 1, 1),
+            new(TokenType.Eq, "", 1, 1),
+            new(TokenType.IntLiteral, "42", 1, 1),
+            new(TokenType.Eof, "", 1, 1)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<ArrayAssignStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("scores", stmt.Name);
+        Assert.IsType<IntLiteralExpression>(stmt.Index);
+        Assert.IsType<IntLiteralExpression>(stmt.Value);
+    }
+
     [Fact]
     public void Parser_Correctly_Generates_Return_Statement_No_Value()
     {

@@ -98,6 +98,22 @@ public class Lexer
                     }
                     tokens.Add(new Token(TokenType.RParen, "", 1, _pos));
                     break;
+                case '[':
+                    if (token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        token = new();
+                    }
+                    tokens.Add(new Token(TokenType.LBracket, "", 1, _pos));
+                    break;
+                case ']':
+                    if (token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        token = new();
+                    }
+                    tokens.Add(new Token(TokenType.RBracket, "", 1, _pos));
+                    break;
                 case '<':
                     if (token.Length > 0)
                     {
@@ -191,6 +207,7 @@ public class Lexer
             "BOOLEAN" => TokenType.Boolean,
             "TRUE" => TokenType.True,
             "FALSE" => TokenType.False,
+            "DIM" => TokenType.Dim,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

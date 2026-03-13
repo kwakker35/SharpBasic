@@ -351,6 +351,65 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[4].Type);
     }
 
+    // --- Phase 8: Arrays ---
+
+    [Fact]
+    public void Lexer_Tokenises_Dim_Keyword()
+    {
+        var tokens = new Lexer("DIM").Tokenise();
+        Assert.Equal(TokenType.Dim, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_LBracket()
+    {
+        var tokens = new Lexer("[").Tokenise();
+        Assert.Equal(TokenType.LBracket, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_RBracket()
+    {
+        var tokens = new Lexer("]").Tokenise();
+        Assert.Equal(TokenType.RBracket, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Dim_Statement_Sequence()
+    {
+        // DIM scores[10] As Integer
+        var tokens = new Lexer("DIM scores[10] As Integer").Tokenise();
+
+        // DIM, scores, [, 10, ], As, Integer, Eof
+        Assert.Equal(8, tokens.Count);
+        Assert.Equal(TokenType.Dim, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("scores", tokens[1].Value);
+        Assert.Equal(TokenType.LBracket, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal("10", tokens[3].Value);
+        Assert.Equal(TokenType.RBracket, tokens[4].Type);
+        Assert.Equal(TokenType.As, tokens[5].Type);
+        Assert.Equal(TokenType.Integer, tokens[6].Type);
+        Assert.Equal(TokenType.Eof, tokens[7].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Array_Access_Sequence()
+    {
+        // scores[2]
+        var tokens = new Lexer("scores[2]").Tokenise();
+
+        // scores, [, 2, ], Eof
+        Assert.Equal(5, tokens.Count);
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("scores", tokens[0].Value);
+        Assert.Equal(TokenType.LBracket, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.RBracket, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
     [Fact]
     public void Lexer_Tokenises_Sub_Signature_With_Params()
     {

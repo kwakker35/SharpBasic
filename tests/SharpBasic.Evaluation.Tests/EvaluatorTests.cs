@@ -314,6 +314,72 @@ public class EvaluatorTests
         Assert.Equal("Alice", output);
     }
 
+    // --- Phase 8: Arrays ---
+
+    [Fact]
+    public void Evaluator_Dim_Declares_Array_In_Symbol_Table()
+    {
+        var source = "DIM scores[3] As Integer";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Can_Assign_And_Read_Array_Element()
+    {
+        var source = "DIM scores[3] As Integer\nLET scores[0] = 42\nPRINT scores[0]";
+        var output = RunHelper.Run(source);
+        Assert.Equal("42", output);
+    }
+
+    [Fact]
+    public void Evaluator_Array_Elements_Default_To_Zero()
+    {
+        var source = "DIM scores[3] As Integer\nPRINT scores[1]";
+        var output = RunHelper.Run(source);
+        Assert.Equal("0", output);
+    }
+
+    [Fact]
+    public void Evaluator_Array_Out_Of_Bounds_Returns_EvalFailure()
+    {
+        var source = "DIM scores[3] As Integer\nLET scores[5] = 99";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Array_Type_Mismatch_Returns_EvalFailure()
+    {
+        var source = "DIM scores[3] As Integer\nLET scores[0] = \"hello\"";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Array_Can_Be_Used_In_Expression()
+    {
+        var source = "DIM nums[2] As Integer\nLET nums[0] = 10\nLET nums[1] = 20\nLET total = nums[0] + nums[1]\nPRINT total";
+        var output = RunHelper.Run(source);
+        Assert.Equal("30", output);
+    }
+
+    [Fact]
+    public void Evaluator_Array_Can_Be_Iterated_With_For_Loop()
+    {
+        var source = """
+            DIM nums[3] As Integer
+            LET nums[0] = 1
+            LET nums[1] = 2
+            LET nums[2] = 3
+            FOR i = 0 TO 2
+            PRINT nums[i]
+            NEXT i
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("1\n2\n3", output);
+    }
+
     [Fact]
     public void Evaluator_Sub_Locals_Do_Not_Leak_To_Caller()
     {
