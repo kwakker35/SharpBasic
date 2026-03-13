@@ -4,16 +4,27 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 7 — Subroutines & Functions
+## Current Phase: 8 — Arrays
 
-**Goal:** `SUB`/`FUNCTION` declarations, `CALL`, `RETURN`, argument passing, hoisted declarations.
+**Goal:** `DIM`, indexing, and bounds checking work.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/phase8-tokens` | New tokens: `Dim` | ⬜ |
+| 2 | `feat/phase8-ast` | AST nodes: `DimStatement`, `ArrayAccessExpression`, `ArrayAssignStatement` | ⬜ |
+| 3 | `feat/phase8-parser` | Parser: `ParseDimStatement`, `ParseArrayAccess`, `ParseArrayAssign` | ⬜ |
+| 4 | `feat/phase8-evaluator` | Evaluator: runtime array storage, bounds checking | ⬜ |
+
+---
+
+## Completed — Phase 7 — Subroutines & Functions
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
 | 1 | `feat/phase7-tokens` | 14 new tokens: `Sub`, `Function`, `Return`, `Call`, `As`, `And`, `Or`, `Not`, `True`, `False`, `Comma`, `Integer`, `String`, `Boolean` | ✅ Complete — merged to `main` |
-| 2 | `feat/phase7-ast` | AST nodes: `Parameter`, `SubDeclaration`, `FunctionDeclaration`, `ReturnStatement`, `CallStatement`, `CallExpression` | ⬜ |
-| 3 | `feat/phase7-parser` | Parser: `ParseSubDeclaration`, `ParseFunctionDeclaration`, `ParseParameterList`, `ParseCallStatement`, `ParseCallExpression` | ⬜ |
-| 4 | `feat/phase7-evaluator` | Evaluator: two-pass hoisting, call frames (SymbolTable chain), `ReturnException`, argument binding | ⬜ |
+| 2 | `feat/phase7-ast` | AST nodes: `Parameter`, `SubDeclaration`, `FunctionDeclaration`, `ReturnStatement`, `CallStatement`, `CallExpression` | ✅ Complete — merged to `main` |
+| 3 | `feat/phase7-parser` | Parser: `ParseSubDeclaration`, `ParseFunctionDeclaration`, `ParseCallStatement`, `ParseCallExpression` + lexer flush & CRLF bugs fixed | ✅ Complete — merged to `main` |
+| 4 | `feat/phase7-evaluator` | Evaluator: two-pass hoisting, call frames (SymbolTable chain), `ReturnException`, argument binding, recursive Fibonacci | ✅ Complete — merged to `main` |
 
 ---
 
