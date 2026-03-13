@@ -10,7 +10,7 @@ public class Lexer
 
     public Lexer(string source)
     {
-        _source = source;
+        _source = source.Replace("\r\n", "\n").Replace("\r", "\n");
     }
 
     private char Current => _pos < _source.Length ? _source[_pos] : '\0';

@@ -19,4 +19,13 @@ public static class RunHelper
         Console.SetOut(currentOutputMethod);
         return writer.ToString().Trim().ReplaceLineEndings("\n");
     }
+
+    public static EvalResult RunResult(string source)
+    {
+        var tokens = new Lexer(source).Tokenise();
+        var parseResult = new Parser(tokens).Parse();
+        if (parseResult is ParseSuccess ps)
+            return new Evaluator(ps.Program).Evaluate();
+        return new EvalFailure([new EvalError(new InvalidOperationException("Parse failed"), 0, 0)]);
+    }
 }

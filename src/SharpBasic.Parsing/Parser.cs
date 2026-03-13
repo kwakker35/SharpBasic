@@ -55,8 +55,10 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         if (Current.Type == TokenType.Identifier)
         {
+            if (Peek().Type == TokenType.LParen)
+                return ParseCallExpression();   // Foo(...)
+
             var identExpr = new IdentifierExpression(Current.Value, loc);
-            // Phase 7: peek ahead — if next token is (, parse call expression
             return identExpr;
         }
 
@@ -104,7 +106,8 @@ public class Parser(IReadOnlyList<Token> tokens)
             {
                 left = ParsePrimary();
                 if (left is null) return null;
-                Advance(); //consume the primary token
+                if (left is not CallExpression)
+                    Advance(); //consume the primary token
             }
         }
 
@@ -334,6 +337,48 @@ public class Parser(IReadOnlyList<Token> tokens)
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
     }
 
+    private Expression? ParseCallExpression()
+    {
+        ParseStatementFailure? err;
+
+        var name = string.Empty;
+        List<Expression> arguments = [];
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        err = ExpectToken(TokenType.Identifier, "Identifier");
+        if (err is not null) return null;
+
+        name = Current.Value;
+        Advance(); //consume function name
+
+        err = ExpectToken(TokenType.LParen, "( after <Identifier>");
+        if (err is not null) return null;
+        Advance(); //consume (
+
+        //loop though Aguments
+        while (Current.Type is not TokenType.RParen)
+        {
+            var expr = ParseExpression();
+
+            err = ExpectExpression(expr, "expression in arguments");
+            if (err is not null) return null;
+
+            if (Current.Type == TokenType.Comma)
+                Advance(); //consume comma if it exsits
+
+            arguments.Add(expr);
+        }
+
+        if (Current.Type is TokenType.RParen)
+            Advance(); //consume )
+
+        return new CallExpression(
+                name,
+                arguments,
+                loc
+        );
+    }
+
     private ParseStatementResult ParseCallStatement()
     {
         ParseStatementFailure? err;
@@ -348,7 +393,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
 
         name = Current.Value;
-        Advance(); //consume sub or function name
+        Advance(); //consume sub name
 
         err = ExpectToken(TokenType.LParen, "( after <Identifier>");
         if (err is not null) return err;

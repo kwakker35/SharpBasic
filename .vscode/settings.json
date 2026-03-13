@@ -11,7 +11,8 @@
     "git fetch": true,
     "git checkout": true,
     "git push": true,
-    "git merge": true
+    "git merge": true,
+    "dotnet script": true
   },
   "editor.codeActionsOnSave": {
     "source.organizeImports": "never"

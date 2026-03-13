@@ -297,4 +297,69 @@ public class EvaluatorTests
         Assert.NotNull(output);
         Assert.Equal("1 1\n1 2\n2 1\n2 2\n3 1\n3 2", output);
     }
+
+    [Fact]
+    public void Evaluator_Calls_Sub_With_No_Params()
+    {
+        var source = "CALL Greet()\nSUB Greet()\nPRINT \"Hello\"\nEND SUB";
+        var output = RunHelper.Run(source);
+        Assert.Equal("Hello", output);
+    }
+
+    [Fact]
+    public void Evaluator_Calls_Sub_With_Params()
+    {
+        var source = "CALL Greet(\"Alice\")\nSUB Greet(name As String)\nPRINT name\nEND SUB";
+        var output = RunHelper.Run(source);
+        Assert.Equal("Alice", output);
+    }
+
+    [Fact]
+    public void Evaluator_Sub_Locals_Do_Not_Leak_To_Caller()
+    {
+        var source = "CALL SetX()\nPRINT x\nSUB SetX()\nLET x = 42\nEND SUB";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Calls_Function_And_Uses_Return_Value()
+    {
+        var source = "LET result = Add(1, 2)\nPRINT result\nFUNCTION Add(a As Integer, b As Integer) As Integer\nRETURN a + b\nEND FUNCTION";
+        var output = RunHelper.Run(source);
+        Assert.Equal("3", output);
+    }
+
+    [Fact]
+    public void Evaluator_Sub_Hoisted_Can_Be_Called_Before_Declaration()
+    {
+        var source = "CALL Greet()\nSUB Greet()\nPRINT \"Hi\"\nEND SUB";
+        var output = RunHelper.Run(source);
+        Assert.Equal("Hi", output);
+    }
+
+    [Fact]
+    public void Evaluator_Function_Hoisted_Can_Be_Called_Before_Declaration()
+    {
+        var source = "LET result = Double(5)\nPRINT result\nFUNCTION Double(n As Integer) As Integer\nRETURN n + n\nEND FUNCTION";
+        var output = RunHelper.Run(source);
+        Assert.Equal("10", output);
+    }
+
+    [Fact]
+    public void Evaluator_Recursive_Fibonacci_Returns_Correct_Value()
+    {
+        var source = """
+            LET result = Fib(10)
+            PRINT result
+            FUNCTION Fib(n As Integer) As Integer
+            IF n <= 1 THEN
+            RETURN n
+            END IF
+            RETURN Fib(n - 1) + Fib(n - 2)
+            END FUNCTION
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("55", output);
+    }
 }

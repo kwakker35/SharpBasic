@@ -1,14 +1,23 @@
+using System.Runtime.Versioning;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Evaluation;
 
-public class Evaluator(Program _program, SymbolTable? table = null)
+public class Evaluator(
+    Program _program,
+    SymbolTable? table = null,
+    Dictionary<string, SubDeclaration>? subs = null,
+    Dictionary<string, FunctionDeclaration>? functions = null)
 {
     private SymbolTable _table = table ?? new();
+    private Dictionary<string, SubDeclaration> _subs = subs ?? new();
+    private Dictionary<string, FunctionDeclaration> _functions = functions ?? new();
     private List<EvalError> errors = [];
 
     public EvalResult Evaluate()
     {
+        HoistDeclarations();
+
         foreach (Statement stmt in _program.Statements)
         {
             var result = EvaluateStatement(stmt);
@@ -22,6 +31,21 @@ public class Evaluator(Program _program, SymbolTable? table = null)
         return errors.Count > 0 ? new EvalFailure(errors) : new EvalSuccess(new VoidValue());
     }
 
+    public void HoistDeclarations()
+    {
+        foreach (Statement stmt in _program.Statements)
+        {
+            if (stmt is SubDeclaration s)
+            {
+                _subs.Add(s.Name, s);
+            }
+            else if (stmt is FunctionDeclaration f)
+            {
+                _functions.Add(f.Name, f);
+            }
+        }
+    }
+
     private EvalResult EvaluateStatement(Statement stmt)
     {
         return stmt switch
@@ -31,6 +55,10 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             IfStatement i => EvaluateIfStatement(i),
             WhileStatement w => EvaluateWhileStatement(w),
             ForStatement f => EvaluateForStatement(f),
+            SubDeclaration => new EvalSuccess(new VoidValue()),
+            FunctionDeclaration => new EvalSuccess(new VoidValue()),
+            CallStatement cs => EvaluateCallStatement(cs),
+            ReturnStatement rs => EvaluateReturnStatement(rs),
             _
                 => new EvalFailure(
                     [
@@ -44,6 +72,17 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                     ]
                 )
         };
+    }
+
+    private EvalResult EvaluateReturnStatement(ReturnStatement stmt)
+    {
+        if (stmt.Value is null)
+            throw new ReturnException(null);
+
+        var result = EvaluateExpression(stmt.Value);
+        if (result is EvalFailure) return result;
+
+        throw new ReturnException(((EvalSuccess)result).Value);
     }
 
     private EvalResult EvaluatePrintStatement(PrintStatement p)
@@ -274,6 +313,131 @@ public class Evaluator(Program _program, SymbolTable? table = null)
                 new EvalSuccess(new VoidValue());
     }
 
+    private EvalResult EvaluateCallStatement(CallStatement stmt)
+    {
+        var subExists = _subs.TryGetValue(stmt.Name, out var sub);
+
+        if (!subExists)
+        {
+            return new EvalFailure(
+                        [
+                            new EvalError(
+                            new InvalidOperationException($"Sub: {stmt.Name} not found."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+        }
+
+        var localSymbols = new SymbolTable(_table);
+
+        for (int i = 0; i < sub!.Parameters.Count; i++)
+        {
+            var argResult = EvaluateExpression(stmt.Arguments[i]);  // evaluate in caller's scope
+            if (argResult is EvalFailure) return argResult;
+            localSymbols.Set(sub.Parameters[i].Name, ((EvalSuccess)argResult).Value!);
+        }
+
+        try
+        {
+            var funcEval = new Evaluator(
+                                new Program(sub.Body),
+                                localSymbols,
+                                _subs,
+                                _functions
+                            ).Evaluate();
+        }
+        catch (ReturnException re)
+        {
+            //sucess hit return statement and swallow the return value
+            return new EvalSuccess(new VoidValue());
+        }
+        catch (Exception e)
+        {
+            //unkown exception
+            return new EvalFailure(
+                        [
+                            new EvalError(
+                            e,
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+        }
+
+        //no return statment - no problem!
+        return new EvalSuccess(new VoidValue());
+    }
+
+    private EvalResult EvaluateCallExpression(CallExpression expr)
+    {
+        var funcExists = _functions.TryGetValue(expr.Name, out var func);
+
+        if (!funcExists)
+        {
+            return new EvalFailure(
+                        [
+                            new EvalError(
+                            new InvalidOperationException($"Function: {expr.Name} not found."),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+        }
+
+        var localSymbols = new SymbolTable(_table);
+
+        for (int i = 0; i < func!.Parameters.Count; i++)
+        {
+            var argResult = EvaluateExpression(expr.Arguments[i]);  // evaluate in caller's scope
+            if (argResult is EvalFailure) return argResult;
+            localSymbols.Set(func.Parameters[i].Name, ((EvalSuccess)argResult).Value!);
+        }
+
+        try
+        {
+            var funcEval = new Evaluator(
+                                new Program(func.Body),
+                                localSymbols,
+                                _subs,
+                                _functions
+                            ).Evaluate();
+        }
+        catch (ReturnException re)
+        {
+            //sucess hit return statement 
+            return new EvalSuccess(re.ReturnValue);
+        }
+        catch (Exception e)
+        {
+            //unkown exception
+            return new EvalFailure(
+                        [
+                            new EvalError(
+                            e,
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+        }
+
+        //no return statement hit
+        return new EvalFailure(
+                        [
+                            new EvalError(
+                            new InvalidOperationException("Missing RETURN statement in FUNCTION."),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                        ]
+                    );
+
+    }
+
     private static double ToFloat(Value v) => v switch
     {
         IntValue iv => iv.V,
@@ -433,6 +597,7 @@ public class Evaluator(Program _program, SymbolTable? table = null)
             IntLiteralExpression il => new EvalSuccess(new IntValue(il.Value)),
             FloatLiteralExpression fl => new EvalSuccess(new FloatValue(fl.Value)),
             BinaryExpression be => EvaluateBinaryExpression(be),
+            CallExpression ce => EvaluateCallExpression(ce),
             IdentifierExpression id when _table.Get(id.Name) is { } val => new EvalSuccess(val),
             IdentifierExpression id
                 => new EvalFailure(
