@@ -58,6 +58,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             if (Peek().Type == TokenType.LParen)
                 return ParseCallExpression();   // Foo(...)
 
+            if (Peek().Type == TokenType.LBracket)
+                return ParseArrayAccessExpression();   // Foo[...]
+
             var identExpr = new IdentifierExpression(Current.Value, loc);
             return identExpr;
         }
@@ -162,6 +165,9 @@ public class Parser(IReadOnlyList<Token> tokens)
                 break;
             case TokenType.Call:
                 AddStatement(target, ParseCallStatement());
+                break;
+            case TokenType.Dim:
+                AddStatement(target, ParseDimStatement());
                 break;
             default:
                 errors.Add(
@@ -335,6 +341,112 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
 
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
+    }
+
+    private ParseStatementResult ParseDimStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        string name = string.Empty;
+        int size = 0;
+        string typeName = string.Empty;
+
+        Advance(); //Consume DIM
+
+        //expecting Identifer
+        err = ExpectToken(TokenType.Identifier, "<Identifier> after DIM");
+        if (err is not null) return err;
+
+        name = Current.Value;
+        Advance(); //consume Identifier
+
+        //expecting [
+        err = ExpectToken(TokenType.LBracket, "[ after <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume [
+
+        //expecting Identifer
+        err = ExpectToken(TokenType.IntLiteral, "Integer as array size.");
+        if (err is not null) return err;
+
+        var sizeValid = int.TryParse(Current.Value, out size);
+
+        if (!sizeValid)
+        {
+            var errEnd = new ParseStatementError(
+            new InvalidOperationException(
+                $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
+            ),
+            Current.Line,
+            Current.Column
+            );
+            return new ParseStatementFailure(errEnd);
+        }
+
+        Advance(); //consume size expression
+
+        //expecting ]
+        err = ExpectToken(TokenType.RBracket, "] after array size");
+        if (err is not null) return err;
+        Advance(); //consume ]
+
+        //expecting AS
+        err = ExpectToken(TokenType.As, "AS after array size");
+        if (err is not null) return err;
+        Advance(); //consume As
+
+        if (Current.Type is not TokenType.Integer &&
+                Current.Type is not TokenType.Float &&
+                Current.Type is not TokenType.String &&
+                Current.Type is not TokenType.Boolean)
+        {
+            var errEnd = new ParseStatementError(
+            new InvalidOperationException(
+                $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
+            ),
+            Current.Line,
+            Current.Column
+            );
+            return new ParseStatementFailure(errEnd);
+        }
+
+        typeName = Current.Type.ToString();
+        Advance(); //consume  type
+
+        return new ParseStatementSuccess(
+                                new DimStatement(
+                                    name,
+                                    typeName,
+                                    size,
+                                    loc
+                                )
+        );
+    }
+
+    private Expression? ParseArrayAccessExpression()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        err = ExpectToken(TokenType.Identifier, "Identifier");
+        if (err is not null) return null;
+        var name = Current.Value;
+        Advance(); //consume identifier
+
+        err = ExpectToken(TokenType.LBracket, "[ after <Identifier>");
+        if (err is not null) return null;
+        Advance(); //consume [
+
+        var expr = ParseExpression();
+
+        err = ExpectExpression(expr, "expression in array access");
+        if (err is not null) return null;
+
+        return new ArrayAccessExpression(
+                name,
+                expr,
+                loc
+        );
     }
 
     private Expression? ParseCallExpression()
@@ -805,23 +917,59 @@ public class Parser(IReadOnlyList<Token> tokens)
         var ident = Current;
         Advance(); //consume Identifier
 
-        err = ExpectToken(TokenType.Eq, "after LET <identifier>");
-        if (err is not null) return err;
+        if (Current.Type == TokenType.LBracket)
+        {
+            Advance(); //consume [
 
-        Advance(); //consume =
+            var exprIndex = ParseExpression();
 
-        var expr = ParseExpression();
+            err = ExpectExpression(exprIndex, "value after LET <identifier>[");
+            if (err is not null) return err;
 
-        err = ExpectExpression(expr, "value after LET <identifier> =");
-        if (err is not null) return err;
+            err = ExpectToken(TokenType.RBracket, "] after array index expression");
+            if (err is not null) return err;
+            Advance();// consume ]
 
-        return new ParseStatementSuccess(
-            new LetStatement(
-                ident,
-                expr,
-                letLoc
-            )
-        );
+            err = ExpectToken(TokenType.Eq, "after LET <identifier>[]");
+            if (err is not null) return err;
+
+            Advance(); //consume =
+
+            var exprValue = ParseExpression();
+
+            err = ExpectExpression(exprValue, "value after LET <identifier> =");
+            if (err is not null) return err;
+
+            return new ParseStatementSuccess(
+                new ArrayAssignStatement(
+                    ident.Value,
+                    exprIndex!,
+                    exprValue!,
+                    letLoc
+                )
+            );
+        }
+        else
+        {
+
+            err = ExpectToken(TokenType.Eq, "after LET <identifier>");
+            if (err is not null) return err;
+
+            Advance(); //consume =
+
+            var expr = ParseExpression();
+
+            err = ExpectExpression(expr, "value after LET <identifier> =");
+            if (err is not null) return err;
+
+            return new ParseStatementSuccess(
+                new LetStatement(
+                    ident,
+                    expr!,
+                    letLoc
+                )
+            );
+        }
     }
 
 }
