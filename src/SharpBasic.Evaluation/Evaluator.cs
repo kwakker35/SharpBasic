@@ -59,6 +59,8 @@ public class Evaluator(
             FunctionDeclaration => new EvalSuccess(new VoidValue()),
             CallStatement cs => EvaluateCallStatement(cs),
             ReturnStatement rs => EvaluateReturnStatement(rs),
+            DimStatement ds => EvaluateDimStatement(ds),
+            ArrayAssignStatement aas => EvaluateArrayAssignStatement(aas),
             _
                 => new EvalFailure(
                     [
@@ -72,6 +74,43 @@ public class Evaluator(
                     ]
                 )
         };
+    }
+
+    private EvalResult EvaluateDimStatement(DimStatement stmt)
+    {
+        var name = stmt.Name;
+        var exists = _table.Get(name);
+
+        if (exists is not null)
+        {
+            return new EvalFailure(
+                [
+                    new EvalError(
+                            new InvalidOperationException($"The variable {name} already exists and cannot be redefined."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                ]
+            );
+        }
+
+        var arrVal = new Value[stmt.Size];
+
+        for (var i = 0; i < stmt.Size; i++)
+        {
+            arrVal[i] = stmt.TypeName.ToUpper() switch
+            {
+                "INTEGER" => new IntValue(0),
+                "FLOAT" => new FloatValue(0),
+                "BOOLEAN" => new BoolValue(false),
+                "STRING" => new StringValue(string.Empty),
+                _ => new VoidValue()
+            };
+        }
+
+        var val = new ArrayValue(arrVal, stmt.TypeName);
+        _table.Set(name, val);
+        return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateReturnStatement(ReturnStatement stmt)
@@ -589,6 +628,168 @@ public class Evaluator(
                 );
     }
 
+    private EvalResult EvaluateArrayAssignStatement(ArrayAssignStatement stmt)
+    {
+        var getVal = _table.Get(stmt.Name);
+
+        if (getVal is not ArrayValue)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Identifier: {stmt.Name} is not an Array."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+
+        var arrVal = (ArrayValue)getVal;
+
+        var idxExpr = EvaluateExpression(stmt.Index);
+
+        if (idxExpr is EvalSuccess es && es.Value is IntValue iv)
+        {
+            var targetType = arrVal.TypeName.ToUpper();
+            var idx = iv.V;
+            if (idx < 0 || idx > arrVal.Items.Length)
+            {
+                return new EvalFailure(
+                    [
+                        new EvalError(
+                            new IndexOutOfRangeException($"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {stmt.Name}."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                    ]
+                );
+            }
+
+            var valueResult = EvaluateExpression(stmt.Value);
+            if (valueResult is not EvalSuccess valueSuccess)
+                return valueResult;
+
+            var value = valueSuccess.Value;
+            if (targetType == "INTEGER" && value is IntValue ival)
+            {
+                arrVal.Items[idx] = ival;
+                _table.Set(stmt.Name, arrVal);
+                return new EvalSuccess(new VoidValue());
+            }
+            else if (targetType == "FLOAT" && value is FloatValue fval)
+            {
+                arrVal.Items[idx] = fval;
+                _table.Set(stmt.Name, arrVal);
+                return new EvalSuccess(new VoidValue());
+            }
+            else if (targetType == "STRING" && value is StringValue sval)
+            {
+                arrVal.Items[idx] = sval;
+                _table.Set(stmt.Name, arrVal);
+                return new EvalSuccess(new VoidValue());
+            }
+            else if (targetType == "BOOLEAN" && value is BoolValue bval)
+            {
+                arrVal.Items[idx] = bval;
+                _table.Set(stmt.Name, arrVal);
+                return new EvalSuccess(new VoidValue());
+            }
+            else
+            {
+                return new EvalFailure(
+                    [
+                        new EvalError(
+                            new ArrayTypeMismatchException($"Supplied value is not an {targetType} as defined for the array: {stmt.Name}."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                    ]
+                );
+            }
+        }
+        else
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Invalid index suppled."),
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+    }
+
+    private EvalResult EvaluateArrayAccessExpression(ArrayAccessExpression expr)
+    {
+        var getVal = _table.Get(expr.Name);
+
+        if (getVal is not ArrayValue)
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Identifier: {expr.Name} is not an Array."),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+
+        var arrVal = (ArrayValue)getVal;
+
+        var idxExpr = EvaluateExpression(expr.Index);
+
+        if (idxExpr is EvalSuccess es && es.Value is IntValue iv)
+        {
+            var idx = iv.V;
+            if (idx < 0 || idx > arrVal.Items.Length)
+            {
+                return new EvalFailure(
+                    [
+                        new EvalError(
+                            new IndexOutOfRangeException($"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {expr.Name}."),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                );
+            }
+
+            return arrVal.TypeName.ToUpper() switch
+            {
+                "INTEGER" => new EvalSuccess((IntValue)arrVal.Items[idx]),
+                "FLOAT" => new EvalSuccess((FloatValue)arrVal.Items[idx]),
+                "BOOLEAN" => new EvalSuccess((BoolValue)arrVal.Items[idx]),
+                "STRING" => new EvalSuccess((StringValue)arrVal.Items[idx]),
+                _ => new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidCastException($"Unknown Typename supplied: {arrVal.TypeName}"),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                )
+            };
+        }
+        else
+        {
+            return new EvalFailure(
+                    [
+                        new EvalError(
+                            new InvalidOperationException($"Invalid index suppled."),
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0
+                        )
+                    ]
+                );
+        }
+    }
+
     private EvalResult EvaluateExpression(Expression expr)
     {
         return expr switch
@@ -598,6 +799,7 @@ public class Evaluator(
             FloatLiteralExpression fl => new EvalSuccess(new FloatValue(fl.Value)),
             BinaryExpression be => EvaluateBinaryExpression(be),
             CallExpression ce => EvaluateCallExpression(ce),
+            ArrayAccessExpression aae => EvaluateArrayAccessExpression(aae),
             IdentifierExpression id when _table.Get(id.Name) is { } val => new EvalSuccess(val),
             IdentifierExpression id
                 => new EvalFailure(
