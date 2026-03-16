@@ -496,7 +496,8 @@ public class Evaluator(
                                         TokenType.Gt or
                                         TokenType.LtEq or
                                         TokenType.GtEq or
-                                        TokenType.Ampersand))
+                                        TokenType.Ampersand or
+                                        TokenType.Mod))
         {
             return new EvalFailure(
                     [
@@ -578,7 +579,8 @@ public class Evaluator(
         if (expr.Operator.Type is TokenType.Plus or
                                         TokenType.Minus or
                                         TokenType.Multiply or
-                                        TokenType.Divide)
+                                        TokenType.Divide or
+                                        TokenType.Mod)
         {
             double result = expr.Operator.Type switch
             {
@@ -586,6 +588,7 @@ public class Evaluator(
                 TokenType.Minus => left - right,
                 TokenType.Multiply => left * right,
                 TokenType.Divide => left / right,
+                TokenType.Mod => (int)left % (int)right,
                 _ => throw new InvalidOperationException("Unreachable")
             };
 

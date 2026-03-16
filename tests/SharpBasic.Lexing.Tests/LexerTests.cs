@@ -492,4 +492,51 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[4].Type);
     }
 
+    [Fact]
+    public void Lexer_Tokenises_Mod_Keyword()
+    {
+        var tokens = new Lexer("MOD").Tokenise();
+
+        Assert.Equal(2, tokens.Count);
+        Assert.Equal(TokenType.Mod, tokens[0].Type);
+        Assert.Equal(TokenType.Eof, tokens[1].Type);
+    }
+
+    [Fact]
+    public void Lexer_Tokenises_Mod_Expression()
+    {
+        // 10 MOD 3
+        var tokens = new Lexer("10 MOD 3").Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.IntLiteral, tokens[0].Type);
+        Assert.Equal("10", tokens[0].Value);
+        Assert.Equal(TokenType.Mod, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal("3", tokens[2].Value);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lexer_Skips_Rem_Comment_Line()
+    {
+        // REM comment followed by a real statement
+        var tokens = new Lexer("REM this is a comment\nPRINT \"hi\"").Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.NewLine, tokens[0].Type);
+        Assert.Equal(TokenType.Print, tokens[1].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lexer_Skips_Rem_Comment_At_End_Of_Input()
+    {
+        var tokens = new Lexer("REM just a comment").Tokenise();
+
+        Assert.Equal(1, tokens.Count);
+        Assert.Equal(TokenType.Eof, tokens[0].Type);
+    }
+
 }

@@ -30,6 +30,13 @@ public class Lexer
                 case ' ':
                     if (token.Length > 0)
                     {
+                        if (token.ToString() == "REM")
+                        {
+                            ConsumeComment();
+                            token = new();
+                            break;
+                        }
+
                         tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
                         token = new();
                     }
@@ -176,6 +183,18 @@ public class Lexer
         return tokens;
     }
 
+    private void ConsumeComment()
+    {
+        //consume everything up to next \n
+        while (true)
+        {
+            if (Peek() == '\n' || Peek() == '\0')
+                break;
+
+            Advance();
+        }
+    }
+
     private static TokenType GetTokenType(string token)
     {
         return token.ToUpper() switch
@@ -208,6 +227,7 @@ public class Lexer
             "TRUE" => TokenType.True,
             "FALSE" => TokenType.False,
             "DIM" => TokenType.Dim,
+            "MOD" => TokenType.Mod,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
         };
     }

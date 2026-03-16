@@ -36,7 +36,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         TokenType.Eq or TokenType.NotEq or TokenType.Lt or
             TokenType.Gt or TokenType.LtEq or TokenType.GtEq => 5,
         TokenType.Plus or TokenType.Minus or TokenType.Ampersand => 10,
-        TokenType.Multiply or TokenType.Divide => 20,
+        TokenType.Multiply or TokenType.Divide or TokenType.Mod => 20,
         _ => 0
     };
 

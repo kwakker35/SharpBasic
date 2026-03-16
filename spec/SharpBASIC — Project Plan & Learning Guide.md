@@ -187,6 +187,18 @@ SharpBasic/
 
 ---
 
+## Design Deviations from Original Spec
+
+Deliberate decisions made during implementation that differ from the spec examples.
+
+| Feature | Spec | Implemented | Rationale |
+|---|---|---|---|
+| Comments | `'` single-quote | `REM` keyword | More authentic to classic BASIC (GW-BASIC, QBasic). Block comments not supported. |
+| Array indexing syntax | `scores(0)` parentheses | `scores[0]` square brackets | Disambiguates array access from function calls at the lexer/parser level without lookahead. |
+| `MOD` with float operands | Not specified | Both operands truncated to `int` before modulo | Matches GW-BASIC / QBasic behaviour: `7.5 MOD 2.9` → `7 MOD 2` → `1`. |
+
+---
+
 ## The Roadmap — 10 Phases (Fixed Scope)
 
 Every phase follows this TDD loop:

@@ -428,4 +428,42 @@ public class EvaluatorTests
         var output = RunHelper.Run(source);
         Assert.Equal("55", output);
     }
+
+    [Fact]
+    public void RunHelper_Mod_Integer_Operands()
+    {
+        var output = RunHelper.Run("PRINT 10 MOD 3");
+        Assert.Equal("1", output);
+    }
+
+    [Fact]
+    public void RunHelper_Mod_Float_Left_Operand_Truncated()
+    {
+        // 7.5 → 7, 7 MOD 2 = 1
+        var output = RunHelper.Run("PRINT 7.5 MOD 2");
+        Assert.Equal("1", output);
+    }
+
+    [Fact]
+    public void RunHelper_Mod_Both_Float_Operands_Truncated()
+    {
+        // 7.5 → 7, 2.9 → 2, 7 MOD 2 = 1
+        var output = RunHelper.Run("PRINT 7.5 MOD 2.9");
+        Assert.Equal("1", output);
+    }
+
+    [Fact]
+    public void RunHelper_Rem_Comment_Line_Is_Ignored()
+    {
+        var output = RunHelper.Run("REM this should be ignored\nPRINT \"ok\"");
+        Assert.Equal("ok", output);
+    }
+
+    [Fact]
+    public void RunHelper_Rem_Comment_Does_Not_Affect_Variables()
+    {
+        var source = "LET x = 42\nREM x is forty two\nPRINT x";
+        var output = RunHelper.Run(source);
+        Assert.Equal("42", output);
+    }
 }

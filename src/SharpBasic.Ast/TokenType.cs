@@ -8,7 +8,7 @@ public enum TokenType
 
     //Identifiers and Literals
     Identifier, StringLiteral, IntLiteral, FloatLiteral, True, False,
-    Plus, Minus, Multiply, Divide, LParen, RParen,
+    Plus, Minus, Multiply, Divide, Mod, LParen, RParen,
 
     //Type Names
     Integer, Float, String, Boolean,
