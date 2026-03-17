@@ -98,9 +98,20 @@ Current phase and active task list. Update as you progress.
 
 ---
 
+## Current Phase: 9.5 — Logical Operators & Unary Expressions
+
+**Goal:** `AND`, `OR`, `NOT`, `TRUE`, `FALSE`, and unary minus on any expression work end-to-end.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/phase9.5-ast` | AST: `BoolLiteralExpression`, `UnaryExpression` nodes | ⬜ |
+| 2 | `feat/phase9.5-parser` | Parser: `True`/`False` in `ParsePrimary`; `NOT` prefix; `And`/`Or` binding powers (AND=3, OR=2); fix unary minus to work on any expression | ⬜ |
+| 3 | `feat/phase9.5-evaluator` | Evaluator: `BoolLiteralExpression` → `BoolValue`; `And`/`Or` in binary eval; `EvaluateUnaryExpression` for `NOT` and unary minus | ⬜ |
+
+---
+
 ## Upcoming Phases
 
 | Phase | Focus |
 |-------|-------|
-| 9.5 | Logical operators: AND, OR, NOT + unary minus |
 | 10 | Standard Library & File Runner |

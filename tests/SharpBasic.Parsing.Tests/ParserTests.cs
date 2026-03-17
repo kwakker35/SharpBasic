@@ -877,4 +877,124 @@ public class ParserTests
         Assert.Contains("Line", formatted);
         Assert.Contains("Col", formatted);
     }
+
+    // --- Phase 9.5: Logical operators & unary expressions ---
+
+    [Fact]
+    public void Parser_True_Token_Produces_BoolLiteralExpression_True()
+    {
+        // PRINT TRUE
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.True, "TRUE", 1, 7),
+            new(TokenType.Eof, "", 1, 11)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var expr = Assert.IsType<BoolLiteralExpression>(stmt.Value);
+        Assert.True(expr.Value);
+    }
+
+    [Fact]
+    public void Parser_False_Token_Produces_BoolLiteralExpression_False()
+    {
+        // PRINT FALSE
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.False, "FALSE", 1, 7),
+            new(TokenType.Eof, "", 1, 12)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var expr = Assert.IsType<BoolLiteralExpression>(stmt.Value);
+        Assert.False(expr.Value);
+    }
+
+    [Fact]
+    public void Parser_Not_Prefix_Produces_UnaryExpression()
+    {
+        // PRINT NOT TRUE
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.Not, "NOT", 1, 7),
+            new(TokenType.True, "TRUE", 1, 11),
+            new(TokenType.Eof, "", 1, 15)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var unary = Assert.IsType<UnaryExpression>(stmt.Value);
+        Assert.Equal(TokenType.Not, unary.Operator.Type);
+        Assert.IsType<BoolLiteralExpression>(unary.Operand);
+    }
+
+    [Fact]
+    public void Parser_And_Operator_Produces_BinaryExpression()
+    {
+        // PRINT TRUE AND FALSE
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.True, "TRUE", 1, 7),
+            new(TokenType.And, "AND", 1, 12),
+            new(TokenType.False, "FALSE", 1, 16),
+            new(TokenType.Eof, "", 1, 21)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var binary = Assert.IsType<BinaryExpression>(stmt.Value);
+        Assert.Equal(TokenType.And, binary.Operator.Type);
+        Assert.IsType<BoolLiteralExpression>(binary.Left);
+        Assert.IsType<BoolLiteralExpression>(binary.Right);
+    }
+
+    [Fact]
+    public void Parser_Or_Operator_Produces_BinaryExpression()
+    {
+        // PRINT FALSE OR TRUE
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.False, "FALSE", 1, 7),
+            new(TokenType.Or, "OR", 1, 13),
+            new(TokenType.True, "TRUE", 1, 16),
+            new(TokenType.Eof, "", 1, 20)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var binary = Assert.IsType<BinaryExpression>(stmt.Value);
+        Assert.Equal(TokenType.Or, binary.Operator.Type);
+    }
+
+    [Fact]
+    public void Parser_Unary_Minus_On_Identifier_Produces_UnaryExpression()
+    {
+        // PRINT -x
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 1, 1),
+            new(TokenType.Minus, "-", 1, 7),
+            new(TokenType.Identifier, "x", 1, 8),
+            new(TokenType.Eof, "", 1, 9)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var unary = Assert.IsType<UnaryExpression>(stmt.Value);
+        Assert.Equal(TokenType.Minus, unary.Operator.Type);
+        Assert.IsType<IdentifierExpression>(unary.Operand);
+    }
 }

@@ -511,4 +511,99 @@ public class EvaluatorTests
         Assert.Contains("Line", formatted);
         Assert.Contains("Col", formatted);
     }
+
+    // --- Phase 9.5: Logical operators & unary expressions ---
+
+    [Fact]
+    public void Evaluator_True_Literal_Prints_True()
+    {
+        var output = RunHelper.Run("PRINT TRUE");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_False_Literal_Prints_False()
+    {
+        var output = RunHelper.Run("PRINT FALSE");
+        Assert.Equal("False", output);
+    }
+
+    [Fact]
+    public void Evaluator_Let_Bool_Variable_Holds_True()
+    {
+        var output = RunHelper.Run("LET x = TRUE\nPRINT x");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_And_True_True_Returns_True()
+    {
+        var output = RunHelper.Run("PRINT TRUE AND TRUE");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_And_True_False_Returns_False()
+    {
+        var output = RunHelper.Run("PRINT TRUE AND FALSE");
+        Assert.Equal("False", output);
+    }
+
+    [Fact]
+    public void Evaluator_Or_False_False_Returns_False()
+    {
+        var output = RunHelper.Run("PRINT FALSE OR FALSE");
+        Assert.Equal("False", output);
+    }
+
+    [Fact]
+    public void Evaluator_Or_False_True_Returns_True()
+    {
+        var output = RunHelper.Run("PRINT FALSE OR TRUE");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_Not_True_Returns_False()
+    {
+        var output = RunHelper.Run("PRINT NOT TRUE");
+        Assert.Equal("False", output);
+    }
+
+    [Fact]
+    public void Evaluator_Not_False_Returns_True()
+    {
+        var output = RunHelper.Run("PRINT NOT FALSE");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_And_Binds_Tighter_Than_Or()
+    {
+        // TRUE OR FALSE AND FALSE = TRUE OR (FALSE AND FALSE) = TRUE OR FALSE = TRUE
+        var output = RunHelper.Run("PRINT TRUE OR FALSE AND FALSE");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void Evaluator_Not_In_If_Condition()
+    {
+        var source = "IF NOT FALSE THEN\nPRINT \"yes\"\nEND IF";
+        var output = RunHelper.Run(source);
+        Assert.Equal("yes", output);
+    }
+
+    [Fact]
+    public void Evaluator_Unary_Minus_On_Variable_Negates_Value()
+    {
+        var output = RunHelper.Run("LET x = 5\nPRINT -x");
+        Assert.Equal("-5", output);
+    }
+
+    [Fact]
+    public void Evaluator_Unary_Minus_On_Float_Variable_Negates_Value()
+    {
+        var output = RunHelper.Run("LET x = 3.5\nPRINT -x");
+        Assert.Equal("-3.5", output);
+    }
 }
