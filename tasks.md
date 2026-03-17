@@ -4,16 +4,30 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 8 — Arrays
+## Current Phase: 10 — Standard Library & File Runner
 
-**Goal:** `DIM`, indexing, and bounds checking work.
+**Goal:** Built-in functions (`LEN`, `MID$`, `STR$`, etc.) and ability to run `.bas` files from the command line.
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
-| 1 | `feat/phase8-tokens` | New tokens: `Dim` | ⬜ |
-| 2 | `feat/phase8-ast` | AST nodes: `DimStatement`, `ArrayAccessExpression`, `ArrayAssignStatement` | ⬜ |
-| 3 | `feat/phase8-parser` | Parser: `ParseDimStatement`, `ParseArrayAccess`, `ParseArrayAssign` | ⬜ |
-| 4 | `feat/phase8-evaluator` | Evaluator: runtime array storage, bounds checking | ⬜ |
+| 1 | `feat/phase10-stdlib` | Standard library built-in functions | ⬜ |
+| 2 | `feat/phase10-file-runner` | File runner — `sharpbasic run <file.bas>` | ⬜ |
+
+---
+
+## Completed — Phase 9 — Error Handling & Diagnostics
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/phase9-diagnostic` | `Diagnostic` record + `DiagnosticSeverity` enum in `SharpBasic.Ast` | ✅ Complete — merged to `main` |
+| 2 | `feat/phase9-lexer-location` | Lexer line/column tracking — `_line`/`_col` fields, `Advance()` updated | ✅ Complete — merged to `main` |
+| 3 | `feat/phase9-migrate-errors` | Migrate `ParseFailure`/`EvalFailure` to `IReadOnlyList<Diagnostic>`; delete `ParseError`, `ParseStatementError`, `EvalError` | ✅ Complete — merged to `main` |
+| 4 | `feat/phase9-repl-diagnostics` | REPL displays `diagnostic.ToString()` output | ✅ Complete — merged to `main` |
+| 5 | `chore/remove-semantics` | Remove `SharpBasic.Semantics` from solution and disk | ✅ Complete — merged to `main` |
+
+---
+
+## Completed — Phase 8 — Arrays
 
 ---
 
@@ -88,13 +102,5 @@ Current phase and active task list. Update as you progress.
 
 | Phase | Focus |
 |-------|-------|
-| 2 | Parser + AST |
-| 3 | Variables & Assignment |
-| 4 | Expressions & Arithmetic (Pratt parsing) |
-| 5 | IF / THEN / ELSE / END IF |
-| 6 | FOR / NEXT and WHILE / WEND |
-| 7 | Subroutines & Functions |
-| 8 | Arrays |
-| 9 | Error Handling & Diagnostics |
 | 9.5 | Logical operators: AND, OR, NOT + unary minus |
 | 10 | Standard Library & File Runner |
