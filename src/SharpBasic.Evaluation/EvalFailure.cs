@@ -1,3 +1,5 @@
-using SharpBasic.Evaluation;
+using SharpBasic.Ast;
 
-public record EvalFailure(IReadOnlyList<EvalError> Errors): EvalResult;
+namespace SharpBasic.Evaluation;
+
+public record EvalFailure(IReadOnlyList<Diagnostic> Diagnostics) : EvalResult;

@@ -191,10 +191,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
         else if (ppsRes is ParseStatementFailure pf)
         {
-            _diagnostics.Add(new Diagnostic(pf.Error.Line,
-                                            pf.Error.Col,
-                                            pf.Error.Exception.Message,
-                                            DiagnosticSeverity.Error));
+            _diagnostics.Add(pf.Diagnostic);
         }
     }
 
@@ -612,14 +609,14 @@ public class Parser(IReadOnlyList<Token> tokens)
                 Current.Type is not TokenType.String &&
                 Current.Type is not TokenType.Boolean)
             {
-                var errEnd = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-                return new ParseStatementFailure(errEnd);
+                return new ParseStatementFailure(
+                    new Diagnostic(
+                        Current.Line,
+                        Current.Column,
+                        $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+                        DiagnosticSeverity.Error
+                    )
+                );
             }
 
             paramType = Current.Type.ToString();
@@ -645,14 +642,14 @@ public class Parser(IReadOnlyList<Token> tokens)
                 Current.Type is not TokenType.String &&
                 Current.Type is not TokenType.Boolean)
         {
-            var errEnd = new ParseStatementError(
-            new InvalidOperationException(
-                $"Expected return TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
-            ),
-            Current.Line,
-            Current.Column
-        );
-            return new ParseStatementFailure(errEnd);
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected return TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
+            );
         }
 
         returnType = Current.Type.ToString();
@@ -671,14 +668,14 @@ public class Parser(IReadOnlyList<Token> tokens)
         //expecting END FUNCTION
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Function)
         {
-            var errEnd = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected FUNCTION after END but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected FUNCTION after END but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
             );
-            return new ParseStatementFailure(errEnd);
         }
 
         Advance(); //consume END
@@ -738,14 +735,14 @@ public class Parser(IReadOnlyList<Token> tokens)
                 Current.Type is not TokenType.String &&
                 Current.Type is not TokenType.Boolean)
             {
-                var errEnd = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
-            );
-                return new ParseStatementFailure(errEnd);
+                return new ParseStatementFailure(
+                    new Diagnostic(
+                        Current.Line,
+                        Current.Column,
+                        $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+                        DiagnosticSeverity.Error
+                    )
+                );
             }
 
             paramType = Current.Type.ToString();
@@ -775,14 +772,14 @@ public class Parser(IReadOnlyList<Token> tokens)
         //expecting END SUB
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Sub)
         {
-            var errEnd = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected SUB after END but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected SUB after END but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
             );
-            return new ParseStatementFailure(errEnd);
         }
 
         Advance(); //consume END
@@ -847,14 +844,14 @@ public class Parser(IReadOnlyList<Token> tokens)
         //expecting END IF
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.If)
         {
-            var errEnd = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected IF after END but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
-                Current.Line,
-                Current.Column
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected IF after END but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
             );
-            return new ParseStatementFailure(errEnd);
         }
 
         Advance(); //consume END

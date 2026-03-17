@@ -1,3 +1,4 @@
+using SharpBasic.Ast;
 using SharpBasic.Lexing;
 using SharpBasic.Parsing;
 
@@ -26,6 +27,6 @@ public static class RunHelper
         var parseResult = new Parser(tokens).Parse();
         if (parseResult is ParseSuccess ps)
             return new Evaluator(ps.Program).Evaluate();
-        return new EvalFailure([new EvalError(new InvalidOperationException("Parse failed"), 0, 0)]);
+        return new EvalFailure([new Diagnostic(0, 0, "Parse failed", DiagnosticSeverity.Error)]);
     }
 }

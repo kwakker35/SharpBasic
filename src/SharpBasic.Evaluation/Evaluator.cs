@@ -1,4 +1,3 @@
-using System.Runtime.Versioning;
 using SharpBasic.Ast;
 
 namespace SharpBasic.Evaluation;
@@ -12,7 +11,7 @@ public class Evaluator(
     private SymbolTable _table = table ?? new();
     private Dictionary<string, SubDeclaration> _subs = subs ?? new();
     private Dictionary<string, FunctionDeclaration> _functions = functions ?? new();
-    private List<EvalError> errors = [];
+    private List<Diagnostic> _diagnostics = [];
 
     public EvalResult Evaluate()
     {
@@ -24,11 +23,11 @@ public class Evaluator(
 
             if (result is EvalFailure failure)
             {
-                errors.AddRange(failure.Errors);
+                _diagnostics.AddRange(failure.Diagnostics);
             }
         }
 
-        return errors.Count > 0 ? new EvalFailure(errors) : new EvalSuccess(new VoidValue());
+        return _diagnostics.Count > 0 ? new EvalFailure(_diagnostics) : new EvalSuccess(new VoidValue());
     }
 
     public void HoistDeclarations()
@@ -64,12 +63,11 @@ public class Evaluator(
             _
                 => new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException(
-                                $"Unknown statement type: {stmt.GetType().Name}"
-                            ),
+                        new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            $"Unknown statement type: {stmt.GetType().Name}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 )
@@ -85,11 +83,12 @@ public class Evaluator(
         {
             return new EvalFailure(
                 [
-                    new EvalError(
-                            new InvalidOperationException($"The variable {name} already exists and cannot be redefined."),
-                            stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
-                        )
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        $"The variable {name} already exists and cannot be redefined.",
+                        DiagnosticSeverity.Error
+                    )
                 ]
             );
         }
@@ -152,10 +151,11 @@ public class Evaluator(
 
         return new EvalFailure(
             [
-                new EvalError(
-                    new ArgumentNullException($"{l.Identifier.Value}"),
+                new Diagnostic(
                     l.Location?.Line ?? 0,
-                    l.Location?.Col ?? 0
+                    l.Location?.Col ?? 0,
+                    $"Value assigned to '{l.Identifier.Value}' was null.",
+                    DiagnosticSeverity.Error
                 )
             ]
         );
@@ -168,7 +168,7 @@ public class Evaluator(
         if (result is EvalFailure) return result;
 
         bool value = false;
-        List<EvalError> localErrors = [];
+        List<Diagnostic> localErrors = [];
 
         if (result is EvalSuccess es && es.Value is BoolValue bv)
         {
@@ -178,10 +178,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException("IF condition must evaluate to a boolean value."),
+                        new Diagnostic(
                             stmt.Condition.Location?.Line ?? 0,
-                            stmt.Condition.Location?.Col ?? 0
+                            stmt.Condition.Location?.Col ?? 0,
+                            "IF condition must evaluate to a boolean value.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -196,7 +197,7 @@ public class Evaluator(
 
                 if (thenResult is EvalFailure failure)
                 {
-                    localErrors.AddRange(failure.Errors);
+                    localErrors.AddRange(failure.Diagnostics);
                 }
             }
         }
@@ -208,7 +209,7 @@ public class Evaluator(
 
                 if (elseResult is EvalFailure failure)
                 {
-                    localErrors.AddRange(failure.Errors);
+                    localErrors.AddRange(failure.Diagnostics);
                 }
             }
         }
@@ -221,7 +222,7 @@ public class Evaluator(
 
     private EvalResult EvaluateForStatement(ForStatement stmt)
     {
-        List<EvalError> localErrors = [];
+        List<Diagnostic> localErrors = [];
         var startEx = EvaluateExpression(stmt.Start);
         var limitEx = EvaluateExpression(stmt.Limit);
         var stepEx = stmt.Step is null ?
@@ -233,10 +234,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException("Invalid START expression or value"),
+                        new Diagnostic(
                             stmt.Start.Location?.Line ?? 0,
-                            stmt.Start.Location?.Col ?? 0
+                            stmt.Start.Location?.Col ?? 0,
+                            "Invalid START expression or value",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -245,10 +247,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException("Invalid LIMIT expression or value"),
+                        new Diagnostic(
                             stmt.Limit.Location?.Line ?? 0,
-                            stmt.Limit.Location?.Col ?? 0
+                            stmt.Limit.Location?.Col ?? 0,
+                            "Invalid LIMIT expression or value",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -257,10 +260,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException("Invalid STEP expression or value"),
+                        new Diagnostic(
                             stmt.Step?.Location?.Line ?? 0,
-                            stmt.Step?.Location?.Col ?? 0
+                            stmt.Step?.Location?.Col ?? 0,
+                            "Invalid STEP expression or value",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -292,7 +296,7 @@ public class Evaluator(
 
                     if (bodyResult is EvalFailure failure)
                     {
-                        localErrors.AddRange(failure.Errors);
+                        localErrors.AddRange(failure.Diagnostics);
                     }
                 }
 
@@ -308,7 +312,7 @@ public class Evaluator(
 
     private EvalResult EvaluateWhileStatement(WhileStatement stmt)
     {
-        List<EvalError> localErrors = [];
+        List<Diagnostic> localErrors = [];
 
         while (true)
         {
@@ -325,10 +329,11 @@ public class Evaluator(
             {
                 return new EvalFailure(
                         [
-                            new EvalError(
-                            new InvalidOperationException("WHILE condition must evaluate to a boolean value."),
+                            new Diagnostic(
                             stmt.Condition.Location?.Line ?? 0,
-                            stmt.Condition.Location?.Col ?? 0
+                            stmt.Condition.Location?.Col ?? 0,
+                            "WHILE condition must evaluate to a boolean value.",
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -342,7 +347,7 @@ public class Evaluator(
 
                 if (bodyResult is EvalFailure failure)
                 {
-                    localErrors.AddRange(failure.Errors);
+                    localErrors.AddRange(failure.Diagnostics);
                 }
             }
         }
@@ -360,10 +365,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                         [
-                            new EvalError(
-                            new InvalidOperationException($"Sub: {stmt.Name} not found."),
+                            new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            $"Sub: {stmt.Name} not found.",
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -397,10 +403,11 @@ public class Evaluator(
             //unkown exception
             return new EvalFailure(
                         [
-                            new EvalError(
-                            e,
+                            new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            e.Message,
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -418,10 +425,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                         [
-                            new EvalError(
-                            new InvalidOperationException($"Function: {expr.Name} not found."),
+                            new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Function: {expr.Name} not found.",
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -455,10 +463,11 @@ public class Evaluator(
             //unkown exception
             return new EvalFailure(
                         [
-                            new EvalError(
-                            e,
+                            new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            e.Message,
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -467,10 +476,11 @@ public class Evaluator(
         //no return statement hit
         return new EvalFailure(
                         [
-                            new EvalError(
-                            new InvalidOperationException("Missing RETURN statement in FUNCTION."),
+                            new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            "Missing RETURN statement in FUNCTION.",
+                            DiagnosticSeverity.Error
                         )
                         ]
                     );
@@ -501,12 +511,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException(
-                                $"Unknown statement type: {expr.Operator.GetType().Name}"
-                            ),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Unknown statement type: {expr.Operator.GetType().Name}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -546,11 +555,12 @@ public class Evaluator(
             {
                 return new EvalFailure(
                     [
-                        new EvalError(
-                        new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
-                        expr.Location?.Line ?? 0,
-                        expr.Location?.Col ?? 0
-                    )
+                        new Diagnostic(
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0,
+                            $"Unknown Expression: {expr.GetType()}",
+                            DiagnosticSeverity.Error
+                        )
                     ]
                 );
             }
@@ -566,10 +576,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                 [
-                    new EvalError(
-                        new DivideByZeroException(),
+                    new Diagnostic(
                         expr.Location?.Line ?? 0,
-                        expr.Location?.Col ?? 0
+                        expr.Location?.Col ?? 0,
+                        "Attempted to divide by zero.",
+                        DiagnosticSeverity.Error
                     )
                 ]
             );
@@ -622,10 +633,11 @@ public class Evaluator(
 
         return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Unknown Expression: {expr.GetType()}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -639,10 +651,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Identifier: {stmt.Name} is not an Array."),
+                        new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            $"Identifier: {stmt.Name} is not an Array.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -660,10 +673,11 @@ public class Evaluator(
             {
                 return new EvalFailure(
                     [
-                        new EvalError(
-                            new IndexOutOfRangeException($"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {stmt.Name}."),
+                        new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {stmt.Name}.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -702,10 +716,11 @@ public class Evaluator(
             {
                 return new EvalFailure(
                     [
-                        new EvalError(
-                            new ArrayTypeMismatchException($"Supplied value is not an {targetType} as defined for the array: {stmt.Name}."),
+                        new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            $"Supplied value is not an {targetType} as defined for the array: {stmt.Name}.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -715,10 +730,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Invalid index suppled."),
+                        new Diagnostic(
                             stmt.Location?.Line ?? 0,
-                            stmt.Location?.Col ?? 0
+                            stmt.Location?.Col ?? 0,
+                            "Invalid index suppled.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -733,10 +749,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Identifier: {expr.Name} is not an Array."),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Identifier: {expr.Name} is not an Array.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -753,10 +770,11 @@ public class Evaluator(
             {
                 return new EvalFailure(
                     [
-                        new EvalError(
-                            new IndexOutOfRangeException($"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {expr.Name}."),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {expr.Name}.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -770,10 +788,11 @@ public class Evaluator(
                 "STRING" => new EvalSuccess((StringValue)arrVal.Items[idx]),
                 _ => new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidCastException($"Unknown Typename supplied: {arrVal.TypeName}"),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Unknown Typename supplied: {arrVal.TypeName}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 )
@@ -783,10 +802,11 @@ public class Evaluator(
         {
             return new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Invalid index suppled."),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            "Invalid index suppled.",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 );
@@ -807,20 +827,22 @@ public class Evaluator(
             IdentifierExpression id
                 => new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Unknown Identifier: {id.Name}"),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Unknown Identifier: {id.Name}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 ),
             _
                 => new EvalFailure(
                     [
-                        new EvalError(
-                            new InvalidOperationException($"Unknown Expression: {expr.GetType()}"),
+                        new Diagnostic(
                             expr.Location?.Line ?? 0,
-                            expr.Location?.Col ?? 0
+                            expr.Location?.Col ?? 0,
+                            $"Unknown Expression: {expr.GetType()}",
+                            DiagnosticSeverity.Error
                         )
                     ]
                 )

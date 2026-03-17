@@ -1,3 +1,4 @@
+using SharpBasic.Ast;
 using SharpBasic.Evaluation;
 using SharpBasic.Lexing;
 using SharpBasic.Parsing;
@@ -19,9 +20,9 @@ while (true)
     if (parseResult is ParseFailure pf)
     {
         Console.WriteLine("One or more parse errors found:");
-        foreach (var err in pf.Errors)
+        foreach (var diagnostic in pf.Diagnostics)
         {
-            Console.WriteLine($"{err.Exception.Message} at Line:{err.Line}, Column:{err.Col}");
+            Console.WriteLine(diagnostic.ToString());
         }
         continue;
     }
@@ -33,9 +34,9 @@ while (true)
         if (evalResult is EvalFailure ef)
         {
             Console.WriteLine("One or more evaluation errors found:");
-            foreach (var err in ef.Errors)
+            foreach (var diagnostic in ef.Diagnostics)
             {
-                Console.WriteLine($"{err.Exception.Message} at Line:{err.Line}, Column:{err.Col}");
+                Console.WriteLine(diagnostic.ToString());
             }
             continue;
         }

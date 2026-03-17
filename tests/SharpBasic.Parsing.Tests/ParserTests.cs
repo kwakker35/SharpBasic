@@ -41,10 +41,10 @@ public class ParserTests
         var parser = new Parser(tokens);
         var result = parser.Parse();
         var failure = Assert.IsType<ParseFailure>(result);
-        var errors = failure.Errors;
+        var diagnostics = failure.Diagnostics;
 
-        Assert.Single(errors);
-        Assert.IsType<InvalidOperationException>(errors[0].Exception);
+        Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
     }
 
     [Fact]
@@ -252,10 +252,10 @@ public class ParserTests
         var parser = new Parser(tokens);
         var result = parser.Parse();
         var failure = Assert.IsType<ParseFailure>(result);
-        var errors = failure.Errors;
+        var diagnostics = failure.Diagnostics;
 
-        Assert.Single(errors);
-        Assert.IsType<InvalidOperationException>(errors[0].Exception);
+        Assert.Single(diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostics[0].Severity);
     }
 
     [Fact]
