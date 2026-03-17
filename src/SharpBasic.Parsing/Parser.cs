@@ -7,7 +7,7 @@ public class Parser(IReadOnlyList<Token> tokens)
     private readonly IReadOnlyList<Token> _tokens = tokens;
     private int _pos = 0;
 
-    List<ParseError> errors = [];
+    private readonly List<Diagnostic> _diagnostics = [];
 
     private Token Eof = new(TokenType.Eof, "", 1, 1);
 
@@ -26,8 +26,8 @@ public class Parser(IReadOnlyList<Token> tokens)
             ParseStatement(statements);
         }
 
-        return errors.Count > 0
-            ? new ParseFailure(errors)
+        return _diagnostics.Count > 0
+            ? new ParseFailure(_diagnostics)
             : new ParseSuccess(new Program(statements));
     }
 
@@ -170,13 +170,12 @@ public class Parser(IReadOnlyList<Token> tokens)
                 AddStatement(target, ParseDimStatement());
                 break;
             default:
-                errors.Add(
-                    new ParseError(
-                        new InvalidOperationException(
-                            $"Unexpected token '{Current.Value}' ({Current.Type})"
-                        ),
+                _diagnostics.Add(
+                    new Diagnostic(
                         Current.Line,
-                        Current.Column
+                        Current.Column,
+                        $"Unexpected token '{Current.Value}' ({Current.Type})",
+                        DiagnosticSeverity.Error
                     )
                 );
                 Advance();
@@ -192,7 +191,10 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
         else if (ppsRes is ParseStatementFailure pf)
         {
-            errors.Add(new ParseError(pf.Error.Exception, pf.Error.Line, pf.Error.Col));
+            _diagnostics.Add(new Diagnostic(pf.Error.Line,
+                                            pf.Error.Col,
+                                            pf.Error.Exception.Message,
+                                            DiagnosticSeverity.Error));
         }
     }
 
@@ -201,12 +203,11 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (Current.Type != expected)
         {
             Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected {expected} {context} but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
+            var err = new Diagnostic(
                 Current.Line,
-                Current.Column
+                Current.Column,
+                 $"Expected {expected} {context} but got {Current.Type} at {Current.Line}:{Current.Column}",
+                 DiagnosticSeverity.Error
             );
             return new ParseStatementFailure(err);
         }
@@ -220,12 +221,11 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (expected is null)
         {
             Advance();
-            var err = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected {context} but got {Current.Type} at {Current.Line}:{Current.Column}"
-                ),
+            var err = new Diagnostic(
                 Current.Line,
-                Current.Column
+                Current.Column,
+                $"Expected {context} but got {Current.Type} at {Current.Line}:{Current.Column}",
+                DiagnosticSeverity.Error
             );
             return new ParseStatementFailure(err);
         }
@@ -301,12 +301,11 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             if (Current != loopVar)
             {
-                var errVar = new ParseStatementError(
-                new InvalidOperationException(
-                    $"Expected {loopVar.Value} but got {Current.Value} at {Current.Line}:{Current.Column}"
-                ),
+                var errVar = new Diagnostic(
                 Current.Line,
-                Current.Column
+                Current.Column,
+                $"Expected {loopVar.Value} but got {Current.Value} at {Current.Line}:{Current.Column}",
+                DiagnosticSeverity.Error
             );
                 return new ParseStatementFailure(errVar);
             }
@@ -373,12 +372,11 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         if (!sizeValid)
         {
-            var errEnd = new ParseStatementError(
-            new InvalidOperationException(
-                $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
-            ),
+            var errEnd = new Diagnostic(
             Current.Line,
-            Current.Column
+            Current.Column,
+            $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+            DiagnosticSeverity.Error
             );
             return new ParseStatementFailure(errEnd);
         }
@@ -400,12 +398,11 @@ public class Parser(IReadOnlyList<Token> tokens)
                 Current.Type is not TokenType.String &&
                 Current.Type is not TokenType.Boolean)
         {
-            var errEnd = new ParseStatementError(
-            new InvalidOperationException(
-                $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}"
-            ),
+            var errEnd = new Diagnostic(
             Current.Line,
-            Current.Column
+            Current.Column,
+            $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+            DiagnosticSeverity.Error
             );
             return new ParseStatementFailure(errEnd);
         }

@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharpBasic.Ast\SharpBasic.Ast.csproj" />
-    <ProjectReference Include="..\SharpBasic.Semantics\SharpBasic.Semantics.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

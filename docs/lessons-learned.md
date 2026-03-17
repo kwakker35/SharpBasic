@@ -100,6 +100,55 @@ new Evaluator(new Program(func.Body), localSymbols, _subs, _functions).Evaluate(
 
 ---
 
+---
+
+## Phase Design Lessons — What Belongs Where
+
+A record of features that were implemented at the wrong phase, and where they should sit if rebuilding the learning path from scratch. Use this to sequence a future BASIC interpreter course correctly.
+
+---
+
+### Lesson D1 — AND / OR belong in Phase 5, not Phase 7
+
+**What happened:** `AND`, `OR`, and `NOT` tokens were added as part of the Phase 7 token batch (bundled with `Sub`, `Function`, `Return`, etc.), because that was the first phase that needed the token enum to expand. But the tokens were never wired up in the parser or evaluator — they lay dormant.
+
+**Why it matters:** The very first realistic `IF` statement a learner writes will be:
+```basic
+IF x > 0 AND x < 10 THEN PRINT "in range"
+```
+Without `AND`/`OR`, `IF` is artificially limited to single conditions throughout Phases 5–9.
+
+**Where they belong:**
+- `AND` / `OR` → **Phase 5** (alongside `IF`). They are just two more rows in `BindingPower()`. The Pratt loop handles them for free once binding powers are assigned.
+- `NOT` → **Phase 5** (alongside `IF`). `IF NOT done THEN` is the canonical BASIC idiom. Needs a `UnaryExpression` AST node and a prefix parse rule — small, but necessary.
+
+**Root cause of the slip:** Tokens and operator semantics are separate concerns. Adding a token to the enum feels like "done", but it's only half the work. A future course should pair every new token with its parser binding power and evaluator case on the same task card.
+
+---
+
+### Lesson D2 — Unary minus on expressions belongs in Phase 4, not deferred
+
+**What happened:** The Phase 4 Pratt parser handled unary minus only for literal tokens (`-5`, `-3.14`). Negating a variable (`-n`) or a grouped expression (`-(a + b)`) was silently unhandled — the parser returned `null` and the expression failed.
+
+**Why it matters:** Any arithmetic-heavy program (including minimax AI scoring) needs `-score` or `-(result)`. The workaround is `LET neg = 0 - n`, which is verbose and unidiomatic.
+
+**Where it belongs:** **Phase 4**, alongside the rest of the Pratt prefix position. The fix is extending the existing unary minus branch in `ParseExpression` to fall through to `ParsePrimary` rather than only accepting literal tokens.
+
+**Root cause of the slip:** The literal case was enough to pass the initial test suite. "Can I negate a variable?" was never in the Phase 4 test list — it only surfaced when writing a real program.
+
+---
+
+### Lesson D3 — "Can I write a realistic program?" is a phase-completion test
+
+**The pattern:** Both gaps above (AND/OR/NOT, unary minus) would have been caught immediately if, at the end of each phase, the question was asked: *"Can I write a realistic program using only the features added so far?"*
+
+- End of Phase 4: try `LET result = -n * 2` → catches unary minus on variables.
+- End of Phase 5: try `IF x > 0 AND x < 10 THEN` → catches missing AND/OR/NOT.
+
+**Recommendation for future learning paths:** Add a mandatory "capstone snippet" to each phase's definition — a short, realistic program that exercises every feature introduced. If it doesn't run, the phase isn't done.
+
+---
+
 ## Diagnostic Techniques
 
 ### When `RunHelper.Run()` produces `""` with no exception

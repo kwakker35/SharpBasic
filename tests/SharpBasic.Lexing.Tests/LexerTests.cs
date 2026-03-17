@@ -539,4 +539,64 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[0].Type);
     }
 
+    // --- Phase 9: Line & Column Tracking ---
+
+    [Fact]
+    public void Lexer_Token_On_First_Line_Has_Line_1()
+    {
+        var tokens = new Lexer("PRINT \"hello\"").Tokenise();
+
+        Assert.Equal(1, tokens[0].Line); // PRINT
+        Assert.Equal(1, tokens[1].Line); // "hello"
+    }
+
+    [Fact]
+    public void Lexer_Token_On_Second_Line_Has_Line_2()
+    {
+        // PRINT "hello"\nPRINT "world"
+        var tokens = new Lexer("PRINT \"hello\"\nPRINT \"world\"").Tokenise();
+
+        // tokens: PRINT(1), "hello"(1), NewLine(1), PRINT(2), "world"(2), Eof
+        Assert.Equal(1, tokens[0].Line); // first PRINT
+        Assert.Equal(2, tokens[3].Line); // second PRINT
+    }
+
+    [Fact]
+    public void Lexer_Token_Column_Starts_At_1()
+    {
+        var tokens = new Lexer("PRINT \"hello\"").Tokenise();
+
+        Assert.Equal(1, tokens[0].Column); // PRINT starts at col 1
+    }
+
+    [Fact]
+    public void Lexer_Token_Column_Is_Correct_After_Space()
+    {
+        // "PRINT \"hello\""
+        // P=1, R=2, I=3, N=4, T=5, space=6, "=7
+        var tokens = new Lexer("PRINT \"hello\"").Tokenise();
+
+        Assert.Equal(7, tokens[1].Column); // string literal starts at col 7
+    }
+
+    [Fact]
+    public void Lexer_Column_Resets_To_1_After_NewLine()
+    {
+        var tokens = new Lexer("PRINT \"a\"\nLET x = 1").Tokenise();
+
+        // NewLine token, then LET should be col 1 on line 2
+        var letToken = tokens.First(t => t.Type == TokenType.Let);
+        Assert.Equal(2, letToken.Line);
+        Assert.Equal(1, letToken.Column);
+    }
+
+    [Fact]
+    public void Lexer_Tracks_Line_Across_Multiple_Newlines()
+    {
+        var tokens = new Lexer("LET x = 1\nLET y = 2\nPRINT x").Tokenise();
+
+        var printToken = tokens.First(t => t.Type == TokenType.Print);
+        Assert.Equal(3, printToken.Line);
+    }
+
 }

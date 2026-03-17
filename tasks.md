@@ -96,4 +96,5 @@ Current phase and active task list. Update as you progress.
 | 7 | Subroutines & Functions |
 | 8 | Arrays |
 | 9 | Error Handling & Diagnostics |
+| 9.5 | Logical operators: AND, OR, NOT + unary minus |
 | 10 | Standard Library & File Runner |

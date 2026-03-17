@@ -154,14 +154,12 @@ SharpBasic/
 │   ├── SharpBasic.Ast/
 │   ├── SharpBasic.Lexing/         ← was SharpBasic.Lexer (renamed for namespace clarity)
 │   ├── SharpBasic.Parsing/        ← was SharpBasic.Parser
-│   ├── SharpBasic.Semantics/
 │   ├── SharpBasic.Evaluation/     ← was SharpBasic.Evaluator
 │   └── SharpBasic.Repl/           ← Console app entry point (REPL + file runner)
 ├── tests/
 │   ├── SharpBasic.Lexing.Tests/
 │   ├── SharpBasic.Parsing.Tests/
 │   ├── SharpBasic.Ast.Tests/
-│   ├── SharpBasic.Semantics.Tests/
 │   └── SharpBasic.Evaluation.Tests/
 ├── samples/                        ← .bas sample programs
 ├── docs/                           ← Language spec (living document)
@@ -226,6 +224,7 @@ Every phase follows this TDD loop:
 | 7 | SUBs, FUNCTIONs, call stack | **Hard** |
 | 8 | Arrays, DIM, bounds checking | Moderate |
 | 9 | Error handling, diagnostics, line/col | Moderate |
+| 9.5 | Logical operators: AND, OR, NOT + unary minus | Easy |
 | 10 | Standard library, INPUT, file runner | Easy |
 
 ---
@@ -475,6 +474,43 @@ public void Evaluate_RecursiveFibonacci_ReturnsCorrectValue()
 
 ---
 
+### Phase 9.5 — Logical Operators & Unary Minus
+
+**Goal:** Complete the operator set so compound boolean conditions and negation work correctly.
+
+**Motivation:** `AND`, `OR`, and `NOT` tokens are already lexed but unimplemented in the parser and evaluator. Unary minus only works on literal numbers, not variables or expressions. These gaps block natural SharpBASIC programs like tic-tac-toe.
+
+**What you'll build:**
+- `AND` and `OR` as binary boolean operators — add to `BindingPower()` and `EvaluateBinaryExpression`
+  - Suggested precedence: `OR` = 2, `AND` = 3 (below comparisons at 5)
+- `NOT` as a prefix/unary operator — needs a `UnaryExpression` AST node, parser prefix handling, and evaluator support
+- Unary minus on any expression — extend the parser's prefix handling beyond integer/float literals
+
+**Example programs that must work after this phase:**
+```basic
+IF x > 0 AND x < 10 THEN PRINT "in range"
+IF NOT done THEN PRINT "still going"
+LET neg = -score
+IF a = 1 OR b = 1 THEN PRINT "either"
+```
+
+**Operator precedence table (complete after this phase):**
+| Precedence | Operators |
+|---|---|
+| 2 | `OR` |
+| 3 | `AND` |
+| 4 | `NOT` (prefix) |
+| 5 | `=` `<>` `<` `>` `<=` `>=` |
+| 10 | `+` `-` `&` |
+| 20 | `*` `/` `MOD` |
+
+**New AST node:**
+```csharp
+public abstract record UnaryExpression(Token Operator, Expression Operand, SourceLocation? Location) : Expression(Location);
+```
+
+---
+
 ### Phase 10 — Standard Library & File Runner *(Final Phase)*
 
 **Goal:** A usable, complete language. Ship it. SharpBASIC is done here.
@@ -514,7 +550,6 @@ dotnet new sln -n SharpBasic
 dotnet new classlib -n SharpBasic.Ast       -o src/SharpBasic.Ast       --framework net10.0
 dotnet new classlib -n SharpBasic.Lexer     -o src/SharpBasic.Lexer     --framework net10.0
 dotnet new classlib -n SharpBasic.Parser    -o src/SharpBasic.Parser    --framework net10.0
-dotnet new classlib -n SharpBasic.Semantics -o src/SharpBasic.Semantics --framework net10.0
 dotnet new classlib -n SharpBasic.Evaluator -o src/SharpBasic.Evaluator --framework net10.0
 dotnet new console  -n SharpBasic.Repl      -o src/SharpBasic.Repl      --framework net10.0
 
@@ -522,29 +557,24 @@ dotnet new console  -n SharpBasic.Repl      -o src/SharpBasic.Repl      --framew
 dotnet new xunit -n SharpBasic.Lexer.Tests     -o tests/SharpBasic.Lexer.Tests     --framework net10.0
 dotnet new xunit -n SharpBasic.Parser.Tests    -o tests/SharpBasic.Parser.Tests    --framework net10.0
 dotnet new xunit -n SharpBasic.Ast.Tests       -o tests/SharpBasic.Ast.Tests       --framework net10.0
-dotnet new xunit -n SharpBasic.Semantics.Tests -o tests/SharpBasic.Semantics.Tests --framework net10.0
 dotnet new xunit -n SharpBasic.Evaluator.Tests -o tests/SharpBasic.Evaluator.Tests --framework net10.0
 
 # Add all projects to solution
 dotnet sln add src/SharpBasic.Ast/SharpBasic.Ast.csproj
 dotnet sln add src/SharpBasic.Lexer/SharpBasic.Lexer.csproj
 dotnet sln add src/SharpBasic.Parser/SharpBasic.Parser.csproj
-dotnet sln add src/SharpBasic.Semantics/SharpBasic.Semantics.csproj
 dotnet sln add src/SharpBasic.Evaluator/SharpBasic.Evaluator.csproj
 dotnet sln add src/SharpBasic.Repl/SharpBasic.Repl.csproj
 dotnet sln add tests/SharpBasic.Lexer.Tests/SharpBasic.Lexer.Tests.csproj
 dotnet sln add tests/SharpBasic.Parser.Tests/SharpBasic.Parser.Tests.csproj
 dotnet sln add tests/SharpBasic.Ast.Tests/SharpBasic.Ast.Tests.csproj
-dotnet sln add tests/SharpBasic.Semantics.Tests/SharpBasic.Semantics.Tests.csproj
 dotnet sln add tests/SharpBasic.Evaluator.Tests/SharpBasic.Evaluator.Tests.csproj
 
 # Add project references (dependency chain)
 dotnet add src/SharpBasic.Lexer/SharpBasic.Lexer.csproj reference src/SharpBasic.Ast/SharpBasic.Ast.csproj
 dotnet add src/SharpBasic.Parser/SharpBasic.Parser.csproj reference src/SharpBasic.Ast/SharpBasic.Ast.csproj
 dotnet add src/SharpBasic.Parser/SharpBasic.Parser.csproj reference src/SharpBasic.Lexer/SharpBasic.Lexer.csproj
-dotnet add src/SharpBasic.Semantics/SharpBasic.Semantics.csproj reference src/SharpBasic.Ast/SharpBasic.Ast.csproj
 dotnet add src/SharpBasic.Evaluator/SharpBasic.Evaluator.csproj reference src/SharpBasic.Ast/SharpBasic.Ast.csproj
-dotnet add src/SharpBasic.Evaluator/SharpBasic.Evaluator.csproj reference src/SharpBasic.Semantics/SharpBasic.Semantics.csproj
 dotnet add src/SharpBasic.Repl/SharpBasic.Repl.csproj reference src/SharpBasic.Lexer/SharpBasic.Lexer.csproj
 dotnet add src/SharpBasic.Repl/SharpBasic.Repl.csproj reference src/SharpBasic.Parser/SharpBasic.Parser.csproj
 dotnet add src/SharpBasic.Repl/SharpBasic.Repl.csproj reference src/SharpBasic.Evaluator/SharpBasic.Evaluator.csproj
@@ -553,13 +583,11 @@ dotnet add src/SharpBasic.Repl/SharpBasic.Repl.csproj reference src/SharpBasic.E
 dotnet add tests/SharpBasic.Lexer.Tests/SharpBasic.Lexer.Tests.csproj package FluentAssertions
 dotnet add tests/SharpBasic.Parser.Tests/SharpBasic.Parser.Tests.csproj package FluentAssertions
 dotnet add tests/SharpBasic.Evaluator.Tests/SharpBasic.Evaluator.Tests.csproj package FluentAssertions
-dotnet add tests/SharpBasic.Semantics.Tests/SharpBasic.Semantics.Tests.csproj package FluentAssertions
 
 # Add test project references to src projects
 dotnet add tests/SharpBasic.Lexer.Tests/SharpBasic.Lexer.Tests.csproj reference src/SharpBasic.Lexer/SharpBasic.Lexer.csproj
 dotnet add tests/SharpBasic.Parser.Tests/SharpBasic.Parser.Tests.csproj reference src/SharpBasic.Parser/SharpBasic.Parser.csproj
 dotnet add tests/SharpBasic.Evaluator.Tests/SharpBasic.Evaluator.Tests.csproj reference src/SharpBasic.Evaluator/SharpBasic.Evaluator.csproj
-dotnet add tests/SharpBasic.Semantics.Tests/SharpBasic.Semantics.Tests.csproj reference src/SharpBasic.Semantics/SharpBasic.Semantics.csproj
 
 # Create folder structure
 mkdir -p samples docs

@@ -1,3 +1,5 @@
+using SharpBasic.Ast;
+
 namespace SharpBasic.Parsing;
 
-public record ParseStatementFailure(ParseStatementError Error): ParseStatementResult;
+public record ParseStatementFailure(Diagnostic Diagnostic) : ParseStatementResult;

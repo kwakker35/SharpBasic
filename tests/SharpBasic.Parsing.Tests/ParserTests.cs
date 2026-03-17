@@ -816,4 +816,65 @@ public class ParserTests
         Assert.IsType<IntLiteralExpression>(stmt.Arguments[0]);
         Assert.IsType<IntLiteralExpression>(stmt.Arguments[1]);
     }
+
+    // --- Phase 9: Diagnostics ---
+
+    [Fact]
+    public void ParseFailure_Diagnostics_Contains_Line_And_Col()
+    {
+        // PRINT with no expression — parse error at line 2, col 1
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 2, 1),
+            new(TokenType.NewLine, "", 2, 1),
+            new(TokenType.Eof, "", 2, 1)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+
+        Assert.NotEmpty(failure.Diagnostics);
+        var d = failure.Diagnostics[0];
+        Assert.Equal(DiagnosticSeverity.Error, d.Severity);
+        Assert.True(d.Line > 0);
+        Assert.True(d.Col > 0);
+    }
+
+    [Fact]
+    public void ParseFailure_Diagnostics_Message_Is_Not_Empty()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let, "", 1, 1),
+            new(TokenType.Identifier, "x", 1, 1),
+            new(TokenType.Eq, "", 1, 1),
+            new(TokenType.NewLine, "", 1, 1),
+            new(TokenType.Eof, "", 1, 1)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.False(string.IsNullOrWhiteSpace(failure.Diagnostics[0].Message));
+    }
+
+    [Fact]
+    public void ParseFailure_Diagnostic_ToString_Includes_Line_Col_And_Error()
+    {
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print, "", 5, 3),
+            new(TokenType.NewLine, "", 5, 3),
+            new(TokenType.Eof, "", 5, 3)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        var formatted = failure.Diagnostics[0].ToString();
+
+        Assert.Contains("Error", formatted);
+        Assert.Contains("Line", formatted);
+        Assert.Contains("Col", formatted);
+    }
 }

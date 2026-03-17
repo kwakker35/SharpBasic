@@ -466,4 +466,49 @@ public class EvaluatorTests
         var output = RunHelper.Run(source);
         Assert.Equal("42", output);
     }
+    // --- Phase 9: Diagnostics ---
+
+    [Fact]
+    public void EvalFailure_Diagnostics_Contains_Line_And_Col()
+    {
+        var tokens = new SharpBasic.Lexing.Lexer("PRINT x").Tokenise();
+        var parseResult = new SharpBasic.Parsing.Parser(tokens).Parse();
+        var ps = Assert.IsType<SharpBasic.Parsing.ParseSuccess>(parseResult);
+        var result = new Evaluator(ps.Program).Evaluate();
+        var failure = Assert.IsType<EvalFailure>(result);
+
+        Assert.NotEmpty(failure.Diagnostics);
+        var d = failure.Diagnostics[0];
+        Assert.Equal(DiagnosticSeverity.Error, d.Severity);
+        Assert.True(d.Line >= 0);
+        Assert.True(d.Col >= 0);
+    }
+
+    [Fact]
+    public void EvalFailure_Diagnostics_Message_Is_Not_Empty()
+    {
+        var tokens = new SharpBasic.Lexing.Lexer("PRINT x").Tokenise();
+        var parseResult = new SharpBasic.Parsing.Parser(tokens).Parse();
+        var ps = Assert.IsType<SharpBasic.Parsing.ParseSuccess>(parseResult);
+        var result = new Evaluator(ps.Program).Evaluate();
+        var failure = Assert.IsType<EvalFailure>(result);
+
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.False(string.IsNullOrWhiteSpace(failure.Diagnostics[0].Message));
+    }
+
+    [Fact]
+    public void EvalFailure_Diagnostic_ToString_Includes_Line_Col_And_Error()
+    {
+        var tokens = new SharpBasic.Lexing.Lexer("PRINT x").Tokenise();
+        var parseResult = new SharpBasic.Parsing.Parser(tokens).Parse();
+        var ps = Assert.IsType<SharpBasic.Parsing.ParseSuccess>(parseResult);
+        var result = new Evaluator(ps.Program).Evaluate();
+        var failure = Assert.IsType<EvalFailure>(result);
+        var formatted = failure.Diagnostics[0].ToString();
+
+        Assert.Contains("Error", formatted);
+        Assert.Contains("Line", formatted);
+        Assert.Contains("Col", formatted);
+    }
 }

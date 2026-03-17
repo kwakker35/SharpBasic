@@ -7,6 +7,8 @@ public class Lexer
 {
     private readonly string _source;
     private int _pos;
+    private int _line = 1;
+    private int _col = 1;
 
     public Lexer(string source)
     {
@@ -15,10 +17,23 @@ public class Lexer
 
     private char Current => _pos < _source.Length ? _source[_pos] : '\0';
     private char Peek() => _pos + 1 < _source.Length ? _source[_pos + 1] : '\0';
-    private void Advance() => _pos++;
+    private void Advance()
+    {
+        if (_pos < _source.Length && _source[_pos] == '\n')
+        {
+            _line++;
+            _col = 1;
+        }
+        else
+        {
+            _col++;
+        }
+        _pos++;
+    }
 
     public IReadOnlyList<Token> Tokenise()
     {
+        var startCol = _pos;
         var tokens = new List<Token>();
         StringBuilder token = new();
         _pos = 0;
@@ -37,14 +52,14 @@ public class Lexer
                             break;
                         }
 
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
                     break;
                 case '"':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
                     tokens.Add(GetStringLiteral());
@@ -52,122 +67,125 @@ public class Lexer
                 case '\n':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.NewLine, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.NewLine, "", _line, _col));
                     break;
                 case '+':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Plus, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Plus, "", _line, _col));
                     break;
                 case '-':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Minus, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Minus, "", _line, _col));
                     break;
                 case '*':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Multiply, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Multiply, "", _line, _col));
                     break;
                 case '/':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Divide, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Divide, "", _line, _col));
                     break;
                 case '(':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.LParen, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.LParen, "", _line, _col));
                     break;
                 case ')':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.RParen, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.RParen, "", _line, _col));
                     break;
                 case '[':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.LBracket, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.LBracket, "", _line, _col));
                     break;
                 case ']':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.RBracket, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.RBracket, "", _line, _col));
                     break;
                 case '<':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.LtEq, "", 1, _pos)); }
-                    else if (Peek() == '>') { Advance(); tokens.Add(new Token(TokenType.NotEq, "", 1, _pos)); }
-                    else tokens.Add(new Token(TokenType.Lt, "", 1, _pos));
+                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.LtEq, "", _line, _col)); }
+                    else if (Peek() == '>') { Advance(); tokens.Add(new Token(TokenType.NotEq, "", _line, _col)); }
+                    else tokens.Add(new Token(TokenType.Lt, "", _line, _col));
                     break;
                 case '>':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.GtEq, "", 1, _pos)); }
-                    else tokens.Add(new Token(TokenType.Gt, "", 1, _pos));
+                    if (Peek() == '=') { Advance(); tokens.Add(new Token(TokenType.GtEq, "", _line, _col)); }
+                    else tokens.Add(new Token(TokenType.Gt, "", _line, _col));
                     break;
                 case '&':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Ampersand, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Ampersand, "", _line, _col)); ;
                     break;
                 case ',':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                         token = new();
                     }
-                    tokens.Add(new Token(TokenType.Comma, "", 1, _pos));
+                    tokens.Add(new Token(TokenType.Comma, "", _line, _col));
                     break;
                 default:
                     if (char.IsDigit(Current))
                     {
                         if (token.Length > 0)
                         {
-                            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+                            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
                             token = new();
                         }
                         tokens.Add(GetNumberLiteral());
                     }
                     else
                     {
+                        if (token.Length == 0)
+                            startCol = _col;
+
                         token.Append(Current);
                     }
 
@@ -177,9 +195,9 @@ public class Lexer
         }
 
         if (token.Length > 0)
-            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), 1, _pos));
+            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
 
-        tokens.Add(new Token(TokenType.Eof, "", 1, _pos));
+        tokens.Add(new Token(TokenType.Eof, "", _line, _col));
         return tokens;
     }
 
@@ -234,6 +252,7 @@ public class Lexer
 
     private Token GetStringLiteral()
     {
+        var startCol = _col;
         StringBuilder lit = new();
         Advance(); //skip opening "
         while (Current != '"' && Current != '\0')
@@ -242,7 +261,7 @@ public class Lexer
             Advance();
         }
 
-        return new Token(TokenType.StringLiteral, lit.ToString(), 1, _pos);
+        return new Token(TokenType.StringLiteral, lit.ToString(), _line, startCol);
     }
 
     /// <summary>
@@ -251,6 +270,7 @@ public class Lexer
     /// <returns></returns>
     private Token GetNumberLiteral()
     {
+        var startCol = _col;
         StringBuilder lit = new();
 
         while (char.IsDigit(Current) || Current == '.' && Current != '\0' && Peek() != ')')
@@ -264,7 +284,7 @@ public class Lexer
         var numStr = lit.ToString();
 
         return numStr.Contains('.') ?
-         new Token(TokenType.FloatLiteral, lit.ToString(), 1, _pos) :
-         new Token(TokenType.IntLiteral, lit.ToString(), 1, _pos);
+         new Token(TokenType.FloatLiteral, lit.ToString(), _line, startCol) :
+         new Token(TokenType.IntLiteral, lit.ToString(), _line, startCol);
     }
 }
