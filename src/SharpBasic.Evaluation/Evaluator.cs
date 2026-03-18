@@ -507,7 +507,9 @@ public class Evaluator(
                                         TokenType.LtEq or
                                         TokenType.GtEq or
                                         TokenType.Ampersand or
-                                        TokenType.Mod))
+                                        TokenType.Mod or
+                                        TokenType.And or
+                                        TokenType.Or))
         {
             return new EvalFailure(
                     [
@@ -527,6 +529,35 @@ public class Evaluator(
         var rightRes = EvaluateExpression(expr.Right);
         if (rightRes is EvalFailure) return rightRes;
         var rightES = (EvalSuccess)rightRes;
+
+        //boolean operations
+        if (expr.Operator.Type is TokenType.And or TokenType.Or)
+        {
+            if (leftES.Value is BoolValue lbv && rightES.Value is BoolValue rbv)
+            {
+                bool result = expr.Operator.Type switch
+                {
+                    TokenType.And => lbv.V && rbv.V,
+                    TokenType.Or => lbv.V || rbv.V,
+                    _ => throw new InvalidOperationException("Unreachable")
+                };
+
+                return new EvalSuccess(new BoolValue(result));
+            }
+            else
+            {
+                return new EvalFailure(
+                    [
+                        new Diagnostic(
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0,
+                            $"Invalid combination: {leftES.Value.GetType()} : {rightES.Value.GetType()}. Cannot perform AND or OR on non boolean values.",
+                            DiagnosticSeverity.Error
+                        )
+                    ]
+                );
+            }
+        }
 
         // string concatenation
         if (expr.Operator.Type is TokenType.Ampersand)
@@ -813,6 +844,38 @@ public class Evaluator(
         }
     }
 
+    private EvalResult EvaluateUnaryExpression(UnaryExpression expr)
+    {
+        var evalResult = EvaluateExpression(expr.Operand);
+        if (evalResult is EvalFailure) return evalResult;
+
+        var resValue = ((EvalSuccess)evalResult).Value;
+
+        if (expr.Operator.Type is TokenType.Minus && resValue is IntValue iv)
+        {
+            return new EvalSuccess(new IntValue(-iv.V));
+        }
+        else if (expr.Operator.Type is TokenType.Minus && resValue is FloatValue fv)
+        {
+            return new EvalSuccess(new FloatValue(-fv.V));
+        }
+        else if (expr.Operator.Type is TokenType.Not && resValue is BoolValue bv)
+        {
+            return new EvalSuccess(new BoolValue(!bv.V));
+        }
+
+        return new EvalFailure(
+                    [
+                        new Diagnostic(
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0,
+                            $"Invalid Operator: {expr.Operator} for type {expr.Operand.GetType()}.",
+                            DiagnosticSeverity.Error
+                        )
+                    ]
+                );
+    }
+
     private EvalResult EvaluateExpression(Expression expr)
     {
         return expr switch
@@ -823,6 +886,8 @@ public class Evaluator(
             BinaryExpression be => EvaluateBinaryExpression(be),
             CallExpression ce => EvaluateCallExpression(ce),
             ArrayAccessExpression aae => EvaluateArrayAccessExpression(aae),
+            BoolLiteralExpression ble => new EvalSuccess(new BoolValue(ble.Value)),
+            UnaryExpression ue => EvaluateUnaryExpression(ue),
             IdentifierExpression id when _table.Get(id.Name) is { } val => new EvalSuccess(val),
             IdentifierExpression id
                 => new EvalFailure(

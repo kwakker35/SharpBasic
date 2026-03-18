@@ -606,4 +606,18 @@ public class EvaluatorTests
         var output = RunHelper.Run("LET x = 3.5\nPRINT -x");
         Assert.Equal("-3.5", output);
     }
+
+    [Fact]
+    public void Evaluator_And_With_Non_Bool_Operand_Returns_EvalFailure()
+    {
+        var result = RunHelper.RunResult("PRINT TRUE AND 5");
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Evaluator_Or_With_Non_Bool_Operand_Returns_EvalFailure()
+    {
+        var result = RunHelper.RunResult("PRINT FALSE OR \"hello\"");
+        Assert.IsType<EvalFailure>(result);
+    }
 }

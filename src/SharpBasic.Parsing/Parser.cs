@@ -33,6 +33,8 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private static int BindingPower(TokenType type) => type switch
     {
+        TokenType.Or => 2,
+        TokenType.And => 3,
         TokenType.Eq or TokenType.NotEq or TokenType.Lt or
             TokenType.Gt or TokenType.LtEq or TokenType.GtEq => 5,
         TokenType.Plus or TokenType.Minus or TokenType.Ampersand => 10,
@@ -53,6 +55,9 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (Current.Type == TokenType.FloatLiteral && double.TryParse(Current.Value, out var f))
             return new FloatLiteralExpression(f, loc);
 
+        if (Current.Type == TokenType.True || Current.Type == TokenType.False)
+            return new BoolLiteralExpression(Current.Type == TokenType.True, loc);
+
         if (Current.Type == TokenType.Identifier)
         {
             if (Peek().Type == TokenType.LParen)
@@ -70,6 +75,7 @@ public class Parser(IReadOnlyList<Token> tokens)
 
     private Expression? ParseExpression(int minBindingPower = 0)
     {
+        ParseStatementFailure? err;
         var loc = new SourceLocation(Current.Line, Current.Column);
 
         //Parse the left-hand side (a "prefix" - literal, identifier or grouped expr)
@@ -85,25 +91,15 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
         else
         {
-            if (Current.Type == TokenType.Minus)
+            if (Current.Type == TokenType.Minus || Current.Type == TokenType.Not)
             {
-                Advance(); // consume -
-                if (Current.Type == TokenType.IntLiteral &&
-                        int.TryParse(Current.Value, out var n))
-                {
-                    left = new IntLiteralExpression(-n, loc);
-                    Advance(); // consume the literal
-                }
-                else if (Current.Type == TokenType.FloatLiteral &&
-                        double.TryParse(Current.Value, out var f))
-                {
-                    left = new FloatLiteralExpression(-f, loc);
-                    Advance(); // consume the literal
-                }
-                else
-                {
-                    return null; // unary minus on non-literal
-                }
+                var minusToken = Current;
+                Advance(); // consume the unary operator
+                var operand = ParseExpression(0);
+                err = ExpectExpression(operand, "expression after unary operator");
+                if (err is not null) return null;
+
+                return new UnaryExpression(minusToken, operand!, loc);
             }
             else
             {
