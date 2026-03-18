@@ -599,4 +599,54 @@ public class LexerTests
         Assert.Equal(3, printToken.Line);
     }
 
+    // --- Phase 10: Standard Library ---
+
+    [Theory]
+    [InlineData("MID$")]
+    [InlineData("LEFT$")]
+    [InlineData("RIGHT$")]
+    [InlineData("UPPER$")]
+    [InlineData("LOWER$")]
+    [InlineData("STR$")]
+    public void Lexer_Dollar_Suffix_Builtin_Lexes_As_Identifier(string name)
+    {
+        var tokens = new Lexer(name).Tokenise();
+
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal(name, tokens[0].Value);
+    }
+
+    [Theory]
+    [InlineData("LEN")]
+    [InlineData("INT")]
+    [InlineData("VAL")]
+    [InlineData("ABS")]
+    [InlineData("SQR")]
+    [InlineData("RND")]
+    public void Lexer_No_Dollar_Builtin_Lexes_As_Identifier(string name)
+    {
+        var tokens = new Lexer(name).Tokenise();
+
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal(name, tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lexer_Dollar_Suffix_In_Call_Expression_Produces_Correct_Sequence()
+    {
+        // MID$("Hello", 2, 3)
+        var tokens = new Lexer("MID$(\"Hello\", 2, 3)").Tokenise();
+
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("MID$", tokens[0].Value);
+        Assert.Equal(TokenType.LParen, tokens[1].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[2].Type);
+        Assert.Equal("Hello", tokens[2].Value);
+        Assert.Equal(TokenType.Comma, tokens[3].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[4].Type);
+        Assert.Equal(TokenType.Comma, tokens[5].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[6].Type);
+        Assert.Equal(TokenType.RParen, tokens[7].Type);
+    }
+
 }
