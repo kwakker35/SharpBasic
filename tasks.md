@@ -12,6 +12,18 @@ Current phase and active task list. Update as you progress.
 |---|--------|------|--------|
 | 1 | `feat/phase10-stdlib` | Standard library built-in functions | ⬜ |
 | 2 | `feat/phase10-file-runner` | File runner — `sharpbasic run <file.bas>` | ⬜ |
+| 3 | `chore/phase10-value-typename` | Add `TypeName` property to `Value` subtypes for readable diagnostics | ⬜ |
+
+---
+
+## Completed — Phase 9.5 — Logical Operators & Unary Expressions
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `test/phase9.5-expressions` | Tests: `BoolLiteralExpression`, `UnaryExpression` (AST, Parser, Evaluator) | ✅ Complete — merged to `main` |
+| 2 | `feat/phase9.5-ast` | `BoolLiteralExpression` and `UnaryExpression` AST nodes | ✅ Complete — merged to `main` |
+| 3 | `feat/phase9.5-parser` | Parser: `TRUE`/`FALSE` primaries, `NOT` and unary minus prefix, `AND`/`OR` binding powers | ✅ Complete — merged to `main` |
+| 4 | `feat/phase9.5-evaluator` | Evaluator: `BoolLiteralExpression`, `AND`/`OR` in binary, `EvaluateUnaryExpression` | ✅ Complete — merged to `main` |
 
 ---
 
@@ -95,6 +107,16 @@ Current phase and active task list. Update as you progress.
 | ⬜ | Not started |
 | 🔵 | In progress |
 | ✅ | Complete — merged to `main` |
+
+---
+
+## Phase 11 — Learning Path *(blocked on Phase 10 completion)*
+
+**Goal:** Build a structured learning path using the completed SharpBASIC interpreter. Specific instructions TBD.
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `docs/phase11-learning-path` | TBD — instructions to be added | ⬜ |
 
 ---
 
