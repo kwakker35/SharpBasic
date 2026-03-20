@@ -166,3 +166,33 @@ if (parseResult is ParseFailure pf)
 2. **If parse succeeds, instrument `EvaluatePrintStatement`.** Log what `EvaluateExpression(p.Value)` returns — is it `EvalSuccess` or `EvalFailure`?
 
 3. **Write diagnostics to a file, not `Console.Error`.** xUnit captures both stdout and stderr from the test process. `File.AppendAllText(@"C:\Temp\diag.txt", ...)` bypasses capture entirely.
+
+---
+
+## Phase 10 — Standard Library & Polish
+
+### Design Lesson — `ToUpper()` vs `ToUpperInvariant()` (the Turkish I problem)
+
+**Context:** Every place the interpreter normalises identifiers or type names for comparison uses string uppercasing — keyword lookup in the lexer, builtin name resolution in the evaluator, array type name matching.
+
+**The problem:** `String.ToUpper()` is culture-sensitive. On a machine configured with a Turkish locale, the uppercase of `"i"` is `"İ"` (dotted capital I, U+0130) — not `"I"`. This means:
+
+```csharp
+"len".ToUpper() == "LEN"   // false on Turkish locale
+```
+
+A SharpBASIC program that called `LEN("hello")` would silently fail to find the builtin on any Turkish system.
+
+**Fix:** Use `ToUpperInvariant()` / `ToLowerInvariant()` everywhere comparisons are made against fixed string constants (keywords, builtin names, type names). These methods always use invariant culture rules regardless of the machine's locale.
+
+```csharp
+// Before (culture-sensitive, fragile)
+_builtins.TryGetValue(expr.Name.ToUpper(), ...)
+stmt.TypeName.ToUpper() switch { "INTEGER" => ... }
+
+// After (safe everywhere)
+_builtins.TryGetValue(expr.Name.ToUpperInvariant(), ...)
+stmt.TypeName.ToUpperInvariant() switch { "INTEGER" => ... }
+```
+
+**Rule of thumb:** `ToUpper()` / `ToLower()` are for *display* (user-facing output). `ToUpperInvariant()` / `ToLowerInvariant()` are for *comparison* (internal logic). When in doubt, use invariant.

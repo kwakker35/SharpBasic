@@ -224,7 +224,7 @@ public class Lexer
 
     private static TokenType GetTokenType(string token)
     {
-        return token.ToUpper() switch
+        return token.ToUpperInvariant() switch
         {
             "PRINT" => TokenType.Print,
             "LET" => TokenType.Let,

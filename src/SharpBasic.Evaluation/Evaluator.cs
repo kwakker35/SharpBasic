@@ -13,9 +13,64 @@ public class Evaluator(
     private Dictionary<string, FunctionDeclaration> _functions = functions ?? new();
     private List<Diagnostic> _diagnostics = [];
 
+    private readonly Dictionary<string, Func<List<Value>, Value?>> _builtins = CreateBuiltins();
+
+    private static Dictionary<string, Func<List<Value>, Value?>> CreateBuiltins() => new()
+    {
+        ["LEN"] = args => args[0] is StringValue sv ?
+                            new IntValue(sv.V.Length)
+                            : null,
+        ["MID$"] = args => args[0] is StringValue sv &&
+                            args[1] is IntValue iv1 &&
+                            args[2] is IntValue iv2 ? new StringValue(
+                                sv.V.Substring(iv1.V - 1, iv2.V)
+                            ) : null,
+        ["LEFT$"] = args => args[0] is StringValue sv &&
+                            args[1] is IntValue iv1 ? new StringValue(
+                                sv.V[..iv1.V]
+                            ) : null,
+        ["RIGHT$"] = args => args[0] is StringValue sv &&
+                            args[1] is IntValue iv1 ? new StringValue(
+                                sv.V[^iv1.V..]
+                            ) : null,
+        ["UPPER$"] = args => args[0] is StringValue sv ? new StringValue(
+                            sv.V.ToUpperInvariant()
+                            ) : null,
+        ["LOWER$"] = args => args[0] is StringValue sv ? new StringValue(
+                            sv.V.ToLowerInvariant()
+                            ) : null,
+        ["INT"] = args => args[0] is IntValue iv ?
+                            new IntValue(iv.V) :
+                            args[0] is FloatValue fv ?
+                            new FloatValue(Math.Floor(fv.V))
+                            : null,
+        ["STR$"] = args => args[0] is IntValue iv ?
+                            new StringValue(iv.V.ToString()) :
+                            args[0] is FloatValue fv ?
+                            new StringValue(fv.V.ToString())
+                            : null,
+        ["VAL"] = args => args[0] is StringValue sv ?
+                            int.TryParse(sv.V, out int ir) ? new IntValue(ir) :
+                            double.TryParse(sv.V, out double dr) ? new FloatValue(dr)
+                            : null
+                            : null,
+        ["ABS"] = args => args[0] is IntValue iv ?
+                            new IntValue(Math.Abs(iv.V)) :
+                            args[0] is FloatValue fv ?
+                            new FloatValue(Math.Abs(fv.V))
+                            : null,
+        ["SQR"] = args => args[0] is IntValue iv ?
+                            new FloatValue(Math.Sqrt(iv.V)) :
+                            args[0] is FloatValue fv ?
+                            new FloatValue(Math.Sqrt(fv.V))
+                            : null,
+        ["RND"] = args => new FloatValue(Random.Shared.NextDouble())
+    };
+
     public EvalResult Evaluate()
     {
-        HoistDeclarations();
+        var hoistResult = HoistDeclarations();
+        if (hoistResult is EvalFailure) return hoistResult;
 
         foreach (Statement stmt in _program.Statements)
         {
@@ -27,22 +82,53 @@ public class Evaluator(
             }
         }
 
+
         return _diagnostics.Count > 0 ? new EvalFailure(_diagnostics) : new EvalSuccess(new VoidValue());
     }
 
-    public void HoistDeclarations()
+    private EvalResult HoistDeclarations()
     {
         foreach (Statement stmt in _program.Statements)
         {
             if (stmt is SubDeclaration s)
             {
+                if (_builtins.ContainsKey(s.Name.ToUpperInvariant()))
+                {
+                    return new EvalFailure(
+                        [
+                            new Diagnostic(
+                                stmt.Location?.Line ?? 0,
+                                stmt.Location?.Col ?? 0,
+                                $"SUB {s.Name} is the name of a built in function and cannot be reused.",
+                                DiagnosticSeverity.Error
+                            )
+                        ]
+                    );
+                }
+
                 _subs.Add(s.Name, s);
             }
             else if (stmt is FunctionDeclaration f)
             {
+                if (_builtins.ContainsKey(f.Name.ToUpperInvariant()))
+                {
+                    return new EvalFailure(
+                        [
+                            new Diagnostic(
+                                stmt.Location?.Line ?? 0,
+                                stmt.Location?.Col ?? 0,
+                                $"FUNCTION {f.Name} is the name of a built in function and cannot be reused.",
+                                DiagnosticSeverity.Error
+                            )
+                        ]
+                    );
+                }
+
                 _functions.Add(f.Name, f);
             }
         }
+
+        return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateStatement(Statement stmt)
@@ -97,7 +183,7 @@ public class Evaluator(
 
         for (var i = 0; i < stmt.Size; i++)
         {
-            arrVal[i] = stmt.TypeName.ToUpper() switch
+            arrVal[i] = stmt.TypeName.ToUpperInvariant() switch
             {
                 "INTEGER" => new IntValue(0),
                 "FLOAT" => new FloatValue(0),
@@ -419,6 +505,23 @@ public class Evaluator(
 
     private EvalResult EvaluateCallExpression(CallExpression expr)
     {
+        var builtInExists = _builtins.TryGetValue(expr.Name.ToUpperInvariant(), out var builtIn);
+
+        if (builtInExists)
+        {
+            List<Value> localArgs = [];
+
+            foreach (var arg in expr.Arguments)
+            {
+                var argResult = EvaluateExpression(arg);  // evaluate in caller's scope
+                if (argResult is EvalFailure) return argResult;
+
+                localArgs.Add(((EvalSuccess)argResult).Value!);
+            }
+
+            return new EvalSuccess(builtIn!(localArgs));
+        }
+
         var funcExists = _functions.TryGetValue(expr.Name, out var func);
 
         if (!funcExists)
@@ -698,7 +801,7 @@ public class Evaluator(
 
         if (idxExpr is EvalSuccess es && es.Value is IntValue iv)
         {
-            var targetType = arrVal.TypeName.ToUpper();
+            var targetType = arrVal.ElementTypeName.ToUpperInvariant();
             var idx = iv.V;
             if (idx < 0 || idx > arrVal.Items.Length)
             {
@@ -811,7 +914,7 @@ public class Evaluator(
                 );
             }
 
-            return arrVal.TypeName.ToUpper() switch
+            return arrVal.ElementTypeName.ToUpperInvariant() switch
             {
                 "INTEGER" => new EvalSuccess((IntValue)arrVal.Items[idx]),
                 "FLOAT" => new EvalSuccess((FloatValue)arrVal.Items[idx]),
