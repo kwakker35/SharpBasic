@@ -181,6 +181,15 @@ public class Lexer
                         }
                         tokens.Add(GetNumberLiteral());
                     }
+                    else if (Current == '$' && !char.IsAsciiLetterOrDigit(Peek()))
+                    {
+                        token.Append(Current);
+                    }
+                    else if (Current == '$' && char.IsAsciiLetterOrDigit(Peek()))
+                    {
+                        tokens.Add(new Token(TokenType.Unknown, "", _line, _col));
+                        token = new();
+                    }
                     else
                     {
                         if (token.Length == 0)
@@ -246,7 +255,8 @@ public class Lexer
             "FALSE" => TokenType.False,
             "DIM" => TokenType.Dim,
             "MOD" => TokenType.Mod,
-            _ => token.All(c => char.IsAsciiLetterOrDigit(c)) ? TokenType.Identifier : TokenType.Unknown
+            _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?
+                        TokenType.Identifier : TokenType.Unknown
         };
     }
 
