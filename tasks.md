@@ -10,9 +10,10 @@ Current phase and active task list. Update as you progress.
 
 | # | Branch | Task | Status |
 |---|--------|------|--------|
-| 1 | `feat/phase10-stdlib` | Standard library built-in functions | ⬜ |
+| 1 | `feat/phase10-stdlib` | Standard library built-in functions | ✅ Complete — merged to `main` |
 | 2 | `feat/phase10-file-runner` | File runner — `sharpbasic run <file.bas>` | ⬜ |
 | 3 | `chore/phase10-value-typename` | Add `TypeName` property to `Value` subtypes for readable diagnostics | ⬜ |
+| 4 | `feat/phase10-input` | `INPUT` statement — Lexer token, AST node, Parser, Evaluator (`Console.ReadLine`) | ⬜ |
 
 ---
 
