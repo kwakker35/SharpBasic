@@ -33,6 +33,9 @@ public class Evaluator(
                             args[1] is IntValue iv1 ? new StringValue(
                                 sv.V[^iv1.V..]
                             ) : null,
+        ["TRIM$"] = args => args[0] is StringValue sv ? new StringValue(
+                                sv.V.Trim()
+                            ) : null,
         ["UPPER$"] = args => args[0] is StringValue sv ? new StringValue(
                             sv.V.ToUpperInvariant()
                             ) : null,
@@ -146,6 +149,7 @@ public class Evaluator(
             ReturnStatement rs => EvaluateReturnStatement(rs),
             DimStatement ds => EvaluateDimStatement(ds),
             ArrayAssignStatement aas => EvaluateArrayAssignStatement(aas),
+            InputStatement ins => EvaluateInputStatement(ins),
             _
                 => new EvalFailure(
                     [
@@ -158,6 +162,23 @@ public class Evaluator(
                     ]
                 )
         };
+    }
+
+    private EvalResult EvaluateInputStatement(InputStatement stmt)
+    {
+        var target = stmt.Target.Name;
+        string inputVal;
+
+        if (stmt.Prompt is not null)
+        {
+            Console.Write(stmt.Prompt + "? ");
+        }
+
+        inputVal = Console.ReadLine() ?? string.Empty;
+
+        _table.Set(target, new StringValue(inputVal));
+
+        return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateDimStatement(DimStatement stmt)

@@ -165,6 +165,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Dim:
                 AddStatement(target, ParseDimStatement());
                 break;
+            case TokenType.Input:
+                AddStatement(target, ParseInputStatement());
+                break;
             default:
                 _diagnostics.Add(
                     new Diagnostic(
@@ -962,4 +965,63 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
     }
 
+    private ParseStatementResult ParseInputStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        string? prompt = null;
+
+        Advance(); //consume INPUT
+
+        if (Current.Type == TokenType.StringLiteral)
+        {
+            var promptExpr = ParseExpression();
+
+            err = ExpectExpression(promptExpr, "prompt after INPUT");
+            if (err is not null) return err;
+
+            if (promptExpr is not StringLiteralExpression sle)
+            {
+                return new ParseStatementFailure(
+                   new Diagnostic(
+                       Current.Line,
+                       Current.Column,
+                       $"Expected STRING after INPUT but got {Current.Type} at {Current.Line}:{Current.Column}",
+                       DiagnosticSeverity.Error
+                   )
+               );
+            }
+
+            prompt = sle.Value;
+
+            err = ExpectToken(TokenType.Semicolon, "after INPUT prompt");
+            if (err is not null) return err;
+
+            Advance(); //consume Semicolon
+        }
+
+        var expr = ParseExpression();
+        err = ExpectExpression(expr, "<Identifier> after INPUT");
+        if (err is not null) return err;
+
+        if (expr is not IdentifierExpression ie)
+        {
+            return new ParseStatementFailure(
+                  new Diagnostic(
+                      Current.Line,
+                      Current.Column,
+                      $"Expected INDENTIFIER after INPUT but got {Current.Type} at {Current.Line}:{Current.Column}",
+                      DiagnosticSeverity.Error
+                  )
+              );
+        }
+
+        return new ParseStatementSuccess(
+            new InputStatement(
+                prompt,
+                ie,
+                loc
+            )
+        );
+    }
 }

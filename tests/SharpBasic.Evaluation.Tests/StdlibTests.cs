@@ -277,4 +277,34 @@ public class StdlibTests
     Assert.True(double.TryParse(b, System.Globalization.NumberStyles.Float,
         System.Globalization.CultureInfo.InvariantCulture, out _));
   }
+
+  // --- TRIM$ ---
+
+  [Fact]
+  public void TRIM_Dollar_Removes_Leading_And_Trailing_Spaces()
+  {
+    var output = RunHelper.Run("PRINT TRIM$(\"  hello  \")");
+    Assert.Equal("hello", output);
+  }
+
+  [Fact]
+  public void TRIM_Dollar_No_Op_On_String_With_No_Whitespace()
+  {
+    var output = RunHelper.Run("PRINT TRIM$(\"hello\")");
+    Assert.Equal("hello", output);
+  }
+
+  [Fact]
+  public void TRIM_Dollar_Returns_Empty_For_All_Spaces()
+  {
+    var output = RunHelper.Run("PRINT TRIM$(\"   \")");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void TRIM_Dollar_Works_On_Variable()
+  {
+    var output = RunHelper.Run("LET s$ = \"  world  \"\nPRINT TRIM$(s$)");
+    Assert.Equal("world", output);
+  }
 }

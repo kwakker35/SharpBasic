@@ -649,4 +649,41 @@ public class LexerTests
         Assert.Equal(TokenType.RParen, tokens[7].Type);
     }
 
+    [Fact]
+    public void Lex_InputKeyword_ReturnsCorrectToken()
+    {
+        var tokens = new Lexer("INPUT").Tokenise();
+        Assert.Equal(TokenType.Input, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Semicolon_ReturnsCorrectToken()
+    {
+        var tokens = new Lexer(";").Tokenise();
+        Assert.Equal(TokenType.Semicolon, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Input_Bare_ReturnsCorrectTokens()
+    {
+        // INPUT name$
+        var tokens = new Lexer("INPUT name$").Tokenise();
+        Assert.Equal(TokenType.Input, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("name$", tokens[1].Value);
+    }
+
+    [Fact]
+    public void Lex_Input_WithPrompt_ReturnsCorrectTokens()
+    {
+        // INPUT "Enter name"; name$
+        var tokens = new Lexer("INPUT \"Enter name\"; name$").Tokenise();
+        Assert.Equal(TokenType.Input, tokens[0].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[1].Type);
+        Assert.Equal("Enter name", tokens[1].Value);
+        Assert.Equal(TokenType.Semicolon, tokens[2].Type);
+        Assert.Equal(TokenType.Identifier, tokens[3].Type);
+        Assert.Equal("name$", tokens[3].Value);
+    }
+
 }

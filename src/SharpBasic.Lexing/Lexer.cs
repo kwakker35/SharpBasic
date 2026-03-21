@@ -171,6 +171,14 @@ public class Lexer
                     }
                     tokens.Add(new Token(TokenType.Comma, "", _line, _col));
                     break;
+                case ';':
+                    if (token.Length > 0)
+                    {
+                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
+                        token = new();
+                    }
+                    tokens.Add(new Token(TokenType.Semicolon, "", _line, _col));
+                    break;
                 default:
                     if (char.IsDigit(Current))
                     {
@@ -255,6 +263,7 @@ public class Lexer
             "FALSE" => TokenType.False,
             "DIM" => TokenType.Dim,
             "MOD" => TokenType.Mod,
+            "INPUT" => TokenType.Input,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?
                         TokenType.Identifier : TokenType.Unknown
         };

@@ -997,4 +997,42 @@ public class ParserTests
         Assert.Equal(TokenType.Minus, unary.Operator.Type);
         Assert.IsType<IdentifierExpression>(unary.Operand);
     }
+
+    [Fact]
+    public void Parser_Parses_Input_Bare()
+    {
+        // INPUT name$
+        var tokens = new List<Token>
+        {
+            new(TokenType.Input, "", 1, 1),
+            new(TokenType.Identifier, "name$", 1, 7),
+            new(TokenType.Eof, "", 1, 12)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<InputStatement>(success.Program.Statements[0]);
+        Assert.Equal("name$", stmt.Target.Name);
+        Assert.Null(stmt.Prompt);
+    }
+
+    [Fact]
+    public void Parser_Parses_Input_With_Prompt()
+    {
+        // INPUT "Enter name"; name$
+        var tokens = new List<Token>
+        {
+            new(TokenType.Input, "", 1, 1),
+            new(TokenType.StringLiteral, "Enter name", 1, 7),
+            new(TokenType.Semicolon, "", 1, 19),
+            new(TokenType.Identifier, "name$", 1, 21),
+            new(TokenType.Eof, "", 1, 26)
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<InputStatement>(success.Program.Statements[0]);
+        Assert.Equal("name$", stmt.Target.Name);
+        Assert.Equal("Enter name", stmt.Prompt);
+    }
 }
