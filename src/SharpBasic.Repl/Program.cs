@@ -3,46 +3,67 @@ using SharpBasic.Evaluation;
 using SharpBasic.Lexing;
 using SharpBasic.Parsing;
 
-var table = new SymbolTable();
-Console.WriteLine("Welcome to SharpBASIC");
-while (true)
-{
-    Console.Write("> ");
-    var input = Console.ReadLine();
-    if (input is null || input.ToUpperInvariant() == "EXIT")
-        break;
+if (args.Length == 1)
+    return RunFile(args[0]);
 
-    var lexer = new Lexer(input);
-    var tokens = lexer.Tokenise();
-    var parser = new Parser(tokens);
-    var parseResult = parser.Parse();
+if (args.Length > 1)
+{
+    Console.Error.WriteLine("Usage: sharpbasic [file.bas]");
+    return 1;
+}
+
+return RunInteractive();
+
+static int Execute(string source, SymbolTable table)
+{
+    var parseResult = new Parser(new Lexer(source).Tokenise()).Parse();
 
     if (parseResult is ParseFailure pf)
     {
-        Console.WriteLine("One or more parse errors found:");
         foreach (var diagnostic in pf.Diagnostics)
-        {
-            Console.WriteLine(diagnostic.ToString());
-        }
-        continue;
+            Console.Error.WriteLine(diagnostic.ToString());
+        return 1;
     }
-    else
+
+    var evalResult = new Evaluator(((ParseSuccess)parseResult).Program, table).Evaluate();
+    if (evalResult is EvalFailure ef)
     {
-        var ps = (ParseSuccess)parseResult;
-        var evaluator = new Evaluator(ps.Program, table);
-        var evalResult = evaluator.Evaluate();
-        if (evalResult is EvalFailure ef)
-        {
-            Console.WriteLine("One or more evaluation errors found:");
-            foreach (var diagnostic in ef.Diagnostics)
-            {
-                Console.WriteLine(diagnostic.ToString());
-            }
-            continue;
-        }
-        else if (evalResult is EvalSuccess es && es.Value is not VoidValue)
-        {
-            //do someting later with other value types?
-        }
+        foreach (var diagnostic in ef.Diagnostics)
+            Console.Error.WriteLine(diagnostic.ToString());
+        return 1;
     }
+
+    return 0;
+}
+
+static int RunFile(string path)
+{
+    if (!File.Exists(path))
+    {
+        Console.Error.WriteLine($"Error: file not found: {path}");
+        return 1;
+    }
+    if (!path.EndsWith(".bas", StringComparison.OrdinalIgnoreCase))
+    {
+        Console.Error.WriteLine("Error: expected a .bas file");
+        return 1;
+    }
+
+    return Execute(File.ReadAllText(path), new SymbolTable());
+}
+
+static int RunInteractive()
+{
+    var table = new SymbolTable();
+    Console.WriteLine("Welcome to SharpBASIC");
+    while (true)
+    {
+        Console.Write("> ");
+        var input = Console.ReadLine();
+        if (input is null || input.ToUpperInvariant() == "EXIT")
+            break;
+
+        Execute(input, table);
+    }
+    return 0;
 }
