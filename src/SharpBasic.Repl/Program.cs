@@ -37,6 +37,30 @@ static int Execute(string source, SymbolTable table)
     return 0;
 }
 
+static void PrintHelp()
+{
+    Console.WriteLine();
+    Console.WriteLine("REPL commands:");
+    Console.WriteLine("  HELP    Show this help");
+    Console.WriteLine("  EXIT    Quit the REPL");
+    Console.WriteLine();
+    Console.WriteLine("Built-in functions:");
+    Console.WriteLine("  LEN(s)          Length of string");
+    Console.WriteLine("  MID$(s,n,l)     Substring");
+    Console.WriteLine("  LEFT$(s,n)      Left n characters");
+    Console.WriteLine("  RIGHT$(s,n)     Right n characters");
+    Console.WriteLine("  UPPER$(s)       Uppercase");
+    Console.WriteLine("  LOWER$(s)       Lowercase");
+    Console.WriteLine("  TRIM$(s)        Trim whitespace");
+    Console.WriteLine("  STR$(n)         Number to string");
+    Console.WriteLine("  VAL(s)          String to number");
+    Console.WriteLine("  INT(n)          Floor to integer");
+    Console.WriteLine("  ABS(n)          Absolute value");
+    Console.WriteLine("  RND()           Random float 0..1");
+    Console.WriteLine("  TYPENAME(v)     Type name of value");
+    Console.WriteLine();
+}
+
 static int RunFile(string path)
 {
     if (!File.Exists(path))
@@ -58,7 +82,7 @@ static int RunInteractive()
     var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
     var table = new SymbolTable();
     Console.WriteLine($"SharpBASIC {version}");
-    Console.WriteLine("(c) 2026 Chris Grove (@kwakker35)  MIT Licence");
+    Console.WriteLine("(c) 2026 Chris Grove  MIT Licence");
     Console.WriteLine("Type HELP for commands, EXIT to quit.");
     while (true)
     {
@@ -66,6 +90,12 @@ static int RunInteractive()
         var input = Console.ReadLine();
         if (input is null || input.ToUpperInvariant() == "EXIT")
             break;
+
+        if (input.ToUpperInvariant() == "HELP")
+        {
+            PrintHelp();
+            continue;
+        }
 
         Execute(input, table);
     }

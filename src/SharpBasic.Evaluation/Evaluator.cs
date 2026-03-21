@@ -67,7 +67,8 @@ public class Evaluator(
                             args[0] is FloatValue fv ?
                             new FloatValue(Math.Sqrt(fv.V))
                             : null,
-        ["RND"] = args => new FloatValue(Random.Shared.NextDouble())
+        ["RND"] = args => new FloatValue(Random.Shared.NextDouble()),
+        ["TYPENAME"] = args => new StringValue(args[0].TypeName)
     };
 
     public EvalResult Evaluate()
