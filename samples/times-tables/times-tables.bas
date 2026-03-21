@@ -1,0 +1,12 @@
+REM Times tables — nested FOR loops
+
+PRINT "=== Times Tables (1-12) ==="
+PRINT ""
+
+FOR i = 1 TO 12
+    FOR j = 1 TO 12
+        LET product AS INTEGER = i * j
+        PRINT STR$(i) & " x " & STR$(j) & " = " & STR$(product)
+    NEXT j
+    PRINT ""
+NEXT i
