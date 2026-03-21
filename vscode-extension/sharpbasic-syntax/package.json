@@ -23,7 +23,7 @@
           "sharpbasic"
         ],
         "extensions": [
-          ".bas"
+          ".sbx"
         ],
         "configuration": "./language-configuration.json"
       }

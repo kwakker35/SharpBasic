@@ -18,7 +18,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>sharpbasic</ToolCommandName>
     <PackageId>SharpBasic</PackageId>
-    <Description>A modern BASIC-inspired tree-walking interpreter. Run .bas files or launch the interactive REPL.</Description>
+    <Description>A modern BASIC-inspired tree-walking interpreter. Run .sbx files or launch the interactive REPL.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/kwakker35/SharpBasic</RepositoryUrl>
   </PropertyGroup>

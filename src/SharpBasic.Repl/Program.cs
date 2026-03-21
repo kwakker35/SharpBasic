@@ -9,7 +9,7 @@ if (args.Length == 1)
 
 if (args.Length > 1)
 {
-    Console.Error.WriteLine("Usage: sharpbasic [file.bas]");
+    Console.Error.WriteLine("Usage: sharpbasic [file.sbx]");
     return 1;
 }
 
@@ -68,9 +68,9 @@ static int RunFile(string path)
         Console.Error.WriteLine($"Error: file not found: {path}");
         return 1;
     }
-    if (!path.EndsWith(".bas", StringComparison.OrdinalIgnoreCase))
+    if (!path.EndsWith(".sbx", StringComparison.OrdinalIgnoreCase))
     {
-        Console.Error.WriteLine("Error: expected a .bas file");
+        Console.Error.WriteLine("Error: expected a .sbx file");
         return 1;
     }
 
