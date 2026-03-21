@@ -1,0 +1,69 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SharpBASIC",
+  "scopeName": "source.sharpbasic",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#numeric" },
+    { "include": "#keyword-control" },
+    { "include": "#keyword-other" },
+    { "include": "#keyword-operator" },
+    { "include": "#storage-type" },
+    { "include": "#constant-language" },
+    { "include": "#builtin-function" },
+    { "include": "#identifier" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.rem.sharpbasic",
+      "match": "(?i)\\bREM\\b.*$"
+    },
+    "string": {
+      "name": "string.quoted.double.sharpbasic",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": []
+    },
+    "numeric": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.sharpbasic",
+          "match": "\\b[0-9]+\\.[0-9]+\\b"
+        },
+        {
+          "name": "constant.numeric.integer.sharpbasic",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "keyword-control": {
+      "name": "keyword.control.sharpbasic",
+      "match": "(?i)\\b(IF|THEN|ELSE|END|WHILE|WEND|FOR|TO|STEP|NEXT|RETURN|CALL)\\b"
+    },
+    "keyword-other": {
+      "name": "keyword.other.sharpbasic",
+      "match": "(?i)\\b(PRINT|LET|DIM|INPUT|SUB|FUNCTION|AS)\\b"
+    },
+    "keyword-operator": {
+      "name": "keyword.operator.word.sharpbasic",
+      "match": "(?i)\\b(AND|OR|NOT|MOD)\\b"
+    },
+    "storage-type": {
+      "name": "storage.type.sharpbasic",
+      "match": "(?i)\\b(INTEGER|FLOAT|STRING|BOOLEAN)\\b"
+    },
+    "constant-language": {
+      "name": "constant.language.sharpbasic",
+      "match": "(?i)\\b(TRUE|FALSE)\\b"
+    },
+    "builtin-function": {
+      "name": "support.function.builtin.sharpbasic",
+      "match": "(?i)\\b(LEN|MID\\$|LEFT\\$|RIGHT\\$|TRIM\\$|UPPER\\$|LOWER\\$|STR\\$|INT|VAL|ABS|SQR|RND|TYPENAME)(?=\\s*\\()"
+    },
+    "identifier": {
+      "name": "variable.other.sharpbasic",
+      "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\$?\\b"
+    }
+  }
+}

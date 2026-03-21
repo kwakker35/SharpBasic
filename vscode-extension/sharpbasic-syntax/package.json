@@ -1,0 +1,39 @@
+{
+  "name": "sharpbasic-syntax",
+  "displayName": "SharpBASIC",
+  "description": "Syntax highlighting for SharpBASIC (.bas) files",
+  "version": "0.1.0",
+  "publisher": "kwakker35",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kwakker35/SharpBasic"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "sharpbasic",
+        "aliases": [
+          "SharpBASIC",
+          "sharpbasic"
+        ],
+        "extensions": [
+          ".bas"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "sharpbasic",
+        "scopeName": "source.sharpbasic",
+        "path": "./syntaxes/sharpbasic.tmLanguage.json"
+      }
+    ]
+  }
+}
