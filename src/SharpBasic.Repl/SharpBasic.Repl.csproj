@@ -11,6 +11,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>sharpbasic</AssemblyName>
+    <Version>0.1.0</Version>
+    <Authors>Chris Grove</Authors>
+    <Copyright>Copyright (c) 2026 Chris Grove</Copyright>
   </PropertyGroup>
 
 </Project>

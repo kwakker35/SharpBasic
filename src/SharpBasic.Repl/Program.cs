@@ -1,3 +1,4 @@
+using System.Reflection;
 using SharpBasic.Ast;
 using SharpBasic.Evaluation;
 using SharpBasic.Lexing;
@@ -54,8 +55,11 @@ static int RunFile(string path)
 
 static int RunInteractive()
 {
+    var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.1.0";
     var table = new SymbolTable();
-    Console.WriteLine("Welcome to SharpBASIC");
+    Console.WriteLine($"SharpBASIC {version}");
+    Console.WriteLine("(c) 2026 Chris Grove (@kwakker35)  MIT Licence");
+    Console.WriteLine("Type HELP for commands, EXIT to quit.");
     while (true)
     {
         Console.Write("> ");
