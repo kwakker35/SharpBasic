@@ -15,6 +15,12 @@
     <Version>0.1.0</Version>
     <Authors>Chris Grove</Authors>
     <Copyright>Copyright (c) 2026 Chris Grove</Copyright>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>sharpbasic</ToolCommandName>
+    <PackageId>SharpBasic</PackageId>
+    <Description>A modern BASIC-inspired tree-walking interpreter. Run .bas files or launch the interactive REPL.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/kwakker35/SharpBasic</RepositoryUrl>
   </PropertyGroup>
 
 </Project>

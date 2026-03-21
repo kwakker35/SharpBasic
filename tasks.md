@@ -16,6 +16,7 @@ Current phase and active task list. Update as you progress.
 | 4 | `feat/phase10-input` | `INPUT` statement — Lexer token, AST node, Parser, Evaluator (`Console.ReadLine`) | ✅ Complete — merged to `main` |
 | 5 | `feat/phase10-help` | REPL `help` command — lists REPL commands and available built-in functions | ✅ Complete — merged to `main` |
 | 6 | `feat/vscode-bas-grammar` | VS Code TextMate grammar — `.vsix` syntax highlighter for `.bas` files | ✅ Complete — merged to `main` |
+| 7 | `feat/dotnet-global-tool` | `install.ps1` + `PackAsTool` — compile and install `sharpbasic` as a .NET global tool | ⏳ Built — awaiting review |
 
 ---
 
