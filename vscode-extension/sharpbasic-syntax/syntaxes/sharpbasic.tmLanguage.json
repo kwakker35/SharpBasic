@@ -17,8 +17,7 @@
   "repository": {
     "comment": {
       "name": "comment.line.rem.sharpbasic",
-      "begin": "(?i)\\bREM\\b",
-      "end": "$"
+      "match": "(?i)\\bREM\\b.*$"
     },
     "string": {
       "name": "string.quoted.double.sharpbasic",
