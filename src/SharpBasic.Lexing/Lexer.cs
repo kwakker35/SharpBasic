@@ -277,6 +277,7 @@ public class Lexer
             "TRUE" => TokenType.True,
             "FALSE" => TokenType.False,
             "DIM" => TokenType.Dim,
+            "CONST" => TokenType.Const,
             "MOD" => TokenType.Mod,
             "INPUT" => TokenType.Input,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?

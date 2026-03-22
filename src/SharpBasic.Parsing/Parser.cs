@@ -6,6 +6,7 @@ public class Parser(IReadOnlyList<Token> tokens)
 {
     private readonly IReadOnlyList<Token> _tokens = tokens;
     private int _pos = 0;
+    private bool _inSubOrFunction = false;
 
     private readonly List<Diagnostic> _diagnostics = [];
 
@@ -168,6 +169,9 @@ public class Parser(IReadOnlyList<Token> tokens)
                 break;
             case TokenType.Dim:
                 AddStatement(target, ParseDimStatement());
+                break;
+            case TokenType.Const:
+                AddStatement(target, ParseConstStatement());
                 break;
             case TokenType.Input:
                 AddStatement(target, ParseInputStatement());
@@ -420,6 +424,67 @@ public class Parser(IReadOnlyList<Token> tokens)
         );
     }
 
+    private ParseStatementResult ParseConstStatement()
+    {
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        if (_inSubOrFunction)
+        {
+            Advance(); // consume CONST so the body loop can progress
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    "CONST declarations are not allowed inside SUB or FUNCTION.",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        Advance(); //consume CONST
+
+        var err = ExpectToken(TokenType.Identifier, "Identifier after CONST");
+        if (err is not null) return err;
+
+        var nameToken = Current;
+        Advance(); //consume Identifier
+
+        err = ExpectToken(TokenType.Eq, "= after CONST <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume =
+
+        var valueExpr = ParseExpression();
+
+        if (valueExpr is null)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    "Expected a literal value after CONST =.",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        if (valueExpr is not IntLiteralExpression &&
+            valueExpr is not FloatLiteralExpression &&
+            valueExpr is not StringLiteralExpression &&
+            valueExpr is not BoolLiteralExpression)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    loc.Line,
+                    loc.Col,
+                    "CONST value must be a literal (integer, float, string, or boolean).",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        return new ParseStatementSuccess(new ConstStatement(nameToken, valueExpr, loc));
+    }
+
     private Expression? ParseArrayAccessExpression()
     {
         ParseStatementFailure? err;
@@ -662,11 +727,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             Advance(); //consume NewLine
 
         //break on END
+        _inSubOrFunction = true;
         while (Current.Type is not TokenType.End &&
                 Current.Type is not TokenType.Eof)
         {
             ParseStatement(body);
         }
+        _inSubOrFunction = false;
 
         //expecting END FUNCTION
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Function)
@@ -766,11 +833,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             Advance(); //consume NewLine
 
         //break on END
+        _inSubOrFunction = true;
         while (Current.Type is not TokenType.End &&
                 Current.Type is not TokenType.Eof)
         {
             ParseStatement(body);
         }
+        _inSubOrFunction = false;
 
         //expecting END SUB
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Sub)

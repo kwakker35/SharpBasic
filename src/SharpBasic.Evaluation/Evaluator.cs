@@ -155,6 +155,7 @@ public class Evaluator(
             DimStatement ds => EvaluateDimStatement(ds),
             ArrayAssignStatement aas => EvaluateArrayAssignStatement(aas),
             InputStatement ins => EvaluateInputStatement(ins),
+            ConstStatement cs => EvaluateConstStatement(cs),
             _
                 => new EvalFailure(
                     [
@@ -250,6 +251,19 @@ public class Evaluator(
     private EvalResult EvaluateLetStatement(LetStatement l)
     {
         var ident = l.Identifier.Value;
+
+        if (_table.IsConst(ident))
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        l.Location?.Line ?? 0,
+                        l.Location?.Col ?? 0,
+                        $"Cannot assign to CONST '{ident}'.",
+                        DiagnosticSeverity.Error
+                    )
+                ]
+            );
+
         var valueRes = EvaluateExpression(l.Value);
 
         if (valueRes is EvalFailure)
@@ -267,6 +281,44 @@ public class Evaluator(
                     l.Location?.Line ?? 0,
                     l.Location?.Col ?? 0,
                     $"Value assigned to '{l.Identifier.Value}' was null.",
+                    DiagnosticSeverity.Error
+                )
+            ]
+        );
+    }
+
+    private EvalResult EvaluateConstStatement(ConstStatement cs)
+    {
+        var name = cs.Identifier.Value;
+
+        if (_table.IsConst(name))
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        cs.Location?.Line ?? 0,
+                        cs.Location?.Col ?? 0,
+                        $"Cannot redefine CONST '{name}'.",
+                        DiagnosticSeverity.Error
+                    )
+                ]
+            );
+
+        var valueRes = EvaluateExpression(cs.Value);
+
+        if (valueRes is EvalFailure) return valueRes;
+
+        if (valueRes is EvalSuccess es && es.Value is not null)
+        {
+            _table.SetConst(name, es.Value);
+            return new EvalSuccess(new VoidValue());
+        }
+
+        return new EvalFailure(
+            [
+                new Diagnostic(
+                    cs.Location?.Line ?? 0,
+                    cs.Location?.Col ?? 0,
+                    $"Value for CONST '{name}' was null.",
                     DiagnosticSeverity.Error
                 )
             ]

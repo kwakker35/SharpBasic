@@ -536,4 +536,83 @@ public class StdlibTests
     var output = RunHelper.Run("PRINT CHR$(TRUE)");
     Assert.Equal("", output);
   }
+
+  // --- CONST declaration (happy path) ---
+
+  [Fact]
+  public void Const_Integer_Can_Be_Read()
+  {
+    var output = RunHelper.Run("CONST MAX = 10\nPRINT MAX");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void Const_String_Can_Be_Read()
+  {
+    var output = RunHelper.Run("CONST GREETING = \"hello\"\nPRINT GREETING");
+    Assert.Equal("hello", output);
+  }
+
+  [Fact]
+  public void Const_Float_Can_Be_Read()
+  {
+    var output = RunHelper.Run("CONST PI = 3.14\nPRINT PI");
+    Assert.Equal("3.14", output);
+  }
+
+  [Fact]
+  public void Const_Bool_True_Can_Be_Read()
+  {
+    var output = RunHelper.Run("CONST FLAG = TRUE\nPRINT FLAG");
+    Assert.Equal("True", output);
+  }
+
+  [Fact]
+  public void Const_Bool_False_Can_Be_Read()
+  {
+    var output = RunHelper.Run("CONST FLAG = FALSE\nPRINT FLAG");
+    Assert.Equal("False", output);
+  }
+
+  [Fact]
+  public void Const_Can_Be_Used_In_Expression()
+  {
+    var output = RunHelper.Run("CONST BASE = 5\nPRINT BASE * 3");
+    Assert.Equal("15", output);
+  }
+
+  [Fact]
+  public void Const_Is_Visible_Inside_Sub()
+  {
+    var code = """
+      CONST LIMIT = 100
+      SUB ShowLimit()
+        PRINT LIMIT
+      END SUB
+      CALL ShowLimit()
+      """;
+    var output = RunHelper.Run(code);
+    Assert.Equal("100", output);
+  }
+
+  [Fact]
+  public void Const_Is_Visible_Inside_Function()
+  {
+    var code = """
+      CONST FACTOR = 3
+      FUNCTION Triple(n AS INTEGER) AS INTEGER
+        RETURN n * FACTOR
+      END FUNCTION
+      PRINT Triple(4)
+      """;
+    var output = RunHelper.Run(code);
+    Assert.Equal("12", output);
+  }
+
+  [Fact]
+  public void Const_Can_Be_Concatenated_With_String()
+  {
+    var output = RunHelper.Run("CONST PREFIX = \"Hello\"\nPRINT PREFIX & \" World\"");
+    Assert.Equal("Hello World", output);
+  }
 }
