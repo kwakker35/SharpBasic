@@ -58,7 +58,9 @@ Source files are read as text. Line endings are normalised at load time: `\r\n` 
 
 ### 2.2 Case Sensitivity
 
-**Keywords are case-insensitive.** `PRINT`, `Print`, and `print` are all valid. The lexer normalises keywords to upper-case internally via `ToUpperInvariant()`. Identifiers follow the same rule — `myVar` and `MYVAR` resolve to the same symbol at runtime (the identifier token preserves its original casing, but the symbol table key comparison is case-preserving; be consistent to avoid surprises).
+**Keywords are case-insensitive.** `PRINT`, `Print`, and `print` are all valid. The lexer normalises keywords to upper-case internally via `ToUpperInvariant()`.
+
+**Identifiers are case-sensitive.** `myVar` and `MYVAR` are two distinct symbols at runtime. The symbol table uses a case-sensitive key. Always use consistent casing for identifiers throughout your program.
 
 ### 2.3 Whitespace and Newlines
 
@@ -78,6 +80,8 @@ REM
 
 The last form — `REM` alone on a line with nothing after it — is also valid and treated as an empty comment.
 
+> **Gotcha:** `REM` recognition requires a space, newline, or another token boundary after the word. If a source file ends with the bare text `REM` and no trailing newline or space, the lexer flushes the token as an `Identifier` and the parser reports an error. Always end source files with a trailing newline.
+
 ### 2.5 Line Continuation
 
 There is **no line-continuation character**. Each logical statement must fit on one physical line (or be a multi-line block construct like `IF`/`FOR`/`WHILE`/`SUB`/`FUNCTION`).
@@ -87,10 +91,10 @@ There is **no line-continuation character**. Each logical statement must fit on 
 All operators have dedicated lexer branches. Surrounding spaces are optional for every operator:
 
 ```
-LET x = 5       ' valid
-LET x=5         ' also valid
-LET y = 3+4     ' valid
-LET z = a<b     ' valid
+LET x = 5
+LET x=5
+LET y = 3+4
+LET z = a<b
 ```
 
 ---
@@ -147,12 +151,15 @@ SharpBASIC uses a lexically-chained symbol table. Each SUB and FUNCTION call cre
 LET x = 10
 
 SUB ShowX()
-    PRINT x         ' reads x from outer scope → prints 10
-    LET x = 99      ' writes x in LOCAL scope only
+    REM can read x from the outer scope
+    PRINT x
+    REM LET writes to LOCAL scope only - outer x is unchanged
+    LET x = 99
 END SUB
 
 CALL ShowX()
-PRINT x             ' still 10 — outer x was not mutated
+REM still prints 10 - outer x was not mutated
+PRINT x
 ```
 
 ---
@@ -187,8 +194,10 @@ Arrays are zero-initialised on declaration:
 Array elements are accessed with square bracket notation. Indices are 0-based.
 
 ```
-PRINT scores[0]             ' read element 0
-LET scores[3] = 42          ' write element 3
+REM read element 0
+PRINT scores[0]
+REM write element 3
+LET scores[3] = 42
 ```
 
 The `LET` keyword is required for array element assignment. Note the use of `LET name[index] = value` syntax, not `name[index] = value`.
@@ -202,6 +211,8 @@ Supplied index {idx} is outside of the range 0-{size} defined for the array: {na
 ```
 
 The valid index range is `0` to `size - 1`. Any access or assignment using an index outside this range produces a clean diagnostic — it does not crash.
+
+> **Note:** The upper bound in the error message is the declared `size` (e.g. `0-5` for a 5-element array). This is the **exclusive** limit; the last valid index is `size - 1`.
 
 ---
 
@@ -232,8 +243,10 @@ Division by zero produces a runtime error: *"Attempted to divide by zero."*
 `&` calls `.ToString()` on both sides, so any value type can be concatenated:
 
 ```
-LET msg = "Count: " & 42       ' → "Count: 42"
-LET msg = TRUE & " is true"    ' → "True is true"
+REM results in "Count: 42"
+LET msg = "Count: " & 42
+REM results in "True is true"
+LET msg = TRUE & " is true"
 ```
 
 `+` does **not** concatenate strings. Applying `+` to two `StringValue` operands is a runtime error.
@@ -251,7 +264,7 @@ Produce a `Boolean` result.
 | `<=` | Less than or equal |
 | `>=` | Greater than or equal |
 
-Numeric comparisons work on both `Integer` and `Float`. String comparisons support only `=` and `<>` (reference equality of the string value). Applying `<`, `>`, `<=`, or `>=` to strings is a runtime error.
+Numeric comparisons work on both `Integer` and `Float`. String comparisons support only `=` and `<>` (value equality — two strings with identical content compare equal). Applying `<`, `>`, `<=`, or `>=` to strings is a runtime error.
 
 ### 6.4 Logical Operators
 
@@ -349,6 +362,8 @@ NEXT var
 
 > **Gotcha:** The loop counter is stored as `IntValue((int)i)` every iteration, even when `start`, `limit`, or `step` are floats. Sub-integer step values are silently truncated to int in the symbol table, but the internal accumulator `i` remains a `double`. Use `STEP` with integer values to avoid surprising counter values.
 
+> **Gotcha:** `start`, `limit`, and `step` must evaluate to `Integer` or `Float`. Supplying a `String` or `Boolean` expression for any of these causes an unhandled exception that halts the interpreter.
+
 **Examples:**
 
 ```
@@ -405,7 +420,7 @@ END SUB
 CALL name(arg1, arg2, ...)
 ```
 
-Arguments are expressions evaluated in the caller's scope before the new local scope is created (pass-by-value). Arguments are positional and must match parameter count exactly (a count mismatch will produce an `IndexOutOfRangeException` at runtime).
+Arguments are expressions evaluated in the caller's scope before the new local scope is created (pass-by-value). Arguments are positional; the argument count must match the parameter count exactly. Too few arguments produces a runtime error diagnostic; extra arguments beyond the parameter count are silently ignored.
 
 ### Return
 
@@ -418,6 +433,14 @@ A fresh `SymbolTable` is created with the caller's table as parent. The SUB can 
 ### Name restriction
 
 A SUB name must not match any built-in function name (case-insensitive). Attempting to declare such a SUB produces a runtime error at the hoisting phase.
+
+### Declaration order (hoisting)
+
+All `SUB` and `FUNCTION` declarations are **hoisted**: they are registered before any top-level statement executes. A `SUB` may therefore be declared anywhere in the file — even after the `CALL` statement that invokes it.
+
+### Case sensitivity
+
+SUB names are **case-sensitive** at call sites. `CALL Greet()` and `CALL greet()` refer to different subs. Declare and call with consistent casing.
 
 **Example:**
 
@@ -465,7 +488,7 @@ Exits the function and delivers the value back to the call site. The declared re
 
 ### Scope and name restriction
 
-Same rules as SUBs: new local scope with parent chain, caller variables readable but not writable, name must not collide with built-ins.
+Same rules as SUBs: new local scope with parent chain, caller variables readable but not writable, name must not collide with built-ins. FUNCTION declarations are hoisted along with SUBs — a function may be declared after the expression that calls it. FUNCTION names are **case-sensitive** at call sites.
 
 **Recursive example:**
 
@@ -500,6 +523,8 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 
 > **`MID$` uses 1-based indexing.** `MID$("abc", 1, 1)` → `"a"`, not `MID$("abc", 0, 1)`.
 
+> **Gotcha:** `MID$`, `LEFT$`, and `RIGHT$` perform no internal bounds checking. Providing a `length` or `n` value that exceeds the string length (e.g. `LEFT$("hi", 10)`) throws an unhandled C# `ArgumentOutOfRangeException` that halts the interpreter. Validate string lengths before calling these functions.
+
 ### Numeric functions
 
 | Signature | Return type | Description | Example |
@@ -519,6 +544,8 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 | `VAL(s)` | `Integer` or `Float` | Parse string to number; tries `int.Parse` first, then `double.Parse` | `VAL("42")` → `42`, `VAL("3.14")` → `3.14` |
 
 `VAL` returns `null` (which surfaces as a failure) if the string cannot be parsed as either integer or float.
+
+> **Gotcha (`STR$`):** `STR$` converts a `Float` via C# `double.ToString()` **without** an explicit culture argument. On systems where the decimal separator is `,` (e.g. many European locales), `STR$(3.14)` returns `"3,14"`. `PRINT` and `&` are not affected — `FloatValue.ToString()` uses invariant culture internally. If portability matters, avoid relying on `STR$` for float-to-string conversion.
 
 ### Diagnostic function
 
@@ -601,7 +628,8 @@ All runtime errors produce a `Diagnostic` with a line/column location and messag
 | SUB not found | `Sub: {name} not found.` |
 | FUNCTION not found | `Function: {name} not found.` |
 | FUNCTION with no executed RETURN | `Missing RETURN statement in FUNCTION.` |
-| SUB or FUNCTION name matches a built-in | `SUB/FUNCTION {name} is the name of a built in function and cannot be reused.` |
+| SUB name matches a built-in | `SUB {name} is the name of a built in function and cannot be reused.` |
+| FUNCTION name matches a built-in | `FUNCTION {name} is the name of a built in function and cannot be reused.` |
 | Unary `-` or `NOT` applied to wrong type | `Invalid Operator: {op} for type {type}.` |
 
 The REPL continues after an error (the symbol table is preserved). File runner exits with code `1` on any error.
