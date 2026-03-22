@@ -15,19 +15,22 @@ if ($Uninstall) {
 
 Write-Host "Building and installing sharpbasic as a .NET global tool..."
 
-# Pack the tool
-dotnet pack $projectPath --configuration Release --output "$PSScriptRoot\artifacts" -v quiet
+# Compute dev version: base version from csproj + short git hash suffix
+$baseVersion = ([xml](Get-Content $projectPath)).Project.PropertyGroup.Version
+$gitHash = git rev-parse --short HEAD 2>$null
+$devVersion = if ($gitHash) { "$baseVersion-dev.$gitHash" } else { $baseVersion }
+Write-Host "Version: $devVersion"
+
+# Pack the tool with dev version
+dotnet pack $projectPath --configuration Release --output "$PSScriptRoot\artifacts" -v quiet -p:Version=$devVersion
 if ($LASTEXITCODE -ne 0) { Write-Error "Pack failed."; exit 1 }
 
-# Install (or reinstall) from local package
+# Install from local package — uninstall first so version ordering never blocks an update
 $nupkg = Get-ChildItem "$PSScriptRoot\artifacts\SharpBasic.*.nupkg" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $nupkg) { Write-Error "No .nupkg found in artifacts\."; exit 1 }
 
-dotnet tool install -g SharpBasic --add-source "$PSScriptRoot\artifacts" --version $nupkg.BaseName.Replace("SharpBasic.", "")
-if ($LASTEXITCODE -ne 0) {
-    # Already installed — update instead
-    dotnet tool update -g SharpBasic --add-source "$PSScriptRoot\artifacts"
-}
+dotnet tool uninstall -g SharpBasic 2>$null   # silent — fine if not yet installed
+dotnet tool install  -g SharpBasic --add-source "$PSScriptRoot\artifacts" --version $devVersion
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
