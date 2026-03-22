@@ -1,11 +1,11 @@
 # SharpBASIC Samples
 
-A collection of programs that showcase the SharpBASIC language, arranged in order of increasing complexity. Each sample has its own folder with a `.bas` source file and a `README.md` explaining what it teaches.
+A collection of programs that showcase the SharpBASIC language, arranged in order of increasing complexity. Each sample has its own folder with a `.sbx` source file and a `README.md` explaining what it teaches.
 
 Run any sample with:
 
 ```
-sharpbasic <sample-folder>/<sample-name>.bas
+sharpbasic <sample-folder>/<sample-name>.sbx
 ```
 
 ---
