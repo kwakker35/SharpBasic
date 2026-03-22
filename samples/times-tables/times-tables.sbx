@@ -5,7 +5,7 @@ PRINT ""
 
 FOR i = 1 TO 12
     FOR j = 1 TO 12
-        LET product AS INTEGER = i * j
+        LET product = i * j  REM FIXED: LET does not support AS TYPE annotation
         PRINT STR$(i) & " x " & STR$(j) & " = " & STR$(product)
     NEXT j
     PRINT ""

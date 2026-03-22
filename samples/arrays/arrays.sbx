@@ -20,17 +20,17 @@ NEXT i
 PRINT ""
 
 REM Calculate total and average
-LET total AS INTEGER = 0
+LET total = 0  REM FIXED: LET does not support AS TYPE annotation
 FOR i = 0 TO 4
     LET total = total + scores[i]
 NEXT i
 
-LET avg AS FLOAT = total / 5
+LET avg = total / 5  REM FIXED: LET does not support AS TYPE annotation
 PRINT "Total:   " & STR$(total)
 PRINT "Average: " & STR$(avg)
 
 REM Find highest score
-LET highest AS INTEGER = scores[0]
+LET highest = scores[0]  REM FIXED: LET does not support AS TYPE annotation
 FOR i = 1 TO 4
     IF scores[i] > highest THEN
         LET highest = scores[i]

@@ -21,10 +21,10 @@ LET wordList[9] = "BLAZE"
 LET wordList[10] = "CRIMP"
 LET wordList[11] = "DOWRY"
 
-LET secret AS STRING = wordList[INT(RND() * 12)]
-LET maxGuesses AS INTEGER = 6
-LET guessNum AS INTEGER = 0
-LET won AS BOOLEAN = FALSE
+LET secret = wordList[VAL(STR$(INT(RND() * 12)))]  REM FIXED: LET does not support AS TYPE annotation; INT returns Float so VAL(STR$(INT(n))) converts to Integer for array index
+LET maxGuesses = 6  REM FIXED: LET does not support AS TYPE annotation
+LET guessNum = 0  REM FIXED: LET does not support AS TYPE annotation
+LET won = FALSE  REM FIXED: LET does not support AS TYPE annotation
 
 REM -------------------------------------------------------
 REM FUNCTION: check if a string is exactly 5 alphabetic chars
@@ -34,14 +34,14 @@ FUNCTION IsValidGuess(g AS STRING) AS BOOLEAN
         RETURN FALSE
     END IF
     FOR k = 1 TO 5
-        LET ch AS STRING = MID$(g, k, 1)
-        LET isAlpha AS BOOLEAN = FALSE
+        LET ch = MID$(g, k, 1)  REM FIXED: LET does not support AS TYPE annotation
+        LET isAlpha = FALSE  REM FIXED: LET does not support AS TYPE annotation
         FOR a = 0 TO 25
             IF ch = MID$("ABCDEFGHIJKLMNOPQRSTUVWXYZ", a + 1, 1) THEN
                 LET isAlpha = TRUE
             END IF
         NEXT a
-        IF isAlpha = FALSE THEN
+        IF NOT isAlpha THEN  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
             RETURN FALSE
         END IF
     NEXT k
@@ -73,9 +73,9 @@ FUNCTION ScoreGuess(guess AS STRING, answer AS STRING) AS STRING
     REM Pass 2: yellows
     FOR k = 0 TO 4
         IF result[k] <> "G" THEN
-            LET gch AS STRING = MID$(guess, k + 1, 1)
+            LET gch = MID$(guess, k + 1, 1)  REM FIXED: LET does not support AS TYPE annotation
             FOR j = 0 TO 4
-                IF answerUsed[j] = FALSE THEN
+                IF NOT answerUsed[j] THEN  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
                     IF MID$(answer, j + 1, 1) = gch THEN
                         LET result[k] = "Y"
                         LET answerUsed[j] = TRUE
@@ -86,7 +86,7 @@ FUNCTION ScoreGuess(guess AS STRING, answer AS STRING) AS STRING
     NEXT k
 
     REM Build result string
-    LET score AS STRING = result[0] & result[1] & result[2] & result[3] & result[4]
+    LET score = result[0] & result[1] & result[2] & result[3] & result[4]  REM FIXED: LET does not support AS TYPE annotation
     RETURN score
 END FUNCTION
 
@@ -94,10 +94,10 @@ REM -------------------------------------------------------
 REM SUB: pretty-print a scored guess
 REM -------------------------------------------------------
 SUB PrintResult(guess AS STRING, score AS STRING)
-    LET line AS STRING = ""
+    LET line = ""  REM FIXED: LET does not support AS TYPE annotation
     FOR k = 0 TO 4
-        LET ch AS STRING = MID$(guess, k + 1, 1)
-        LET s AS STRING = MID$(score, k + 1, 1)
+        LET ch = MID$(guess, k + 1, 1)  REM FIXED: LET does not support AS TYPE annotation
+        LET s = MID$(score, k + 1, 1)  REM FIXED: LET does not support AS TYPE annotation
         IF s = "G" THEN
             LET line = line & "[" & ch & "]"
         ELSE
@@ -120,16 +120,16 @@ PRINT ""
 PRINT "Legend:  [X] correct position   (X) wrong position   .X. not in word"
 PRINT ""
 
-WHILE guessNum < maxGuesses AND won = FALSE
+WHILE guessNum < maxGuesses AND NOT won  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
     PRINT "Guess " & STR$(guessNum + 1) & " of " & STR$(maxGuesses) & ":"
     INPUT rawInput
-    LET guess AS STRING = UPPER$(TRIM$(rawInput))
+    LET guess = UPPER$(TRIM$(rawInput))  REM FIXED: LET does not support AS TYPE annotation
 
-    IF IsValidGuess(guess) = FALSE THEN
+    IF NOT IsValidGuess(guess) THEN  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
         PRINT "Please enter exactly 5 letters."
     ELSE
         LET guessNum = guessNum + 1
-        LET score AS STRING = ScoreGuess(guess, secret)
+        LET score = ScoreGuess(guess, secret)  REM FIXED: LET does not support AS TYPE annotation
         CALL PrintResult(guess, score)
         PRINT ""
 
@@ -139,7 +139,7 @@ WHILE guessNum < maxGuesses AND won = FALSE
     END IF
 WEND
 
-IF won = TRUE THEN
+IF won THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
     PRINT "Brilliant! You got it in " & STR$(guessNum) & " guess(es)."
 ELSE
     PRINT "Hard luck. The word was: " & secret

@@ -1,8 +1,8 @@
 REM Guess the number — WHILE loop, RND, and conditional logic
 
-LET secret AS INTEGER = INT(RND() * 100) + 1
-LET guess AS INTEGER = 0
-LET attempts AS INTEGER = 0
+LET secret = INT(RND() * 100) + 1  REM FIXED: LET does not support AS TYPE annotation
+LET guess = 0  REM FIXED: LET does not support AS TYPE annotation
+LET attempts = 0  REM FIXED: LET does not support AS TYPE annotation
 
 PRINT "=== Guess the Number ==="
 PRINT "I'm thinking of a number between 1 and 100."

@@ -6,14 +6,14 @@ PRINT ""
 
 PRINT "First number:"
 INPUT aStr
-LET a AS FLOAT = VAL(aStr)
+LET a = VAL(aStr)  REM FIXED: LET does not support AS TYPE annotation
 
 PRINT "Operator:"
 INPUT op
 
 PRINT "Second number:"
 INPUT bStr
-LET b AS FLOAT = VAL(bStr)
+LET b = VAL(bStr)  REM FIXED: LET does not support AS TYPE annotation
 
 PRINT ""
 

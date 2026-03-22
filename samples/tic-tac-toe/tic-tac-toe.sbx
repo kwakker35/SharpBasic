@@ -49,7 +49,7 @@ REM -------------------------------------------------------
 REM FUNCTION: check if the board is full (draw)
 REM -------------------------------------------------------
 FUNCTION IsBoardFull() AS BOOLEAN
-    LET full AS BOOLEAN = TRUE
+    LET full = TRUE  REM FIXED: LET does not support AS TYPE annotation
     FOR i = 0 TO 8
         IF board[i] = "X" OR board[i] = "O" THEN
         ELSE
@@ -66,30 +66,30 @@ PRINT "=== TIC-TAC-TOE ==="
 PRINT "Players: X and O"
 PRINT "Enter the cell number (1-9) shown on the board."
 
-LET currentMark AS STRING = "X"
-LET gameOver AS BOOLEAN = FALSE
+LET currentMark = "X"  REM FIXED: LET does not support AS TYPE annotation
+LET gameOver = FALSE  REM FIXED: LET does not support AS TYPE annotation
 
-WHILE gameOver = FALSE
+WHILE NOT gameOver  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
     CALL DrawBoard()
     PRINT "Player " & currentMark & ", choose a cell (1-9):"
     INPUT cellStr
-    LET cell AS INTEGER = VAL(cellStr)
+    LET cell = VAL(cellStr)  REM FIXED: LET does not support AS TYPE annotation
 
     IF cell < 1 OR cell > 9 THEN
         PRINT "Invalid choice. Enter a number from 1 to 9."
     ELSE
-        LET idx AS INTEGER = cell - 1
+        LET idx = cell - 1  REM FIXED: LET does not support AS TYPE annotation
         IF board[idx] = "X" OR board[idx] = "O" THEN
             PRINT "That cell is already taken."
         ELSE
             LET board[idx] = currentMark
 
-            IF CheckWin(currentMark) = TRUE THEN
+            IF CheckWin(currentMark) THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
                 CALL DrawBoard()
                 PRINT "Player " & currentMark & " wins!"
                 LET gameOver = TRUE
             ELSE
-                IF IsBoardFull() = TRUE THEN
+                IF IsBoardFull() THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
                     CALL DrawBoard()
                     PRINT "It's a draw!"
                     LET gameOver = TRUE

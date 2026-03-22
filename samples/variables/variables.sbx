@@ -1,14 +1,14 @@
 REM Demonstrates variable declaration and the four built-in types
 
-LET name AS STRING = "SharpBASIC"
-LET version AS FLOAT = 0.1
-LET year AS INTEGER = 2026
-LET isOpen AS BOOLEAN = TRUE
+LET name = "SharpBASIC"  REM FIXED: LET does not support AS TYPE annotation
+LET version = 0.1  REM FIXED: LET does not support AS TYPE annotation
+LET year = 2026  REM FIXED: LET does not support AS TYPE annotation
+LET isOpen = TRUE  REM FIXED: LET does not support AS TYPE annotation
 
 PRINT "Language: " & name
 PRINT "Version:  " & STR$(version)
 PRINT "Year:     " & STR$(year)
-PRINT "Open source: " & STR$(isOpen)
+PRINT "Open source: " & isOpen  REM FIXED: STR$ does not accept Boolean; use & for concatenation
 
 REM TYPENAME tells you the runtime type of any value
 PRINT "Type of name:    " & TYPENAME(name)
