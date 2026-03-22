@@ -15,6 +15,7 @@
 > - Deliverable 5 — 10-issue explanatory text (story beats, concept callouts, what to try)
 > - Deliverable 6 — Throne Room special text (post-combat beat, gold mechanic, crown sequence)
 > - Deliverable 7 — Gate resolution text (win text, death text, end screen)
+> - Deliverable 8 — Pre-build mechanic text (SEARCH interrupt, zombie disturbance, poison, Hollow Mage luck drain, Bound King refusals)
 >
 > **Key conventions used throughout:**
 > - State variants are labelled explicitly — (first visit), (revisit), (monster alive), (monster dead) etc.
@@ -1189,4 +1190,154 @@ Play again? (YES / NO)
 
 ---
 
-*End of asset file — Deliverables 1, 2, 3, 4, 5, 6, and 7. All content locked.*
+---
+
+## DELIVERABLE 8 — PRE-BUILD MECHANIC TEXT
+
+---
+
+### Poison Room Entry Message
+
+*The poison spreads further through your blood. You feel it costing you.*
+
+*(STAMINA -1 fires after this line)*
+
+---
+
+### Hollow Mage — Luck Drain at Zero
+
+*You feel the last of your luck leave you. Whatever happens next, it happens without fortune's favour.*
+
+*(Luck floors at zero. This line prints once when the drain fires and luck is already at zero. Silent thereafter.)*
+
+---
+
+### Bound King — SNEAK Refused
+
+*He is already looking at you.*
+
+---
+
+### Bound King — SEARCH Refused
+
+*Not here. Not with him watching.*
+
+---
+
+### SEARCH Interrupt — Fixed Monsters
+
+*These lines fire when the player attempts SEARCH while the named monster is alive in the room. Combat triggers immediately after the line prints. SKILL -1 applies to round 1, additive with any existing Lesser Terror.*
+
+---
+
+**Guardroom Brute — Room [2]**
+
+*The Brute hears the scrape of your boot before you've taken a step toward the wall. It turns with the speed of something that has been waiting for an excuse. You are out of time.*
+
+---
+
+**Skittering Horror — Room [6]**
+
+*The moment your hand touches the rubble the Horror is already moving. Not toward the sound — toward you. It has been still this whole time. It was never unaware.*
+
+---
+
+**Pit Guardian — Room [7]**
+
+*The Guardian does not hurry. It simply turns, raises its weapon, and begins walking toward you with the unhurried certainty of something that has done this before. You had your back to it. That was your mistake.*
+
+---
+
+**Hollow Mage — Room [9]**
+
+*The cold in the room doubles before you have touched anything. The luminescence fixes on you — steady now, no longer drifting. It knew the moment your attention shifted. It was waiting for exactly this.*
+
+---
+
+**Troll — Room [10]**
+
+*The small dark eyes find you the instant you crouch. It doesn't roar. It doesn't rush. It simply stands — and keeps standing, and keeps coming, with the patient certainty of something that has never needed to hurry.*
+
+---
+
+### SEARCH Interrupt — Wandering Zombie
+
+*These lines fire when the player attempts SEARCH while the zombie is in the room. Six options selected at random, each grounded in what is physically present in the room the zombie currently occupies. Combat triggers immediately after the line prints. SKILL -1 applies to round 1.*
+
+*The zombie does not think. It hears disturbance and moves toward it. The lines convey a predator responding to sound, not a creature reacting with intelligence.*
+
+---
+
+**Room [1] — Entry Hall**
+*(torch brackets, stone floor, iron gates)*
+
+1. *The scrape of your boot on stone is enough. The zombie turns toward the sound with the absolute certainty of a thing that has nothing else to do.*
+2. *You disturb the silence and the zombie disturbs you. It was closer than you thought.*
+3. *The creak of an iron bracket above you is all it takes. The zombie is already moving.*
+
+---
+
+**Room [2] — Guardroom**
+*(weapon racks, gouged floor, dark stain)*
+
+1. *Your hand catches the edge of an empty weapon rack. The clatter fills the room. The zombie's head swings toward it before the sound has finished.*
+2. *A boot finds the uneven stone near the dark stain. The sound is small. The zombie's response is not.*
+3. *The weapon rack shifts as you lean past it. One noise. Enough.*
+
+---
+
+**Room [3] — Armoury**
+*(iron brackets, bare hooks, the chest)*
+
+1. *A hook swings free from the wall as your shoulder catches it. The sound rings off the stone. The zombie turns with mechanical precision.*
+2. *The chest lid drops an inch under your hand. The sound is sharp and final. The zombie is already facing you.*
+3. *Iron on stone — your fumbling dislodges something from a bracket. The zombie does not hesitate.*
+
+---
+
+**Room [4] — The Crossroads**
+*(bare stone, four passages, worn floor)*
+
+1. *A loose stone shifts under your weight. In the silence of the crossroads it might as well be a shout. The zombie turns.*
+2. *Your search disturbs the dust that has settled here for decades. The zombie hears something in the disturbance you cannot.*
+3. *You scrape a heel on the worn floor. The sound carries down all four passages. The zombie chooses yours.*
+
+---
+
+**Room [6] — Collapsed Passage**
+*(rubble, fallen stone, dry bones)*
+
+1. *The rubble shifts under your hands — stone against stone, loud and irreversible. The zombie was on the other side of the collapse. It is no longer.*
+2. *A fragment of bone cracks under your knee. You freeze. The zombie does not.*
+3. *The fallen stone grinds as you test it. One sound. The zombie's head turns toward it with the patience of something that has been listening for exactly this.*
+
+---
+
+**Room [7] — The Pit**
+*(iron rail, stone floor, the shaft)*
+
+1. *Your hand finds the iron rail and the clang of metal rings out across the pit. The zombie turns toward it with predator's instinct.*
+2. *A loose stone skitters toward the shaft. You watch it fall. The zombie watches you.*
+3. *The rail vibrates under your grip. Enough vibration. Enough sound. The zombie is already moving.*
+
+---
+
+**Room [9] — The Cistern**
+*(stone channels, vaulted ceiling, loose stone recess)*
+
+1. *The loose stone shifts as you reach behind it. The sound of it is nothing — a whisper in the dark. The zombie hears whispers.*
+2. *Water drips from your hand onto the channel cover. The tap of it against stone is enough. The zombie's head swings toward you.*
+3. *The recess scrapes as you reach into it. Stone on stone, quiet and unmistakable. The zombie does not miss it.*
+
+---
+
+**Room [10] — The Underhall**
+*(dry bones along walls, old armour, high ceiling)*
+
+1. *Your foot finds a loose piece of old armour. The rattle of it fills the room and the zombie turns with absolute certainty — not toward the sound, toward you.*
+2. *Dry bones shift as you crouch near the wall. The sound is faint. The zombie does not need loud.*
+3. *A gauntlet shifts under your hand. Iron on stone, barely audible. The zombie was already turning before it finished.*
+
+---
+
+*End of asset file — Deliverables 1, 2, 3, 4, 5, 6, 7, and 8. All content locked.*

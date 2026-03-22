@@ -71,7 +71,7 @@ of code. When documents conflict, the hierarchy below determines which one wins.
 - No game text may be written from scratch — all strings come from `the-sunken-crown-content.md`.
 - The subroutine signatures defined in the technical architecture document are binding.
 - The state variable names defined in the state variable map are binding — do not rename them.
-- All item codes are locked — do not reassign them.
+- All item codes are locked — do not reassign them. Gold Bag is item code 11.
 
 ---
 
