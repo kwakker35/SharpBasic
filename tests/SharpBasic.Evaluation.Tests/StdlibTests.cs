@@ -307,4 +307,42 @@ public class StdlibTests
     var output = RunHelper.Run("LET s$ = \"  world  \"\nPRINT TRIM$(s$)");
     Assert.Equal("world", output);
   }
+
+  // --- Bug fix: locale-sensitive float parsing ---
+
+  [Fact]
+  public void Float_Literal_Parses_Correctly_Under_Comma_Decimal_Culture()
+  {
+    // In cultures where ',' is the decimal separator (e.g. de-DE),
+    // double.TryParse without InvariantCulture silently fails.
+    var original = System.Threading.Thread.CurrentThread.CurrentCulture;
+    try
+    {
+      System.Threading.Thread.CurrentThread.CurrentCulture =
+        new System.Globalization.CultureInfo("de-DE");
+      var output = RunHelper.Run("PRINT 3.14");
+      Assert.Equal("3.14", output);
+    }
+    finally
+    {
+      System.Threading.Thread.CurrentThread.CurrentCulture = original;
+    }
+  }
+
+  [Fact]
+  public void VAL_Parses_Float_String_Correctly_Under_Comma_Decimal_Culture()
+  {
+    var original = System.Threading.Thread.CurrentThread.CurrentCulture;
+    try
+    {
+      System.Threading.Thread.CurrentThread.CurrentCulture =
+        new System.Globalization.CultureInfo("de-DE");
+      var output = RunHelper.Run("PRINT VAL(\"3.14\")");
+      Assert.Equal("3.14", output);
+    }
+    finally
+    {
+      System.Threading.Thread.CurrentThread.CurrentCulture = original;
+    }
+  }
 }

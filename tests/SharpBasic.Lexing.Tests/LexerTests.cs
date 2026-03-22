@@ -686,4 +686,32 @@ public class LexerTests
         Assert.Equal("name$", tokens[3].Value);
     }
 
+    // --- Bug fix: = operator without surrounding spaces ---
+
+    [Fact]
+    public void Lex_Eq_Without_Surrounding_Spaces_Produces_Eq_Token()
+    {
+        // Bug: '=' had no dedicated case in the lexer switch, so LET x=5
+        // accumulated 'x=' into the buffer and produced TokenType.Unknown.
+        var input = "LET x=5";
+        var lexer = new Lexer(input);
+
+        var tokens = lexer.Tokenise();
+
+        Assert.Equal(TokenType.Let, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("x", tokens[1].Value);
+        Assert.Equal(TokenType.Eq, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal("5", tokens[3].Value);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lex_Assignment_Without_Spaces_Produces_No_Unknown_Tokens()
+    {
+        var tokens = new Lexer("LET x=5").Tokenise();
+        Assert.DoesNotContain(tokens, t => t.Type == TokenType.Unknown);
+    }
+
 }
