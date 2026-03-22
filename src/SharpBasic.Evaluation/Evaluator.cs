@@ -54,7 +54,10 @@ public class Evaluator(
                             : null,
         ["VAL"] = args => args[0] is StringValue sv ?
                             int.TryParse(sv.V, out int ir) ? new IntValue(ir) :
-                            double.TryParse(sv.V, out double dr) ? new FloatValue(dr)
+                            double.TryParse(sv.V,
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out double dr) ? new FloatValue(dr)
                             : null
                             : null,
         ["ABS"] = args => args[0] is IntValue iv ?
@@ -825,7 +828,7 @@ public class Evaluator(
         {
             var targetType = arrVal.ElementTypeName.ToUpperInvariant();
             var idx = iv.V;
-            if (idx < 0 || idx > arrVal.Items.Length)
+            if (idx < 0 || idx >= arrVal.Items.Length)
             {
                 return new EvalFailure(
                     [
@@ -922,7 +925,7 @@ public class Evaluator(
         if (idxExpr is EvalSuccess es && es.Value is IntValue iv)
         {
             var idx = iv.V;
-            if (idx < 0 || idx > arrVal.Items.Length)
+            if (idx < 0 || idx >= arrVal.Items.Length)
             {
                 return new EvalFailure(
                     [

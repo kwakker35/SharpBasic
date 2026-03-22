@@ -620,4 +620,33 @@ public class EvaluatorTests
         var result = RunHelper.RunResult("PRINT FALSE OR \"hello\"");
         Assert.IsType<EvalFailure>(result);
     }
+
+    // --- Bug fix: array bounds off-by-one ---
+
+    [Fact]
+    public void Array_Access_At_Index_Equal_To_Size_Returns_EvalFailure_Not_Exception()
+    {
+        // DIM arr[3] AS INTEGER → valid indices are 0, 1, 2.
+        // Index 3 equals Length and must produce a clean EvalFailure diagnostic,
+        // not an IndexOutOfRangeException from the C# runtime.
+        var result = RunHelper.RunResult("DIM arr[3] AS INTEGER\nPRINT arr[3]");
+        var failure = Assert.IsType<EvalFailure>(result);
+        Assert.Contains(failure.Diagnostics, d => d.Message.Contains("outside of the range"));
+    }
+
+    [Fact]
+    public void Array_Assign_At_Index_Equal_To_Size_Returns_EvalFailure_Not_Exception()
+    {
+        var result = RunHelper.RunResult("DIM arr[3] AS INTEGER\nLET arr[3] = 99");
+        var failure = Assert.IsType<EvalFailure>(result);
+        Assert.Contains(failure.Diagnostics, d => d.Message.Contains("outside of the range"));
+    }
+
+    [Fact]
+    public void Array_Access_At_Last_Valid_Index_Succeeds()
+    {
+        // Index 2 is the last valid index for a size-3 array.
+        var output = RunHelper.Run("DIM arr[3] AS INTEGER\nLET arr[2] = 42\nPRINT arr[2]");
+        Assert.Equal("42", output);
+    }
 }
