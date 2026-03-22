@@ -1,8 +1,8 @@
 {
   "name": "sharpbasic-syntax",
   "displayName": "SharpBASIC",
-  "description": "Syntax highlighting for SharpBASIC (.bas) files",
-  "version": "0.1.0",
+  "description": "Syntax highlighting for SharpBASIC (.sbx) files",
+  "version": "0.2.0",
   "publisher": "kwakker35",
   "engines": {
     "vscode": "^1.85.0"
@@ -34,6 +34,16 @@
         "scopeName": "source.sharpbasic",
         "path": "./syntaxes/sharpbasic.tmLanguage.json"
       }
-    ]
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "constant.numeric.sharpbasic",
+            "settings": { "foreground": "#4EC9B0" }
+          }
+        ]
+      }
+    }
   }
 }
