@@ -345,4 +345,98 @@ public class StdlibTests
       System.Threading.Thread.CurrentThread.CurrentCulture = original;
     }
   }
+
+  // --- TYPENAME ---
+
+  [Fact]
+  public void TYPENAME_Integer_Returns_Integer()
+  {
+    var output = RunHelper.Run("PRINT TYPENAME(42)");
+    Assert.Equal("Integer", output);
+  }
+
+  [Fact]
+  public void TYPENAME_Float_Returns_Float()
+  {
+    var output = RunHelper.Run("PRINT TYPENAME(3.14)");
+    Assert.Equal("Float", output);
+  }
+
+  [Fact]
+  public void TYPENAME_String_Returns_String()
+  {
+    var output = RunHelper.Run("PRINT TYPENAME(\"hello\")");
+    Assert.Equal("String", output);
+  }
+
+  [Fact]
+  public void TYPENAME_Boolean_Returns_Boolean()
+  {
+    var output = RunHelper.Run("PRINT TYPENAME(TRUE)");
+    Assert.Equal("Boolean", output);
+  }
+
+  [Fact]
+  public void TYPENAME_Can_Be_Used_In_Condition()
+  {
+    var source = "LET v = 42\nIF TYPENAME(v) = \"Integer\" THEN\nPRINT \"yes\"\nEND IF";
+    var output = RunHelper.Run(source);
+    Assert.Equal("yes", output);
+  }
+
+  // --- Built-in null / edge-case return values ---
+
+  [Fact]
+  public void LEN_Non_String_Argument_Returns_Empty_Output()
+  {
+    // LEN with a non-string argument returns null from the built-in,
+    // which the evaluator prints as an empty line.
+    var output = RunHelper.Run("PRINT LEN(42)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void VAL_Non_Numeric_String_Returns_Empty_Output()
+  {
+    // VAL("abc") cannot parse → built-in returns null → prints empty line.
+    var output = RunHelper.Run("PRINT VAL(\"abc\")");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void SQR_Negative_Number_Returns_NaN()
+  {
+    // Math.Sqrt(-1) = NaN; FloatValue.ToString() renders it as "NaN".
+    var output = RunHelper.Run("PRINT SQR(-1)");
+    Assert.Equal("NaN", output);
+  }
+
+  [Fact]
+  public void ABS_Zero_Float_Returns_Zero()
+  {
+    var output = RunHelper.Run("PRINT ABS(0.0)");
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void STR_Dollar_Converts_Negative_Integer()
+  {
+    var output = RunHelper.Run("PRINT STR$(-7)");
+    Assert.Equal("-7", output);
+  }
+
+  [Fact]
+  public void INT_Already_Integer_Is_Unchanged()
+  {
+    var output = RunHelper.Run("PRINT INT(10)");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void STR_Dollar_Non_Numeric_Argument_Returns_Empty_Output()
+  {
+    // STR$ only accepts integers and floats; a boolean returns null → prints "".
+    var output = RunHelper.Run("PRINT STR$(TRUE)");
+    Assert.Equal("", output);
+  }
 }

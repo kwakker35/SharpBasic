@@ -649,4 +649,95 @@ public class EvaluatorTests
         var output = RunHelper.Run("DIM arr[3] AS INTEGER\nLET arr[2] = 42\nPRINT arr[2]");
         Assert.Equal("42", output);
     }
+
+    // --- FOR loop edge cases ---
+
+    [Fact]
+    public void RunHelper_For_Next_Start_Greater_Than_Limit_Body_Never_Executes()
+    {
+        // Default STEP is 1 (positive), so when start > limit the condition
+        // i <= limit is immediately false and the loop body never runs.
+        var output = RunHelper.Run("FOR i = 5 TO 1\nPRINT i\nNEXT");
+        Assert.Equal("", output);
+    }
+
+    [Fact]
+    public void RunHelper_For_Next_Negative_Step_Ends_At_Exact_Limit()
+    {
+        // STEP -2 counting down from 6 to 2: 6, 4, 2
+        var output = RunHelper.Run("FOR i = 6 TO 2 STEP -2\nPRINT i\nNEXT");
+        Assert.Equal("6\n4\n2", output);
+    }
+
+    [Fact]
+    public void RunHelper_For_Next_Zero_Iterations_With_Negative_Step_And_Start_Less_Than_Limit()
+    {
+        // STEP -1, start (1) < limit (5): condition i >= limit is immediately false
+        var output = RunHelper.Run("FOR i = 1 TO 5 STEP -1\nPRINT i\nNEXT");
+        Assert.Equal("", output);
+    }
+
+    [Fact]
+    public void RunHelper_For_Next_Single_Iteration_When_Start_Equals_Limit()
+    {
+        // Start and limit are equal: loop runs exactly once.
+        var output = RunHelper.Run("FOR i = 3 TO 3\nPRINT i\nNEXT");
+        Assert.Equal("3", output);
+    }
+
+    // --- WHILE / WEND edge cases ---
+
+    [Fact]
+    public void RunHelper_While_Condition_False_Initially_Body_Never_Executes()
+    {
+        var output = RunHelper.Run("LET x = 10\nWHILE x < 5\nLET x = x + 1\nWEND\nPRINT x");
+        Assert.Equal("10", output);
+    }
+
+    // --- String concatenation with mixed types ---
+
+    [Fact]
+    public void RunHelper_Concatenate_Integer_And_String_Via_Ampersand()
+    {
+        var output = RunHelper.Run("PRINT 42 & \" items\"");
+        Assert.Equal("42 items", output);
+    }
+
+    [Fact]
+    public void RunHelper_Concatenate_Float_And_String_Via_Ampersand()
+    {
+        var output = RunHelper.Run("PRINT 3.14 & \" pi\"");
+        Assert.Equal("3.14 pi", output);
+    }
+
+    [Fact]
+    public void RunHelper_Concatenate_Bool_And_String_Via_Ampersand()
+    {
+        var output = RunHelper.Run("PRINT TRUE & \" flag\"");
+        Assert.Equal("True flag", output);
+    }
+
+    // --- Comparison operators ---
+
+    [Fact]
+    public void RunHelper_LtEq_True_When_Left_Equals_Right()
+    {
+        var output = RunHelper.Run("PRINT 5 <= 5");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void RunHelper_GtEq_True_When_Left_Equals_Right()
+    {
+        var output = RunHelper.Run("PRINT 5 >= 5");
+        Assert.Equal("True", output);
+    }
+
+    [Fact]
+    public void RunHelper_Print_Bool_From_String_Equality()
+    {
+        // Equality comparison result stored in a variable
+        var output = RunHelper.Run("LET b = \"yes\" = \"yes\"\nPRINT b");
+        Assert.Equal("True", output);
+    }
 }
