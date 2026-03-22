@@ -439,4 +439,101 @@ public class StdlibTests
     var output = RunHelper.Run("PRINT STR$(TRUE)");
     Assert.Equal("", output);
   }
+
+  // --- CHR$ ---
+
+  [Fact]
+  public void CHR_Dollar_Returns_Uppercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT CHR$(72)");
+    Assert.Equal("H", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Returns_Lowercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT CHR$(97)");
+    Assert.Equal("a", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Returns_Double_Quote_For_Code_34()
+  {
+    // The primary use case: embedding a literal " in string output
+    var output = RunHelper.Run("PRINT CHR$(34)");
+    Assert.Equal("\"", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Returns_Single_Quote_For_Code_39()
+  {
+    var output = RunHelper.Run("PRINT CHR$(39)");
+    Assert.Equal("'", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Space_Code32_HasLength_One()
+  {
+    // RunHelper.Run trims output, so verify via LEN rather than direct PRINT
+    var output = RunHelper.Run("LET s = CHR$(32)\nPRINT LEN(s)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Null_Char_Code0_Has_Length_One()
+  {
+    var output = RunHelper.Run("LET s = CHR$(0)\nPRINT LEN(s)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Can_Be_Concatenated_To_Build_Quoted_String()
+  {
+    var output = RunHelper.Run("PRINT CHR$(34) & \"You survived.\" & CHR$(34)");
+    Assert.Equal("\"You survived.\"", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Result_Can_Be_Stored_In_Variable()
+  {
+    var output = RunHelper.Run("LET ch = CHR$(65)\nPRINT ch");
+    Assert.Equal("A", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Result_Can_Be_Used_Repeatedly_Via_Variable()
+  {
+    var output = RunHelper.Run("LET q = CHR$(34)\nPRINT q & \"hello\" & q");
+    Assert.Equal("\"hello\"", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Digit_Character_Code48_Returns_Zero_Char()
+  {
+    var output = RunHelper.Run("PRINT CHR$(48)");
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_String_Argument_Returns_Empty_Output()
+  {
+    // Non-integer argument → null → prints ""
+    var output = RunHelper.Run("PRINT CHR$(\"H\")");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Float_Argument_Returns_Empty_Output()
+  {
+    // Float does not match IntValue → null → prints ""
+    var output = RunHelper.Run("PRINT CHR$(72.5)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void CHR_Dollar_Boolean_Argument_Returns_Empty_Output()
+  {
+    var output = RunHelper.Run("PRINT CHR$(TRUE)");
+    Assert.Equal("", output);
+  }
 }

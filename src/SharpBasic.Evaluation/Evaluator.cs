@@ -71,7 +71,8 @@ public class Evaluator(
                             new FloatValue(Math.Sqrt(fv.V))
                             : null,
         ["RND"] = args => new FloatValue(Random.Shared.NextDouble()),
-        ["TYPENAME"] = args => new StringValue(args[0].TypeName)
+        ["TYPENAME"] = args => new StringValue(args[0].TypeName),
+        ["CHR$"] = args => args[0] is IntValue iv ? new StringValue(((char)iv.V).ToString()) : null
     };
 
     public EvalResult Evaluate()
