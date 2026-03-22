@@ -14,7 +14,7 @@
    - 2.3 [Whitespace and Newlines](#23-whitespace-and-newlines)
    - 2.4 [Comments](#24-comments)
    - 2.5 [Line Continuation](#25-line-continuation)
-   - 2.6 [Operator Tokenisation Gotcha](#26-operator-tokenisation-gotcha)
+   - 2.6 [Operator Spacing](#26-operator-spacing)
 3. [Data Types](#3-data-types)
 4. [Variables](#4-variables)
    - 4.1 [Declaration and Assignment](#41-declaration-and-assignment)
@@ -81,20 +81,13 @@ LET x = 42  REM Inline comment is also supported
 
 There is **no line-continuation character**. Each logical statement must fit on one physical line (or be a multi-line block construct like `IF`/`FOR`/`WHILE`/`SUB`/`FUNCTION`).
 
-### 2.6 Operator Tokenisation Gotcha
+### 2.6 Operator Spacing
 
-The lexer has dedicated `case` branches for most operators (`+`, `-`, `*`, `/`, `(`, `)`, `[`, `]`, `<`, `>`, `<=`, `>=`, `<>`, `&`, `,`, `;`) which means those operators work without surrounding spaces.
-
-**However, `=` has no dedicated case branch.** It is accumulated into the identifier buffer along with adjacent characters. This means:
+All operators have dedicated lexer branches. Surrounding spaces are optional for every operator:
 
 ```
-LET x = 5   ' correct — spaces around = required
-LET x=5     ' WRONG — produces an Unknown token, parse error
-```
-
-All other operators listed above work with or without spaces:
-
-```
+LET x = 5       ' valid
+LET x=5         ' also valid
 LET y = 3+4     ' valid
 LET z = a<b     ' valid
 ```
@@ -207,7 +200,7 @@ The evaluator checks that the index is in the range `0` to `size - 1`. An out-of
 Supplied index {idx} is outside of the range 0-{size} defined for the array: {name}.
 ```
 
-> **Implementation note:** The bounds check is `idx < 0 || idx > arrVal.Items.Length`, which allows index equal to `Items.Length` (one past the last valid element) to slip through the guard. In practice, accessing `scores[10]` on a size-10 array will raise a C# `IndexOutOfRangeException` which surfaces as a runtime crash rather than a clean diagnostic. Stay within `0` to `size - 1`.
+The valid index range is `0` to `size - 1`. Any access or assignment using an index outside this range produces a clean diagnostic — it does not crash.
 
 ---
 
