@@ -207,4 +207,32 @@ public class EvaluatorErrorTests
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("undefined") || d.Message.Contains("Unknown Identifier"));
   }
+
+  // --- SUB/FUNCTION body failure propagation ---
+
+  [Fact]
+  public void Evaluator_Sub_Body_Failure_Propagates_To_Caller()
+  {
+    var code = """
+      SUB BadSub()
+        PRINT 10 / 0
+      END SUB
+      CALL BadSub()
+      """;
+    var result = RunHelper.RunResult(code);
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Function_Body_Failure_Propagates_To_Caller()
+  {
+    var code = """
+      FUNCTION BadFunc() AS INTEGER
+        RETURN 10 / 0
+      END FUNCTION
+      PRINT BadFunc()
+      """;
+    var result = RunHelper.RunResult(code);
+    Assert.IsType<EvalFailure>(result);
+  }
 }

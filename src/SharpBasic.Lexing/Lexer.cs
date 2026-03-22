@@ -67,8 +67,15 @@ public class Lexer
                 case '\n':
                     if (token.Length > 0)
                     {
-                        tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
-                        token = new();
+                        if (token.ToString() == "REM")
+                        {
+                            token = new();
+                        }
+                        else
+                        {
+                            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
+                            token = new();
+                        }
                     }
                     tokens.Add(new Token(TokenType.NewLine, "", _line, _col));
                     break;

@@ -714,4 +714,19 @@ public class LexerTests
         Assert.DoesNotContain(tokens, t => t.Type == TokenType.Unknown);
     }
 
+    // --- Bug fix: REM with no trailing space ---
+
+    [Fact]
+    public void Lexer_Rem_With_No_Trailing_Space_Is_Treated_As_Comment()
+    {
+        // REM alone on a line (no trailing space) was lexed as Identifier before fix
+        var tokens = new Lexer("REM\nPRINT \"hi\"").Tokenise();
+
+        Assert.Equal(4, tokens.Count);
+        Assert.Equal(TokenType.NewLine, tokens[0].Type);
+        Assert.Equal(TokenType.Print, tokens[1].Type);
+        Assert.Equal(TokenType.StringLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
 }

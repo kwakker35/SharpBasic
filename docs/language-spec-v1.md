@@ -73,9 +73,10 @@ Lines beginning with `REM` (followed by at least one space) are comment lines. T
 ```
 REM This is a comment
 LET x = 42  REM Inline comment is also supported
+REM
 ```
 
-> **Gotcha:** `REM` with no trailing space (e.g. at the very end of a line with no content after it) is NOT treated as a comment — it is lexed as an identifier.
+The last form — `REM` alone on a line with nothing after it — is also valid and treated as an empty comment.
 
 ### 2.5 Line Continuation
 

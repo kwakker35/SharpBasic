@@ -503,6 +503,7 @@ public class Evaluator(
                                 _subs,
                                 _functions
                             ).Evaluate();
+            if (funcEval is EvalFailure) return funcEval;
         }
         catch (ReturnException re)
         {
@@ -580,6 +581,7 @@ public class Evaluator(
                                 _subs,
                                 _functions
                             ).Evaluate();
+            if (funcEval is EvalFailure) return funcEval;
         }
         catch (ReturnException re)
         {
