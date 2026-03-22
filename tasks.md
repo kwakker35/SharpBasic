@@ -4,7 +4,23 @@ Current phase and active task list. Update as you progress.
 
 ---
 
-## Current Phase: 10 — Standard Library & File Runner
+## Current Phase: v1 Pre-Release — The Sunken Crown Feature Set
+
+**Goal:** Add five language features required by The Sunken Crown showcase game before public v1 release, then sync all documentation and samples.  
+**Spec files:** `spec/feat-set-global.md`, `spec/feat-chr-builtin.md`, `spec/feat-const.md`, `spec/feat-select-case.md`, `spec/feat-2d-arrays.md`, `spec/docs-v1-sync.md`
+
+| # | Branch | Task | Status |
+|---|--------|------|--------|
+| 1 | `feat/set-global` | `SET GLOBAL` statement — write to global scope from inside SUB/FUNCTION | ⬜ Not started |
+| 2 | `feat/chr-builtin` | `CHR$()` built-in function — Unicode code point → single-character string | ⬜ Not started |
+| 3 | `feat/const-declaration` | `CONST` declaration — immutable named values with runtime enforcement | ⬜ Not started |
+| 4 | `feat/select-case` | `SELECT CASE` statement — multi-branch dispatch without fall-through | ⬜ Not started |
+| 5 | `feat/2d-arrays` | 2D arrays — `DIM name[rows][cols] AS type`, read/write both dimensions | ⬜ Not started |
+| 6 | `docs/v1-feature-sync` | Sync spec, samples (excl. Sunken Crown), and all learning docs to v1 feature set | ⬜ Not started — do last |
+
+---
+
+## Completed — Phase 10 — Standard Library & File Runner
 
 **Goal:** Built-in functions (`LEN`, `MID$`, `STR$`, etc.) and ability to run `.bas` files from the command line.
 
