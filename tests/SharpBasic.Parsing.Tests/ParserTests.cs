@@ -1196,4 +1196,96 @@ public class ParserTests
         var val = Assert.IsType<IntLiteralExpression>(stmt.Value);
         Assert.Equal(42, val.Value);
     }
+
+    // --- 2D Arrays ---
+
+    [Fact]
+    public void Parser_2d_Dim_Produces_Dim2dStatement()
+    {
+        // DIM map[5][8] AS INTEGER
+        var tokens = new List<Token>
+        {
+            new(TokenType.Dim,        "",          1, 1),
+            new(TokenType.Identifier, "map",       1, 5),
+            new(TokenType.LBracket,   "",          1, 8),
+            new(TokenType.IntLiteral, "5",         1, 9),
+            new(TokenType.RBracket,   "",          1, 10),
+            new(TokenType.LBracket,   "",          1, 11),
+            new(TokenType.IntLiteral, "8",         1, 12),
+            new(TokenType.RBracket,   "",          1, 13),
+            new(TokenType.As,         "",          1, 15),
+            new(TokenType.Integer,    "",          1, 18),
+            new(TokenType.Eof,        "",          1, 25),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<Dim2dStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("map", stmt.Name);
+        Assert.Equal("Integer", stmt.TypeName);
+        Assert.Equal(5, stmt.Rows);
+        Assert.Equal(8, stmt.Cols);
+    }
+
+    [Fact]
+    public void Parser_2d_Let_Produces_Array2dAssignStatement()
+    {
+        // LET map[2][3] = 42
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,        "",    1, 1),
+            new(TokenType.Identifier, "map", 1, 5),
+            new(TokenType.LBracket,   "",    1, 8),
+            new(TokenType.IntLiteral, "2",   1, 9),
+            new(TokenType.RBracket,   "",    1, 10),
+            new(TokenType.LBracket,   "",    1, 11),
+            new(TokenType.IntLiteral, "3",   1, 12),
+            new(TokenType.RBracket,   "",    1, 13),
+            new(TokenType.Eq,         "",    1, 15),
+            new(TokenType.IntLiteral, "42",  1, 17),
+            new(TokenType.Eof,        "",    1, 19),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<Array2dAssignStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("map", stmt.Name);
+        var rowIdx = Assert.IsType<IntLiteralExpression>(stmt.RowIndex);
+        Assert.Equal(2, rowIdx.Value);
+        var colIdx = Assert.IsType<IntLiteralExpression>(stmt.ColIndex);
+        Assert.Equal(3, colIdx.Value);
+        var value = Assert.IsType<IntLiteralExpression>(stmt.Value);
+        Assert.Equal(42, value.Value);
+    }
+
+    [Fact]
+    public void Parser_2d_Print_Produces_Array2dAccessExpression()
+    {
+        // PRINT map[2][3]
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print,      "",    1, 1),
+            new(TokenType.Identifier, "map", 1, 7),
+            new(TokenType.LBracket,   "",    1, 10),
+            new(TokenType.IntLiteral, "2",   1, 11),
+            new(TokenType.RBracket,   "",    1, 12),
+            new(TokenType.LBracket,   "",    1, 13),
+            new(TokenType.IntLiteral, "3",   1, 14),
+            new(TokenType.RBracket,   "",    1, 15),
+            new(TokenType.Eof,        "",    1, 16),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var print = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var expr = Assert.IsType<Array2dAccessExpression>(print.Value);
+
+        Assert.Equal("map", expr.Name);
+        var row = Assert.IsType<IntLiteralExpression>(expr.RowIndex);
+        Assert.Equal(2, row.Value);
+        var col = Assert.IsType<IntLiteralExpression>(expr.ColIndex);
+        Assert.Equal(3, col.Value);
+    }
 }

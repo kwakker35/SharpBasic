@@ -829,4 +829,165 @@ public class EvaluatorTests
         var output = RunHelper.Run(source);
         Assert.Equal("10", output);
     }
+
+    // --- 2D Arrays ---
+
+    [Fact]
+    public void Array2d_Dim_Declares_With_Correct_Size()
+    {
+        var source = "DIM map[5][8] AS INTEGER";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalSuccess>(result);
+    }
+
+    [Fact]
+    public void Array2d_Assign_And_Read_At_Known_Index()
+    {
+        var source = """
+            DIM map[5][8] AS INTEGER
+            LET map[2][3] = 42
+            PRINT map[2][3]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("42", output);
+    }
+
+    [Fact]
+    public void Array2d_Stores_Independent_Rows()
+    {
+        var source = """
+            DIM grid[3][3] AS INTEGER
+            LET grid[0][0] = 10
+            LET grid[1][0] = 20
+            LET grid[2][0] = 30
+            PRINT grid[0][0]
+            PRINT grid[1][0]
+            PRINT grid[2][0]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("10\n20\n30", output);
+    }
+
+    [Fact]
+    public void Array2d_All_Cells_Default_To_Zero()
+    {
+        var source = """
+            DIM grid[3][3] AS INTEGER
+            PRINT grid[1][1]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("0", output);
+    }
+
+    [Fact]
+    public void Array2d_Returns_Error_On_Row_Out_Of_Bounds()
+    {
+        var source = """
+            DIM map[3][4] AS INTEGER
+            LET map[5][0] = 99
+            """;
+        var result = RunHelper.RunResult(source);
+        var failure = Assert.IsType<EvalFailure>(result);
+        Assert.Contains(failure.Diagnostics, d => d.Message.Contains("outside of the range"));
+    }
+
+    [Fact]
+    public void Array2d_Returns_Error_On_Col_Out_Of_Bounds()
+    {
+        var source = """
+            DIM map[3][4] AS INTEGER
+            LET map[0][9] = 99
+            """;
+        var result = RunHelper.RunResult(source);
+        var failure = Assert.IsType<EvalFailure>(result);
+        Assert.Contains(failure.Diagnostics, d => d.Message.Contains("outside of the range"));
+    }
+
+    [Fact]
+    public void Array2d_Negative_Row_Index_Returns_Error()
+    {
+        var source = """
+            DIM map[3][4] AS INTEGER
+            LET map[-1][0] = 5
+            """;
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Array2d_Negative_Col_Index_Returns_Error()
+    {
+        var source = """
+            DIM map[3][4] AS INTEGER
+            LET map[0][-1] = 5
+            """;
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Array2d_Works_With_String_Type()
+    {
+        var source = """
+            DIM board[2][2] AS STRING
+            LET board[0][1] = "hello"
+            PRINT board[0][1]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("hello", output);
+    }
+
+    [Fact]
+    public void Array2d_Works_With_Float_Type()
+    {
+        var source = """
+            DIM matrix[2][2] AS FLOAT
+            LET matrix[1][1] = 3.14
+            PRINT matrix[1][1]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("3.14", output);
+    }
+
+    [Fact]
+    public void Array2d_Type_Mismatch_Returns_Error()
+    {
+        var source = """
+            DIM grid[3][3] AS INTEGER
+            LET grid[0][0] = "not an int"
+            """;
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Array2d_Works_Inside_For_Loop()
+    {
+        var source = """
+            DIM table[2][3] AS INTEGER
+            FOR r = 0 TO 1
+                FOR c = 0 TO 2
+                    LET table[r][c] = r + c
+                NEXT c
+            NEXT r
+            PRINT table[1][2]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("3", output);
+    }
+
+    [Fact]
+    public void Array1d_Still_Works_After_2d_Changes()
+    {
+        // Regression: existing 1D syntax must be unaffected
+        var source = """
+            DIM scores[3] AS INTEGER
+            LET scores[0] = 10
+            LET scores[1] = 20
+            LET scores[2] = 30
+            PRINT scores[1]
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("20", output);
+    }
 }

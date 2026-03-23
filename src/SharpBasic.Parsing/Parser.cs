@@ -549,6 +549,49 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
         Advance(); //consume ]
 
+        // 2D: if next token is [ it's DIM name[rows][cols]
+        if (Current.Type == TokenType.LBracket)
+        {
+            Advance(); //consume [
+
+            err = ExpectToken(TokenType.IntLiteral, "Integer as 2D column size.");
+            if (err is not null) return err;
+
+            var colsValid = int.TryParse(Current.Value, out int cols);
+            if (!colsValid)
+            {
+                return new ParseStatementFailure(new Diagnostic(
+                    Current.Line, Current.Column,
+                    $"Expected integer column size but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error));
+            }
+            Advance(); //consume cols size
+
+            err = ExpectToken(TokenType.RBracket, "] after 2D column size");
+            if (err is not null) return err;
+            Advance(); //consume ]
+
+            err = ExpectToken(TokenType.As, "AS after 2D array size");
+            if (err is not null) return err;
+            Advance(); //consume AS
+
+            if (Current.Type is not TokenType.Integer &&
+                    Current.Type is not TokenType.Float &&
+                    Current.Type is not TokenType.String &&
+                    Current.Type is not TokenType.Boolean)
+            {
+                return new ParseStatementFailure(new Diagnostic(
+                    Current.Line, Current.Column,
+                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error));
+            }
+
+            typeName = Current.Type.ToString();
+            Advance(); //consume type
+
+            return new ParseStatementSuccess(new Dim2dStatement(name, typeName, size, cols, loc));
+        }
+
         //expecting AS
         err = ExpectToken(TokenType.As, "AS after array size");
         if (err is not null) return err;
@@ -660,6 +703,21 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         err = ExpectExpression(expr, "expression in array access");
         if (err is not null) return null;
+
+        // 2D: current = ], peek ahead — if next is [ it's name[row][col]
+        if (Peek().Type == TokenType.LBracket)
+        {
+            Advance(); //consume ]
+            Advance(); //consume [
+
+            var colExpr = ParseExpression();
+
+            err = ExpectExpression(colExpr, "column index in 2D array access");
+            if (err is not null) return null;
+
+            return new Array2dAccessExpression(name, expr, colExpr, loc);
+            // caller (ParseExpression) will Advance() to consume the final ]
+        }
 
         return new ArrayAccessExpression(
                 name,
@@ -1152,6 +1210,40 @@ public class Parser(IReadOnlyList<Token> tokens)
             err = ExpectToken(TokenType.RBracket, "] after array index expression");
             if (err is not null) return err;
             Advance();// consume ]
+
+            // 2D: if next token is [ it's LET name[row][col] = value
+            if (Current.Type == TokenType.LBracket)
+            {
+                Advance(); //consume [
+
+                var exprColIndex = ParseExpression();
+
+                err = ExpectExpression(exprColIndex, "column index after LET <identifier>[row][");
+                if (err is not null) return err;
+
+                err = ExpectToken(TokenType.RBracket, "] after 2D column index");
+                if (err is not null) return err;
+                Advance(); //consume ]
+
+                err = ExpectToken(TokenType.Eq, "= after LET <identifier>[row][col]");
+                if (err is not null) return err;
+                Advance(); //consume =
+
+                var exprValue2d = ParseExpression();
+
+                err = ExpectExpression(exprValue2d, "value after LET <identifier>[row][col] =");
+                if (err is not null) return err;
+
+                return new ParseStatementSuccess(
+                    new Array2dAssignStatement(
+                        ident.Value,
+                        exprIndex!,
+                        exprColIndex!,
+                        exprValue2d!,
+                        letLoc
+                    )
+                );
+            }
 
             err = ExpectToken(TokenType.Eq, "after LET <identifier>[]");
             if (err is not null) return err;

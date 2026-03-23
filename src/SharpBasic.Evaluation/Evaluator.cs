@@ -153,7 +153,9 @@ public class Evaluator(
             CallStatement cs => EvaluateCallStatement(cs),
             ReturnStatement rs => EvaluateReturnStatement(rs),
             DimStatement ds => EvaluateDimStatement(ds),
+            Dim2dStatement ds2 => EvaluateDim2dStatement(ds2),
             ArrayAssignStatement aas => EvaluateArrayAssignStatement(aas),
+            Array2dAssignStatement aas2 => EvaluateArray2dAssignStatement(aas2),
             InputStatement ins => EvaluateInputStatement(ins),
             ConstStatement cs => EvaluateConstStatement(cs),
             SelectCaseStatement scs => EvaluateSelectCaseStatement(scs),
@@ -295,6 +297,44 @@ public class Evaluator(
         }
 
         var val = new ArrayValue(arrVal, stmt.TypeName);
+        _table.Set(name, val);
+        return new EvalSuccess(new VoidValue());
+    }
+
+    private EvalResult EvaluateDim2dStatement(Dim2dStatement stmt)
+    {
+        var name = stmt.Name;
+        var exists = _table.Get(name);
+
+        if (exists is not null)
+        {
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        $"The variable {name} already exists and cannot be redefined.",
+                        DiagnosticSeverity.Error
+                    )
+                ]
+            );
+        }
+
+        var total = stmt.Rows * stmt.Cols;
+        var arrVal = new Value[total];
+        var defaultVal = stmt.TypeName.ToUpperInvariant() switch
+        {
+            "INTEGER" => (Value)new IntValue(0),
+            "FLOAT"   => new FloatValue(0),
+            "BOOLEAN" => new BoolValue(false),
+            "STRING"  => new StringValue(string.Empty),
+            _         => new VoidValue()
+        };
+
+        for (var i = 0; i < total; i++)
+            arrVal[i] = defaultVal;
+
+        var val = new ArrayValue(arrVal, stmt.TypeName, stmt.Cols);
         _table.Set(name, val);
         return new EvalSuccess(new VoidValue());
     }
@@ -1101,10 +1141,153 @@ public class Evaluator(
         }
     }
 
+    private EvalResult EvaluateArray2dAssignStatement(Array2dAssignStatement stmt)
+    {
+        var getVal = _table.Get(stmt.Name);
+
+        if (getVal is not ArrayValue arrVal || arrVal.Cols == 0)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    $"Identifier: {stmt.Name} is not a 2D array.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var rowResult = EvaluateExpression(stmt.RowIndex);
+        if (rowResult is not EvalSuccess rowSuccess || rowSuccess.Value is not IntValue rowIv)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    "Row index must be an integer.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var colResult = EvaluateExpression(stmt.ColIndex);
+        if (colResult is not EvalSuccess colSuccess || colSuccess.Value is not IntValue colIv)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    "Column index must be an integer.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var row = rowIv.V;
+        var col = colIv.V;
+        var rows = arrVal.Items.Length / arrVal.Cols;
+
+        if (row < 0 || row >= rows)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    $"Row index {row} is outside of the range 0-{rows - 1} for array: {stmt.Name}.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
+
+        if (col < 0 || col >= arrVal.Cols)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    $"Column index {col} is outside of the range 0-{arrVal.Cols - 1} for array: {stmt.Name}.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var valueResult = EvaluateExpression(stmt.Value);
+        if (valueResult is not EvalSuccess valueSuccess)
+            return valueResult;
+
+        var value = valueSuccess.Value;
+        var targetType = arrVal.ElementTypeName.ToUpperInvariant();
+        var flatIdx = row * arrVal.Cols + col;
+
+        if ((targetType == "INTEGER" && value is IntValue) ||
+            (targetType == "FLOAT"   && value is FloatValue) ||
+            (targetType == "STRING"  && value is StringValue) ||
+            (targetType == "BOOLEAN" && value is BoolValue))
+        {
+            arrVal.Items[flatIdx] = value;
+            _table.Set(stmt.Name, arrVal);
+            return new EvalSuccess(new VoidValue());
+        }
+
+        return new EvalFailure([
+            new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                $"Supplied value is not a {targetType} as defined for the array: {stmt.Name}.",
+                DiagnosticSeverity.Error)
+        ]);
+    }
+
+    private EvalResult EvaluateArray2dAccessExpression(Array2dAccessExpression expr)
+    {
+        var getVal = _table.Get(expr.Name);
+
+        if (getVal is not ArrayValue arrVal || arrVal.Cols == 0)
+        {
+            return new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    $"Identifier: {expr.Name} is not a 2D array.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var rowResult = EvaluateExpression(expr.RowIndex);
+        if (rowResult is not EvalSuccess rowSuccess || rowSuccess.Value is not IntValue rowIv)
+        {
+            return new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    "Row index must be an integer.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var colResult = EvaluateExpression(expr.ColIndex);
+        if (colResult is not EvalSuccess colSuccess || colSuccess.Value is not IntValue colIv)
+        {
+            return new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    "Column index must be an integer.", DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var row = rowIv.V;
+        var col = colIv.V;
+        var rows = arrVal.Items.Length / arrVal.Cols;
+
+        if (row < 0 || row >= rows)
+        {
+            return new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    $"Row index {row} is outside of the range 0-{rows - 1} for array: {expr.Name}.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
+
+        if (col < 0 || col >= arrVal.Cols)
+        {
+            return new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    $"Column index {col} is outside of the range 0-{arrVal.Cols - 1} for array: {expr.Name}.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
+
+        var flatIdx = row * arrVal.Cols + col;
+
+        return arrVal.ElementTypeName.ToUpperInvariant() switch
+        {
+            "INTEGER" => new EvalSuccess((IntValue)arrVal.Items[flatIdx]),
+            "FLOAT"   => new EvalSuccess((FloatValue)arrVal.Items[flatIdx]),
+            "BOOLEAN" => new EvalSuccess((BoolValue)arrVal.Items[flatIdx]),
+            "STRING"  => new EvalSuccess((StringValue)arrVal.Items[flatIdx]),
+            _ => new EvalFailure([
+                new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
+                    $"Unknown type name: {arrVal.TypeName}", DiagnosticSeverity.Error)
+            ])
+        };
+    }
+
     private EvalResult EvaluateUnaryExpression(UnaryExpression expr)
     {
-        var evalResult = EvaluateExpression(expr.Operand);
-        if (evalResult is EvalFailure) return evalResult;
+        var evalResult = EvaluateExpression(expr.Operand);        if (evalResult is EvalFailure) return evalResult;
 
         var resValue = ((EvalSuccess)evalResult).Value;
 
@@ -1143,6 +1326,7 @@ public class Evaluator(
             BinaryExpression be => EvaluateBinaryExpression(be),
             CallExpression ce => EvaluateCallExpression(ce),
             ArrayAccessExpression aae => EvaluateArrayAccessExpression(aae),
+            Array2dAccessExpression aae2 => EvaluateArray2dAccessExpression(aae2),
             BoolLiteralExpression ble => new EvalSuccess(new BoolValue(ble.Value)),
             UnaryExpression ue => EvaluateUnaryExpression(ue),
             IdentifierExpression id when _table.Get(id.Name) is { } val => new EvalSuccess(val),
