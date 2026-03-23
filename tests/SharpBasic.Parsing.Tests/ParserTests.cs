@@ -1035,4 +1035,140 @@ public class ParserTests
         Assert.Equal("name$", stmt.Target.Name);
         Assert.Equal("Enter name", stmt.Prompt);
     }
+
+    // --- SELECT CASE structural ---
+
+    [Fact]
+    public void Parser_SelectCase_Two_Cases_Produces_Correct_AST()
+    {
+        // SELECT CASE x
+        //   CASE 1
+        //     PRINT "one"
+        //   CASE 2
+        //     PRINT "two"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",    1, 1),
+            new(TokenType.Case,          "",    1, 8),
+            new(TokenType.Identifier,    "x",   1, 13),
+            new(TokenType.NewLine,       "",    1, 14),
+            new(TokenType.Case,          "",    2, 3),
+            new(TokenType.IntLiteral,    "1",   2, 8),
+            new(TokenType.NewLine,       "",    2, 9),
+            new(TokenType.Print,         "",    3, 5),
+            new(TokenType.StringLiteral, "one", 3, 11),
+            new(TokenType.NewLine,       "",    3, 16),
+            new(TokenType.Case,          "",    4, 3),
+            new(TokenType.IntLiteral,    "2",   4, 8),
+            new(TokenType.NewLine,       "",    4, 9),
+            new(TokenType.Print,         "",    5, 5),
+            new(TokenType.StringLiteral, "two", 5, 11),
+            new(TokenType.NewLine,       "",    5, 16),
+            new(TokenType.End,           "",    6, 1),
+            new(TokenType.Select,        "",    6, 5),
+            new(TokenType.Eof,           "",    6, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        var subject = Assert.IsType<IdentifierExpression>(stmt.Subject);
+        Assert.Equal("x", subject.Name);
+
+        Assert.Equal(2, stmt.Cases.Count);
+
+        // First clause: CASE 1
+        var clause1 = stmt.Cases[0];
+        Assert.NotNull(clause1.Values);
+        Assert.Single(clause1.Values!);
+        var val1 = Assert.IsType<IntLiteralExpression>(clause1.Values![0]);
+        Assert.Equal(1, val1.Value);
+        Assert.Single(clause1.Body);
+        Assert.IsType<PrintStatement>(clause1.Body[0]);
+
+        // Second clause: CASE 2
+        var clause2 = stmt.Cases[1];
+        Assert.NotNull(clause2.Values);
+        Assert.Single(clause2.Values!);
+        var val2 = Assert.IsType<IntLiteralExpression>(clause2.Values![0]);
+        Assert.Equal(2, val2.Value);
+        Assert.Single(clause2.Body);
+        Assert.IsType<PrintStatement>(clause2.Body[0]);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_CaseElse_PopulatesElseField()
+    {
+        // SELECT CASE x
+        //   CASE ELSE
+        //     PRINT "other"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",      1, 1),
+            new(TokenType.Case,          "",      1, 8),
+            new(TokenType.Identifier,    "x",     1, 13),
+            new(TokenType.NewLine,       "",      1, 14),
+            new(TokenType.Case,          "",      2, 3),
+            new(TokenType.Else,          "",      2, 8),
+            new(TokenType.NewLine,       "",      2, 13),
+            new(TokenType.Print,         "",      3, 5),
+            new(TokenType.StringLiteral, "other", 3, 11),
+            new(TokenType.NewLine,       "",      3, 18),
+            new(TokenType.End,           "",      4, 1),
+            new(TokenType.Select,        "",      4, 5),
+            new(TokenType.Eof,           "",      4, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        Assert.Empty(stmt.Cases);           // no regular CASE clauses
+        Assert.NotNull(stmt.Else);          // CASE ELSE lives in the Else field
+        Assert.Single(stmt.Else!.Body);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_MultiValue_Case_Parses_All_Values()
+    {
+        // SELECT CASE x
+        //   CASE 1, 2, 3
+        //     PRINT "low"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",    1, 1),
+            new(TokenType.Case,          "",    1, 8),
+            new(TokenType.Identifier,    "x",   1, 13),
+            new(TokenType.NewLine,       "",    1, 14),
+            new(TokenType.Case,          "",    2, 3),
+            new(TokenType.IntLiteral,    "1",   2, 8),
+            new(TokenType.Comma,         "",    2, 9),
+            new(TokenType.IntLiteral,    "2",   2, 11),
+            new(TokenType.Comma,         "",    2, 12),
+            new(TokenType.IntLiteral,    "3",   2, 14),
+            new(TokenType.NewLine,       "",    2, 15),
+            new(TokenType.Print,         "",    3, 5),
+            new(TokenType.StringLiteral, "low", 3, 11),
+            new(TokenType.NewLine,       "",    3, 16),
+            new(TokenType.End,           "",    4, 1),
+            new(TokenType.Select,        "",    4, 5),
+            new(TokenType.Eof,           "",    4, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        Assert.Single(stmt.Cases);
+        var clause = stmt.Cases[0];
+        Assert.NotNull(clause.Values);
+        Assert.Equal(3, clause.Values!.Count);
+        Assert.Equal(1, Assert.IsType<IntLiteralExpression>(clause.Values[0]).Value);
+        Assert.Equal(2, Assert.IsType<IntLiteralExpression>(clause.Values[1]).Value);
+        Assert.Equal(3, Assert.IsType<IntLiteralExpression>(clause.Values[2]).Value);
+    }
 }

@@ -156,6 +156,7 @@ public class Evaluator(
             ArrayAssignStatement aas => EvaluateArrayAssignStatement(aas),
             InputStatement ins => EvaluateInputStatement(ins),
             ConstStatement cs => EvaluateConstStatement(cs),
+            SelectCaseStatement scs => EvaluateSelectCaseStatement(scs),
             _
                 => new EvalFailure(
                     [
@@ -168,6 +169,47 @@ public class Evaluator(
                     ]
                 )
         };
+    }
+
+    private EvalResult EvaluateSelectCaseStatement(SelectCaseStatement stmt)
+    {
+        var subjectResult = EvaluateExpression(stmt.Subject);
+        if (subjectResult is EvalFailure) return subjectResult;
+        var subject = ((EvalSuccess)subjectResult).Value;
+
+        foreach (var clause in stmt.Cases)
+        {
+            foreach (var valueExpr in clause.Values)
+            {
+                var valResult = EvaluateExpression(valueExpr);
+                if (valResult is EvalFailure) return valResult;
+                var val = ((EvalSuccess)valResult).Value;
+
+                if (subject == val)
+                {
+                    List<Diagnostic> errors = [];
+                    foreach (var s in clause.Body)
+                    {
+                        var r = EvaluateStatement(s);
+                        if (r is EvalFailure f) errors.AddRange(f.Diagnostics);
+                    }
+                    return errors.Count > 0 ? new EvalFailure(errors) : new EvalSuccess(new VoidValue());
+                }
+            }
+        }
+
+        if (stmt.Else is not null)
+        {
+            List<Diagnostic> errors = [];
+            foreach (var s in stmt.Else.Body)
+            {
+                var r = EvaluateStatement(s);
+                if (r is EvalFailure f) errors.AddRange(f.Diagnostics);
+            }
+            return errors.Count > 0 ? new EvalFailure(errors) : new EvalSuccess(new VoidValue());
+        }
+
+        return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateInputStatement(InputStatement stmt)

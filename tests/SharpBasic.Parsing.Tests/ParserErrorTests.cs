@@ -366,4 +366,89 @@ public class ParserErrorTests
         Assert.NotEmpty(failure.Diagnostics);
         Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
     }
+
+    // --- SELECT CASE errors ---
+
+    [Fact]
+    public void Parser_Select_Without_Case_Keyword_Produces_ParseFailure()
+    {
+        // SELECT x   ← missing CASE between SELECT and subject
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,     "",  1, 1),
+            new(TokenType.Identifier, "x", 1, 8),
+            new(TokenType.Eof,        "",  1, 9),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_Missing_EndSelect_Produces_ParseFailure()
+    {
+        // SELECT CASE x
+        //   CASE 1
+        //     PRINT "one"
+        // ← no END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,      "",    1, 1),
+            new(TokenType.Case,        "",    1, 8),
+            new(TokenType.Identifier,  "x",   1, 13),
+            new(TokenType.NewLine,     "",    1, 14),
+            new(TokenType.Case,        "",    2, 3),
+            new(TokenType.IntLiteral,  "1",   2, 8),
+            new(TokenType.NewLine,     "",    2, 9),
+            new(TokenType.Print,       "",    3, 5),
+            new(TokenType.StringLiteral, "one", 3, 11),
+            new(TokenType.NewLine,     "",    3, 16),
+            new(TokenType.Eof,         "",    4, 1),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_CaseElse_Not_Last_Produces_ParseFailure()
+    {
+        // SELECT CASE x
+        //   CASE ELSE
+        //     PRINT "other"
+        //   CASE 1           ← CASE after CASE ELSE is illegal
+        //     PRINT "one"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,      "",    1, 1),
+            new(TokenType.Case,        "",    1, 8),
+            new(TokenType.Identifier,  "x",   1, 13),
+            new(TokenType.NewLine,     "",    1, 14),
+            new(TokenType.Case,        "",    2, 3),
+            new(TokenType.Else,        "",    2, 8),
+            new(TokenType.NewLine,     "",    2, 13),
+            new(TokenType.Print,       "",    3, 5),
+            new(TokenType.StringLiteral, "other", 3, 11),
+            new(TokenType.NewLine,     "",    3, 18),
+            new(TokenType.Case,        "",    4, 3),
+            new(TokenType.IntLiteral,  "1",   4, 8),
+            new(TokenType.NewLine,     "",    4, 9),
+            new(TokenType.Print,       "",    5, 5),
+            new(TokenType.StringLiteral, "one", 5, 11),
+            new(TokenType.NewLine,     "",    5, 16),
+            new(TokenType.End,         "",    6, 1),
+            new(TokenType.Select,      "",    6, 5),
+            new(TokenType.Eof,         "",    6, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
 }

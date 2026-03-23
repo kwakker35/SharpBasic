@@ -14,7 +14,7 @@ Current phase and active task list. Update as you progress.
 | 1 | `feat/set-global` | `SET GLOBAL` statement — write to global scope from inside SUB/FUNCTION | ⬜ Not started |
 | 2 | `feat/chr-builtin` | `CHR$()` built-in function — Unicode code point → single-character string | ✅ Complete — merged to `main` |
 | 3 | `feat/const-declaration` | `CONST` declaration — immutable named values with runtime enforcement | ✅ Complete — merged to `main` |
-| 4 | `feat/select-case` | `SELECT CASE` statement — multi-branch dispatch without fall-through | ⬜ Not started |
+| 4 | `feat/select-case` | `SELECT CASE` statement — multi-branch dispatch without fall-through | ✅ Complete — merged to `main` |
 | 5 | `feat/2d-arrays` | 2D arrays — `DIM name[rows][cols] AS type`, read/write both dimensions | ⬜ Not started |
 | 6 | `docs/v1-feature-sync` | Sync spec, samples (excl. Sunken Crown), and all learning docs to v1 feature set | ⬜ Not started — do last |
 

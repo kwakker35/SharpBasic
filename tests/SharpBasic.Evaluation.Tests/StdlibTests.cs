@@ -615,4 +615,207 @@ public class StdlibTests
     var output = RunHelper.Run("CONST PREFIX = \"Hello\"\nPRINT PREFIX & \" World\"");
     Assert.Equal("Hello World", output);
   }
+
+  // --- SELECT CASE ---
+
+  [Fact]
+  public void SelectCase_MatchesFirstCase_Integer()
+  {
+    var output = RunHelper.Run(
+      "LET x = 1\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"one\"\n" +
+      "  CASE 2\n" +
+      "    PRINT \"two\"\n" +
+      "END SELECT");
+    Assert.Equal("one", output);
+  }
+
+  [Fact]
+  public void SelectCase_MatchesCorrectCase_WhenMultipleClauses()
+  {
+    var output = RunHelper.Run(
+      "LET x = 2\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"one\"\n" +
+      "  CASE 2\n" +
+      "    PRINT \"two\"\n" +
+      "  CASE 3\n" +
+      "    PRINT \"three\"\n" +
+      "END SELECT");
+    Assert.Equal("two", output);
+  }
+
+  [Fact]
+  public void SelectCase_MatchesCaseElse_WhenNoCaseMatches()
+  {
+    var output = RunHelper.Run(
+      "LET x = 99\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"one\"\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"other\"\n" +
+      "END SELECT");
+    Assert.Equal("other", output);
+  }
+
+  [Fact]
+  public void SelectCase_DoesNotFallThrough_ToNextCase()
+  {
+    // Two CASE clauses both matching x = 1; only first executes
+    var output = RunHelper.Run(
+      "LET x = 1\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"first\"\n" +
+      "  CASE 1\n" +
+      "    PRINT \"second\"\n" +
+      "END SELECT");
+    Assert.Equal("first", output);
+  }
+
+  [Fact]
+  public void SelectCase_ExecutesNothing_WhenNoMatchAndNoCaseElse()
+  {
+    var output = RunHelper.Run(
+      "LET x = 99\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"one\"\n" +
+      "  CASE 2\n" +
+      "    PRINT \"two\"\n" +
+      "END SELECT");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void SelectCase_SupportsMultipleValues_InSingleCase()
+  {
+    var output = RunHelper.Run(
+      "LET x = 3\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1, 2, 3\n" +
+      "    PRINT \"low\"\n" +
+      "  CASE 4, 5\n" +
+      "    PRINT \"high\"\n" +
+      "END SELECT");
+    Assert.Equal("low", output);
+  }
+
+  [Fact]
+  public void SelectCase_WorksWithStringSubject()
+  {
+    var output = RunHelper.Run(
+      "LET cmd = \"north\"\n" +
+      "SELECT CASE cmd\n" +
+      "  CASE \"north\"\n" +
+      "    PRINT \"go north\"\n" +
+      "  CASE \"south\"\n" +
+      "    PRINT \"go south\"\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"unknown\"\n" +
+      "END SELECT");
+    Assert.Equal("go north", output);
+  }
+
+  [Fact]
+  public void SelectCase_CaseBlock_CanContainMultipleStatements()
+  {
+    var output = RunHelper.Run(
+      "LET x = 2\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"a\"\n" +
+      "  CASE 2\n" +
+      "    PRINT \"b\"\n" +
+      "    PRINT \"c\"\n" +
+      "    PRINT \"d\"\n" +
+      "  CASE 3\n" +
+      "    PRINT \"e\"\n" +
+      "END SELECT");
+    Assert.Equal("b\nc\nd", output);
+  }
+
+  [Fact]
+  public void SelectCase_CaseBlock_CanCallSub()
+  {
+    var output = RunHelper.Run(
+      "SUB Greet()\n" +
+      "  PRINT \"hello from sub\"\n" +
+      "END SUB\n" +
+      "LET x = 1\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    CALL Greet()\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"no match\"\n" +
+      "END SELECT");
+    Assert.Equal("hello from sub", output);
+  }
+
+  [Fact]
+  public void SelectCase_Subject_CanBeFunction_Return_Value()
+  {
+    var output = RunHelper.Run(
+      "FUNCTION GetCode() AS INTEGER\n" +
+      "  RETURN 42\n" +
+      "END FUNCTION\n" +
+      "SELECT CASE GetCode()\n" +
+      "  CASE 42\n" +
+      "    PRINT \"matched\"\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"no match\"\n" +
+      "END SELECT");
+    Assert.Equal("matched", output);
+  }
+
+  [Fact]
+  public void SelectCase_Nested_InnerMatchesCorrectly()
+  {
+    var output = RunHelper.Run(
+      "LET x = 1\n" +
+      "LET y = 2\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    SELECT CASE y\n" +
+      "      CASE 1\n" +
+      "        PRINT \"1-1\"\n" +
+      "      CASE 2\n" +
+      "        PRINT \"1-2\"\n" +
+      "    END SELECT\n" +
+      "  CASE 2\n" +
+      "    PRINT \"outer-2\"\n" +
+      "END SELECT");
+    Assert.Equal("1-2", output);
+  }
+
+  [Fact]
+  public void SelectCase_OnlyCaseElse_Executes_WhenSubjectIsAnything()
+  {
+    var output = RunHelper.Run(
+      "LET x = 42\n" +
+      "SELECT CASE x\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"always\"\n" +
+      "END SELECT");
+    Assert.Equal("always", output);
+  }
+
+  [Fact]
+  public void SelectCase_CaseElse_NotExecuted_WhenEarlierCaseMatches()
+  {
+    // Ensures CASE ELSE doesn't run when a preceding CASE already fired
+    var output = RunHelper.Run(
+      "LET x = 1\n" +
+      "SELECT CASE x\n" +
+      "  CASE 1\n" +
+      "    PRINT \"matched\"\n" +
+      "  CASE ELSE\n" +
+      "    PRINT \"fallback\"\n" +
+      "END SELECT");
+    Assert.Equal("matched", output);
+  }
 }

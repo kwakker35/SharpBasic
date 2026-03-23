@@ -176,6 +176,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Input:
                 AddStatement(target, ParseInputStatement());
                 break;
+            case TokenType.Select:
+                AddStatement(target, ParseSelectCaseStatement());
+                break;
             default:
                 _diagnostics.Add(
                     new Diagnostic(
@@ -200,6 +203,131 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             _diagnostics.Add(pf.Diagnostic);
         }
+    }
+
+    private ParseStatementResult ParseSelectCaseStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); // consume SELECT
+
+        // SELECT must be followed by CASE
+        err = ExpectToken(TokenType.Case, "after SELECT");
+        if (err is not null) return err;
+        Advance(); // consume CASE
+
+        var subject = ParseExpression();
+        err = ExpectExpression(subject, "subject expression after SELECT CASE");
+        if (err is not null) return err;
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); // consume NewLine
+
+        List<CaseClause> cases = [];
+        CaseClause? elseClause = null;
+
+        while (Current.Type is TokenType.Case)
+        {
+            var caseLoc = new SourceLocation(Current.Line, Current.Column);
+            Advance(); // consume CASE
+
+            if (Current.Type is TokenType.Else)
+            {
+                // CASE ELSE
+                Advance(); // consume ELSE
+                if (Current.Type is TokenType.NewLine)
+                    Advance(); // consume NewLine
+
+                List<Statement> elseBody = [];
+                while (Current.Type is not TokenType.Case &&
+                       Current.Type is not TokenType.End &&
+                       Current.Type is not TokenType.Eof)
+                {
+                    ParseStatement(elseBody);
+                }
+
+                elseClause = new CaseClause([], elseBody, caseLoc);
+
+                // CASE ELSE must be last - error if another CASE follows
+                if (Current.Type is TokenType.Case)
+                {
+                    return new ParseStatementFailure(
+                        new Diagnostic(
+                            Current.Line,
+                            Current.Column,
+                            $"CASE clause found after CASE ELSE at {Current.Line}:{Current.Column}",
+                            DiagnosticSeverity.Error
+                        )
+                    );
+                }
+
+                break;
+            }
+            else
+            {
+                // regular CASE with one or more comma-separated values
+                List<Expression> values = [];
+
+                var val = ParseExpression();
+                err = ExpectExpression(val, "value after CASE");
+                if (err is not null) return err;
+                values.Add(val!);
+
+                while (Current.Type is TokenType.Comma)
+                {
+                    Advance(); // consume comma
+                    val = ParseExpression();
+                    err = ExpectExpression(val, "value after ','");
+                    if (err is not null) return err;
+                    values.Add(val!);
+                }
+
+                if (Current.Type is TokenType.NewLine)
+                    Advance(); // consume NewLine
+
+                List<Statement> body = [];
+                while (Current.Type is not TokenType.Case &&
+                       Current.Type is not TokenType.End &&
+                       Current.Type is not TokenType.Eof)
+                {
+                    ParseStatement(body);
+                }
+
+                cases.Add(new CaseClause(values, body, caseLoc));
+            }
+        }
+
+        // must end with END SELECT
+        if (Current.Type is TokenType.Eof)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected END SELECT but reached end of file",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        if (Current.Type is not TokenType.End || Peek().Type is not TokenType.Select)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected END SELECT but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        Advance(); // consume END
+        Advance(); // consume SELECT
+
+        return new ParseStatementSuccess(
+            new SelectCaseStatement(subject!, cases, elseClause, loc)
+        );
     }
 
     private ParseStatementFailure? ExpectToken(TokenType expected, string context)

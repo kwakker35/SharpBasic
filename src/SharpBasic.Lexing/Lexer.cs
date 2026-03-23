@@ -280,6 +280,8 @@ public class Lexer
             "CONST" => TokenType.Const,
             "MOD" => TokenType.Mod,
             "INPUT" => TokenType.Input,
+            "SELECT" => TokenType.Select,
+            "CASE" => TokenType.Case,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?
                         TokenType.Identifier : TokenType.Unknown
         };
