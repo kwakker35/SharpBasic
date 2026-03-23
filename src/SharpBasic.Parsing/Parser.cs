@@ -179,6 +179,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Select:
                 AddStatement(target, ParseSelectCaseStatement());
                 break;
+            case TokenType.Set:
+                AddStatement(target, ParseSetGlobalStatement());
+                break;
             default:
                 _diagnostics.Add(
                     new Diagnostic(
@@ -203,6 +206,32 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             _diagnostics.Add(pf.Diagnostic);
         }
+    }
+
+    private ParseStatementResult ParseSetGlobalStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); // consume SET
+
+        err = ExpectToken(TokenType.Global, "after SET");
+        if (err is not null) return err;
+        Advance(); // consume GLOBAL
+
+        err = ExpectToken(TokenType.Identifier, "identifier after SET GLOBAL");
+        if (err is not null) return err;
+        var ident = Current.Value;
+        Advance(); // consume identifier
+
+        err = ExpectToken(TokenType.Eq, "= after SET GLOBAL <identifier>");
+        if (err is not null) return err;
+        Advance(); // consume =
+
+        var value = ParseExpression();
+        err = ExpectExpression(value, "expression after SET GLOBAL <identifier> =");
+        if (err is not null) return err;
+
+        return new ParseStatementSuccess(new SetGlobalStatement(ident, value!, loc));
     }
 
     private ParseStatementResult ParseSelectCaseStatement()

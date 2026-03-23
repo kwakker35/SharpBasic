@@ -157,6 +157,7 @@ public class Evaluator(
             InputStatement ins => EvaluateInputStatement(ins),
             ConstStatement cs => EvaluateConstStatement(cs),
             SelectCaseStatement scs => EvaluateSelectCaseStatement(scs),
+            SetGlobalStatement sgs => EvaluateSetGlobalStatement(sgs),
             _
                 => new EvalFailure(
                     [
@@ -169,6 +170,37 @@ public class Evaluator(
                     ]
                 )
         };
+    }
+
+    private EvalResult EvaluateSetGlobalStatement(SetGlobalStatement stmt)
+    {
+        if (_table.IsGlobal)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    "'SET GLOBAL' is not valid outside a SUB or FUNCTION.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var root = _table.Root;
+
+        if (root.Get(stmt.Identifier) is null)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"'{stmt.Identifier}' does not exist in global scope.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var valueResult = EvaluateExpression(stmt.Value);
+        if (valueResult is EvalFailure) return valueResult;
+
+        root.Set(stmt.Identifier, ((EvalSuccess)valueResult).Value!);
+        return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateSelectCaseStatement(SelectCaseStatement stmt)

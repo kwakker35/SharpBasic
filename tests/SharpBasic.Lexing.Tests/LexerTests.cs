@@ -289,6 +289,8 @@ public class LexerTests
     [InlineData(",", TokenType.Comma)]
     [InlineData("SELECT", TokenType.Select)]
     [InlineData("CASE", TokenType.Case)]
+    [InlineData("SET", TokenType.Set)]
+    [InlineData("GLOBAL", TokenType.Global)]
     public void Lexer_Tokenises_Single_Token(string input, TokenType expected)
     {
         var tokens = new Lexer(input).Tokenise();

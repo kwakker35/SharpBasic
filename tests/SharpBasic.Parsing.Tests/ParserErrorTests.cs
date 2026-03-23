@@ -451,4 +451,63 @@ public class ParserErrorTests
         Assert.NotEmpty(failure.Diagnostics);
         Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
     }
+
+    // --- SET GLOBAL errors ---
+
+    [Fact]
+    public void Parser_Set_Without_Global_Produces_ParseFailure()
+    {
+        // SET x = 42  ← missing GLOBAL keyword
+        var tokens = new List<Token>
+        {
+            new(TokenType.Set,        "",   1, 1),
+            new(TokenType.Identifier, "x",  1, 5),
+            new(TokenType.Eq,         "",   1, 7),
+            new(TokenType.IntLiteral, "42", 1, 9),
+            new(TokenType.Eof,        "",   1, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_SetGlobal_Missing_Identifier_Produces_ParseFailure()
+    {
+        // SET GLOBAL = 42  ← missing identifier
+        var tokens = new List<Token>
+        {
+            new(TokenType.Set,        "",   1, 1),
+            new(TokenType.Global,     "",   1, 5),
+            new(TokenType.Eq,         "",   1, 12),
+            new(TokenType.IntLiteral, "42", 1, 14),
+            new(TokenType.Eof,        "",   1, 16),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_SetGlobal_Missing_Eq_Produces_ParseFailure()
+    {
+        // SET GLOBAL x 42  ← missing =
+        var tokens = new List<Token>
+        {
+            new(TokenType.Set,        "",   1, 1),
+            new(TokenType.Global,     "",   1, 5),
+            new(TokenType.Identifier, "x",  1, 12),
+            new(TokenType.IntLiteral, "42", 1, 14),
+            new(TokenType.Eof,        "",   1, 16),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
 }

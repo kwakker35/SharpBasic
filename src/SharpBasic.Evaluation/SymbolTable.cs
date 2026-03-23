@@ -23,4 +23,7 @@ public class SymbolTable(SymbolTable? parent = null)
         _store[name] = value;
         return true;
     }
+
+    public bool IsGlobal => parent is null;
+    public SymbolTable Root => parent?.Root ?? this;
 }

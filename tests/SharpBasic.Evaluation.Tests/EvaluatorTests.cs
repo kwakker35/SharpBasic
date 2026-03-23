@@ -740,4 +740,93 @@ public class EvaluatorTests
         var output = RunHelper.Run("LET b = \"yes\" = \"yes\"\nPRINT b");
         Assert.Equal("True", output);
     }
+
+    // --- SET GLOBAL ---
+
+    [Fact]
+    public void SetGlobal_UpdatesGlobalVariable_WhenCalledFromSub()
+    {
+        var source = """
+            LET score = 0
+            SUB UpdateScore()
+                SET GLOBAL score = 99
+            END SUB
+            CALL UpdateScore()
+            PRINT score
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("99", output);
+    }
+
+    [Fact]
+    public void SetGlobal_UpdatesGlobalVariable_WhenCalledFromFunction()
+    {
+        var source = """
+            LET total = 0
+            FUNCTION AddToTotal(n AS INTEGER) AS INTEGER
+                SET GLOBAL total = total + n
+                RETURN 0
+            END FUNCTION
+            LET dummy = AddToTotal(5)
+            PRINT total
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("5", output);
+    }
+
+    [Fact]
+    public void SetGlobal_UpdatesGlobalVariable_WhenCalledFromNestedSub()
+    {
+        // A calls B, B uses SET GLOBAL
+        var source = """
+            LET g = 0
+            SUB Inner()
+                SET GLOBAL g = 42
+            END SUB
+            SUB Outer()
+                CALL Inner()
+            END SUB
+            CALL Outer()
+            PRINT g
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("42", output);
+    }
+
+    [Fact]
+    public void SetGlobal_ReturnsError_WhenVariableNotInGlobalScope()
+    {
+        var source = """
+            SUB DoIt()
+                SET GLOBAL nonexistent = 1
+            END SUB
+            CALL DoIt()
+            """;
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void SetGlobal_ReturnsError_WhenUsedAtTopLevel()
+    {
+        var source = "SET GLOBAL x = 1";
+        var result = RunHelper.RunResult(source);
+        Assert.IsType<EvalFailure>(result);
+    }
+
+    [Fact]
+    public void Let_DoesNotMutateGlobal_WhenUsedInsideSub()
+    {
+        // Regression: LET inside a SUB must still shadow, not write to global
+        var source = """
+            LET x = 10
+            SUB ChangeX()
+                LET x = 99
+            END SUB
+            CALL ChangeX()
+            PRINT x
+            """;
+        var output = RunHelper.Run(source);
+        Assert.Equal("10", output);
+    }
 }

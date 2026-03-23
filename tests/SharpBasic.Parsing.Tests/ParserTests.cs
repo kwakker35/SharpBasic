@@ -1171,4 +1171,29 @@ public class ParserTests
         Assert.Equal(2, Assert.IsType<IntLiteralExpression>(clause.Values[1]).Value);
         Assert.Equal(3, Assert.IsType<IntLiteralExpression>(clause.Values[2]).Value);
     }
+
+    // --- SET GLOBAL structural ---
+
+    [Fact]
+    public void Parser_SetGlobal_Produces_Correct_AST()
+    {
+        // SET GLOBAL x = 42
+        var tokens = new List<Token>
+        {
+            new(TokenType.Set,        "",   1, 1),
+            new(TokenType.Global,     "",   1, 5),
+            new(TokenType.Identifier, "x",  1, 12),
+            new(TokenType.Eq,         "",   1, 14),
+            new(TokenType.IntLiteral, "42", 1, 16),
+            new(TokenType.Eof,        "",   1, 18),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SetGlobalStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("x", stmt.Identifier);
+        var val = Assert.IsType<IntLiteralExpression>(stmt.Value);
+        Assert.Equal(42, val.Value);
+    }
 }
