@@ -325,10 +325,10 @@ public class Evaluator(
         var defaultVal = stmt.TypeName.ToUpperInvariant() switch
         {
             "INTEGER" => (Value)new IntValue(0),
-            "FLOAT"   => new FloatValue(0),
+            "FLOAT" => new FloatValue(0),
             "BOOLEAN" => new BoolValue(false),
-            "STRING"  => new StringValue(string.Empty),
-            _         => new VoidValue()
+            "STRING" => new StringValue(string.Empty),
+            _ => new VoidValue()
         };
 
         for (var i = 0; i < total; i++)
@@ -1202,8 +1202,8 @@ public class Evaluator(
         var flatIdx = row * arrVal.Cols + col;
 
         if ((targetType == "INTEGER" && value is IntValue) ||
-            (targetType == "FLOAT"   && value is FloatValue) ||
-            (targetType == "STRING"  && value is StringValue) ||
+            (targetType == "FLOAT" && value is FloatValue) ||
+            (targetType == "STRING" && value is StringValue) ||
             (targetType == "BOOLEAN" && value is BoolValue))
         {
             arrVal.Items[flatIdx] = value;
@@ -1275,9 +1275,9 @@ public class Evaluator(
         return arrVal.ElementTypeName.ToUpperInvariant() switch
         {
             "INTEGER" => new EvalSuccess((IntValue)arrVal.Items[flatIdx]),
-            "FLOAT"   => new EvalSuccess((FloatValue)arrVal.Items[flatIdx]),
+            "FLOAT" => new EvalSuccess((FloatValue)arrVal.Items[flatIdx]),
             "BOOLEAN" => new EvalSuccess((BoolValue)arrVal.Items[flatIdx]),
-            "STRING"  => new EvalSuccess((StringValue)arrVal.Items[flatIdx]),
+            "STRING" => new EvalSuccess((StringValue)arrVal.Items[flatIdx]),
             _ => new EvalFailure([
                 new Diagnostic(expr.Location?.Line ?? 0, expr.Location?.Col ?? 0,
                     $"Unknown type name: {arrVal.TypeName}", DiagnosticSeverity.Error)
@@ -1287,7 +1287,7 @@ public class Evaluator(
 
     private EvalResult EvaluateUnaryExpression(UnaryExpression expr)
     {
-        var evalResult = EvaluateExpression(expr.Operand);        if (evalResult is EvalFailure) return evalResult;
+        var evalResult = EvaluateExpression(expr.Operand); if (evalResult is EvalFailure) return evalResult;
 
         var resValue = ((EvalSuccess)evalResult).Value;
 
