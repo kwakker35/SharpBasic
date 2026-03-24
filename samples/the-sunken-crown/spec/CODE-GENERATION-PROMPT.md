@@ -26,7 +26,7 @@ of code. When documents conflict, the hierarchy below determines which one wins.
 | 2 | `spec/the-sunken-crown-architecture.md` | Implementation authority. ADRs, state variable map, subroutine call tree, flow diagrams. |
 | 3 | `spec/SharpBASIC_Showcase_Game__Decisions__Context_Log.md` | Design authority. All game mechanics, rules, and decisions live here. |
 | 4 | `spec/the-sunken-crown-content.md` | Text authority. All strings printed to the player come from this file and nowhere else. |
-| 5 | `spec/The_Sunken_Crown___Technical_Architecture_Document.md` | Architecture reference. ADRs, state variable map, call tree, flow diagrams. |
+| 5 | `spec/The_Sunken_Crown___Technical_Architecture_Document.md` | **Superseded by Priority 2.** This is the original architecture document before pre-build decisions were resolved. Read Priority 2 instead. If any conflict exists between Priority 2 and Priority 5, Priority 2 wins. |
 
 **If a mechanic is not in the design log, it does not exist.**
 **If a language feature is not in the language spec, it cannot be used.**
@@ -46,23 +46,71 @@ of code. When documents conflict, the hierarchy below determines which one wins.
 
 ### Critical language constraints to keep front of mind:
 
+**Assignment and scope:**
 - `LET` is mandatory for all variable assignment — bare assignment (`x = 5`) is not valid
+- `LET` inside a SUB or FUNCTION always writes to local scope — it never mutates a global
+- `SET GLOBAL name = expression` is the only way to mutate a global from inside a SUB or FUNCTION
+- `SET GLOBAL` is only valid inside a SUB or FUNCTION — using it at top level is a runtime error
+- `SET GLOBAL` requires the variable to already exist in global scope
+- `CONST name = literal` declares an immutable global — `LET` or `SET GLOBAL` on a CONST is a runtime error
+- CONST is global only — declaring CONST inside a SUB or FUNCTION is a runtime error
+
+**Arrays:**
 - Array declaration syntax is `DIM name[size] AS TYPE` with square brackets
+- 2D array declaration is `DIM name[rows][cols] AS TYPE`
 - Array access and assignment use square brackets — `scores[0]`, `LET scores[3] = 42`
+- 2D array access is `name[row][col]` — both indices 0-based
+- Bounds checking applies to each dimension independently
+
+**Control flow:**
 - There is no line-continuation character — every statement fits on one physical line
-- `THEN` must be followed by a newline — there is no single-line IF
-- There is no `ELSEIF` — nested `IF` blocks only
+- Single-line IF is permitted: `IF condition THEN statement END IF` on one line
+- There is no `ELSEIF` — use nested `IF` blocks or `SELECT CASE`
+- `SELECT CASE expression` / `CASE value` / `CASE value1, value2` / `CASE ELSE` / `END SELECT`
+- First matching CASE wins — no fall-through between cases
+- `END SELECT` is two tokens: `END` then `SELECT`
+
+**SUBs and FUNCTIONs:**
 - SUB names and FUNCTION names are case-sensitive at call sites
 - All SUB and FUNCTION declarations are hoisted — declaration order does not matter
 - `RETURN` with no value exits a SUB — `RETURN expression` exits a FUNCTION
+- Arguments are passed by value — modifying a parameter does not affect the caller
+
+**Built-in functions:**
 - `REM` requires a space after it to be recognised as a comment
 - `INPUT` always stores a STRING — use `VAL()` to convert to a number
 - `MID$` is 1-based, not 0-based
-- `INT()` applied to a Float returns a Float, not an Integer
+- `INT()` applied to a Float returns a Float, not an Integer — use `VAL(STR$(INT(n)))` to get Integer
 - `+` does not concatenate strings — use `&` only
+- `CHR$(34)` is the only way to embed a double-quote in a string — no escape sequences exist
+- `CHR$(10)` produces a newline character
 - String comparison supports `=` and `<>` only — not `<`, `>`, `<=`, `>=`
 - Boolean operands for `AND` and `OR` must both be Boolean — no implicit coercion
 - `RND()` requires parentheses
+- `MID$`, `LEFT$`, `RIGHT$` have no bounds checking — validate string lengths before calling
+
+### Paging — Non-Negotiable
+
+The game targets a 30-row terminal. Chrome (separators, header, location line,
+exits, prompt) occupies 10 rows, leaving 20 content rows per screen.
+
+```
+CONST SCREEN_HEIGHT = 30
+CONST CONTENT_ROWS = 20
+```
+
+Text blocks that exceed 20 lines must be broken with `CALL Pause()` at the
+natural break point marked `[PAUSE]` in the content asset file. Currently only
+the win sequence requires a pause. All other blocks fit within 20 lines.
+
+`SUB Pause()` prints `"  Press ENTER to continue."`, waits for INPUT, and clears
+nothing — the terminal scrolls naturally. It is introduced in Issue 2 and used
+wherever the content asset file marks `[PAUSE]`.
+
+Do not insert automatic line counting. Pauses are authored at specific points,
+not generated dynamically.
+
+---
 
 ### The Game — Non-Negotiable
 
@@ -257,14 +305,24 @@ Write the complete updated `.sbx` file. Not a diff. Not a snippet. The full
 file as it stands after this issue is applied. Comment every SUB and FUNCTION
 with its purpose. Comment every DIM block with what the array represents.
 
+The master `.sbx` file is built exactly as a reader following the course would
+build it — by taking Issue 1's listing and creating the file, then adding each
+subsequent issue's listing in order. The master file at the end of Issue N must
+be identical to what a reader would have if they had typed in all listings from
+Issue 1 through Issue N. These two things are the same program. If they ever
+differ, something is wrong and must be corrected before proceeding.
+
 Code standards:
 - Every SUB and FUNCTION has a header comment stating its purpose and parameters
 - Every DIM array has an inline comment stating what it tracks
-- Magic numbers are replaced with named constants via LET at the top of the file
+- All named constants are declared with `CONST` at the top of the file — never `LET`
 - State flag values (0/1) are commented at declaration — `' 0 = false, 1 = true`
 - All text strings are pulled from the content asset file — no inline invented strings
 - Combat, navigation, inventory, and event logic each live in their own named SUBs
 - No SUB or FUNCTION exceeds what can reasonably be understood in one reading
+- Every write to a global variable from inside a SUB uses `SET GLOBAL` — never `LET`
+- Every multi-branch dispatch on a single value uses `SELECT CASE` — not nested IF/ELSE
+- `CHR$(34)` is used wherever a double-quote character must appear in printed output
 
 ### Step 4 — User Testing Checklist
 Before declaring an issue complete, produce a checklist of every scenario
@@ -284,8 +342,14 @@ issue may now begin.
 Replace the placeholder in the corresponding `listing/issue-NN-*.md` file
 with the new code for this issue only. Do not reproduce prior issue code.
 Include navigation comments on every new block telling the reader exactly
-where it goes in the existing file. Confirm that assembling all issues to
-date in order produces the current state of the master `.sbx` file exactly.
+where it goes in the existing file.
+
+Then verify: mentally assemble all issue listings from Issue 1 to Issue N in
+order. The result must be byte-for-byte identical to the current master `.sbx`
+file. The issue files are not a summary or a simplified version — they are the
+exact source of the master file, broken into installments. A reader who types
+every listing in order must end up with a working game that matches the master
+file exactly.
 
 ---
 
@@ -326,15 +390,18 @@ inline. These are UI chrome, not game text.
 ## What Good Code Looks Like in SharpBASIC v1
 
 - Global state is declared at the top of the file in clearly labelled DIM blocks
-- Constants are declared immediately after global state
+- Constants are declared with `CONST` immediately after — never with `LET`
 - SUB and FUNCTION declarations follow — grouped by concern (UI, combat, navigation etc.)
 - The main game loop is at the bottom of the file
 - The opening sequence runs before the main loop
 - Every branch of every IF has an explicit outcome — no silent falls-through
+- Multi-branch dispatch on a single value always uses `SELECT CASE`, not nested IF/ELSE
 - WHILE loops have a clearly named exit condition
 - FOR loops use named variables, never bare `i` in nested contexts
 - All INPUT is followed immediately by UPPER$ normalisation where the result
   will be compared against a keyword
+- All writes to globals from inside SUBs use `SET GLOBAL` — this is never optional
+- Quoted speech in PRINT statements uses `CHR$(34)` for the double-quote character
 
 ---
 
@@ -358,9 +425,10 @@ without confirmation.
 - SharpBASIC v1 does not change.
 - The game design does not change.
 - The state variable names do not change.
-- The item codes do not change.
+- The item codes do not change — they are declared as CONST and are immutable.
 - The subroutine signatures do not change.
 - The text in the content asset file does not change.
+- The `SET GLOBAL` rule does not change — all global mutation from SUBs uses it, always.
 
 The only thing that changes, issue by issue, is how much of the game exists
 in the `.sbx` file.

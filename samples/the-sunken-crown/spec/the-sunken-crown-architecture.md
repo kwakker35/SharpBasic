@@ -6,6 +6,7 @@
 > Ambiguities are noted where they exist.
 >
 > **Updated March 2026 — All ambiguities resolved. Pre-build decisions locked.**
+> **Language spec updated — SET GLOBAL, CONST, SELECT CASE, 2D arrays, CHR$ now in v1.**
 > See Appendix for full resolution record.
 
 -----
@@ -33,10 +34,10 @@ lookups.
 
 ```
 ' exit slot layout (conceptual):
-' exitRoom(i)   -- which room this exit belongs to
-' exitDir(i)    -- direction: 1=N, 2=S, 3=E, 4=W, 5=NE
-' exitDest(i)   -- destination room number
-' roomExitStart(r) -- first exit slot for room r
+' exitRoom[i]   -- which room this exit belongs to
+' exitDir[i]    -- direction: 1=N, 2=S, 3=E, 4=W, 5=NE
+' exitDest[i]   -- destination room number
+' roomExitStart[r] -- first exit slot for room r
 ' roomExitCount(r) -- how many exits room r has
 ```
 
@@ -70,9 +71,9 @@ Each property is its own `DIM`-ed integer array, indexed by room number (1–12)
 Integer 0 = false, 1 = true throughout.
 
 ```
-DIM visited(12) AS INTEGER    ' 0 = first visit, 1 = revisit
-DIM searched(12) AS INTEGER   ' 0 = unsearched, 1 = exhausted
-DIM monsterAlive(12) AS INTEGER ' 0 = dead/absent, 1 = present
+DIM visited[12] AS INTEGER    ' 0 = first visit, 1 = revisit
+DIM searched[12] AS INTEGER   ' 0 = unsearched, 1 = exhausted
+DIM monsterAlive[12] AS INTEGER ' 0 = dead/absent, 1 = present
 ```
 
 **Consequences:**
@@ -100,15 +101,15 @@ a genuine random permutation, not a biased assignment.
 **Decision:**  
 Define a `lootPool` array of 5 integers (item codes 1–4, with 0 representing
 “empty”). Initialise it as `[1, 2, 3, 4, 0]`. Apply a Fisher-Yates shuffle
-using `RND` and `INT`. Then assign `lootPool(i)` to `slotContents(i)` — a
+using `RND` and `INT`. Then assign `lootPool[i]` to `slotContents[i]` — a
 second array mapping slot index to item code.
 
 ```
-' Shuffle lootPool(1..5) in place:
+' Shuffle lootPool[1..5] in place:
 FOR i = 5 TO 2 STEP -1
-    LET j = INT(RND * i) + 1
-    LET temp = lootPool(i)
-    LET lootPool(i) = lootPool(j)
+    LET j = INT(RND() * i) + 1
+    LET temp = lootPool[i]
+    LET lootPool[i] = lootPool(j)
     LET lootPool(j) = temp
 NEXT i
 ```
@@ -181,8 +182,8 @@ not move that turn.
 ```
 ' Conceptual wandering logic:
 LET validExits = 0
-FOR i = roomExitStart(zombieRoom) TO roomExitStart(zombieRoom) + roomExitCount(zombieRoom) - 1
-    IF exitDest(i) <> 5 AND exitDest(i) <> 8 AND exitDest(i) <> 11 THEN
+FOR i = roomExitStart[zombieRoom] TO roomExitStart[zombieRoom] + roomExitCount[zombieRoom] - 1
+    IF exitDest[i] <> 5 AND exitDest[i] <> 8 AND exitDest[i] <> 11 THEN
         LET validExits = validExits + 1
     END IF
 NEXT i
@@ -284,13 +285,13 @@ be checked — landing on a dead monster is a normal room entry, not a fight.
 Store pool rooms as small fixed arrays. Select randomly by index.
 
 ```
-DIM luckyPool(2) AS INTEGER   ' [1, 3]
-DIM unluckyPool(5) AS INTEGER ' [6, 7, 8, 9, 10]
+DIM luckyPool[2] AS INTEGER   ' [1, 3]
+DIM unluckyPool[5] AS INTEGER ' [6, 7, 8, 9, 10]
 ```
 
 After selecting a destination, do not reroll if the monster is dead. Simply
 set `currentRoom` to the destination and let normal room entry logic handle
-the monster-present check. If `monsterAlive(dest) = 0`, the room is entered
+the monster-present check. If `monsterAlive[dest] = 0`, the room is entered
 normally. The pool selection is not filtered — “the dungeon put you there
 regardless” (design log).
 
@@ -344,8 +345,8 @@ Before entering the combat loop, if the relevant terror flag is set:
 
 ```
 IF terrorActive = 1 THEN
-    LET skill = skill - 2
-    LET luck = luck - 1
+    SET GLOBAL skill = skill - 2
+    SET GLOBAL luck = luck - 1
 END IF
 ```
 
@@ -353,8 +354,8 @@ After the combat loop exits (monster dead or player dead), restore:
 
 ```
 IF terrorActive = 1 THEN
-    LET skill = skill + 2
-    LET luck = luck + 1
+    SET GLOBAL skill = skill + 2
+    SET GLOBAL luck = luck + 1
 END IF
 ```
 
@@ -369,7 +370,10 @@ the combat loop.
 - If the player dies during a terror encounter, the restoration code is never
   reached. This is correct — the run is over.
 - The Bangle of Courage check happens before any stat modification: if
-  `hasItem(BANGLE) = 1` then `terrorActive` is never set to 1.
+  `hasItem[BANGLE] = 1` then `terrorActive` is never set to 1.
+
+**SET GLOBAL in terror handler:** All stat modifications in the terror handler
+use `SET GLOBAL` since they run inside `BoundKingSequence` (a SUB).
 
 -----
 
@@ -377,6 +381,33 @@ the combat loop.
 
 All variables are global unless noted as parameter-only. BOOLEAN is represented
 as INTEGER (0 = false, 1 = true).
+
+**SET GLOBAL rule:** All global variables listed in this map must be mutated from
+inside SUBs and FUNCTIONs using `SET GLOBAL name = expression`, not `LET`.
+Using `LET` inside a SUB creates a local variable and leaves the global unchanged.
+`SET GLOBAL` requires the variable to already exist in global scope.
+Constants declared with `CONST` cannot be targeted by `SET GLOBAL`.
+
+**CONST rule:** Direction codes, item codes, array size limits, and fixed thresholds
+are declared with `CONST` at the top of the file. They are read-only throughout
+the program. Any attempt to reassign them with `LET` or `SET GLOBAL` is a runtime error.
+
+**Paging model:**
+The game targets a 30-row terminal. Chrome occupies 10 rows (two separators, header,
+location line, blank lines, exits, prompt), leaving 20 content rows per screen.
+
+```
+CONST SCREEN_HEIGHT = 30    ' total terminal rows
+CONST CONTENT_ROWS = 20     ' rows available for content after chrome
+```
+
+Text blocks exceeding 20 lines are broken with `CALL Pause()` at authored break
+points marked `[PAUSE]` in the content asset file. Currently only the win sequence
+(29 lines) requires a pause — after *"The guards don't move."* before the quoted
+speech. All other text blocks fit within 20 lines.
+
+`SUB Pause()` prints `"  Press ENTER to continue."` and waits for INPUT.
+No line counting. No automatic paging. Pauses are explicit and authored.
 
 ### Player Stats
 
@@ -395,43 +426,42 @@ as INTEGER (0 = false, 1 = true).
 |Variable      |Type   |Represents                          |Set by               |Read by                            |Valid range     |
 |--------------|-------|------------------------------------|---------------------|-----------------------------------|----------------|
 |`invCount`    |INTEGER|Number of items currently carried   |TAKE, DROP handlers  |All item checks, overburdened logic|0–4             |
-|`inventory(4)`|INTEGER|Item code in each slot (0 = empty)  |TAKE, DROP handlers  |USE handler, display, checks       |0–8 (item codes)|
+|`inventory[4]`|INTEGER|Item code in each slot (0 = empty)  |TAKE, DROP handlers  |USE handler, display, checks       |0–11 (item codes)|
 |`poisoned`    |INTEGER|Whether player is currently poisoned|Horror combat loop   |Room entry handler                 |0 or 1          |
 |`overburdened`|INTEGER|Whether invCount = 4                |Derived from invCount|GO handler, combat loop            |0 or 1          |
 
-**Item codes (suggested):**
-1 = Healing Potion, 2 = Lucky Charm, 3 = Armour Shard, 4 = Dark Bread,
-5 = Antidote Vial, 6 = Bangle of Courage, 7 = Sword of Sharpness,
-8 = Mouldy Bread, 9 = Guardroom Key (key to Armoury chest)
+**Item codes — locked (Decision 5):**
+0 = empty slot, 1 = Healing Potion, 2 = Lucky Charm, 3 = Armour Shard,
+4 = Dark Bread, 5 = Medal of Valour, 6 = Antidote Vial, 7 = Bangle of Courage,
+8 = Sword of Sharpness, 9 = Mouldy Bread, 10 = Guardroom Key, 11 = Gold Bag.
 
-**Ambiguity noted:** The design log does not define item codes or specify whether
-items should be stored by code or by name string. Integer codes are recommended
-for array storage; display names are a lookup by code.
+Items are stored as INTEGER codes. Display names are returned by
+`FUNCTION ItemName(code AS INTEGER) AS STRING` using SELECT CASE.
 
 ### Room and Navigation
 
 |Variable           |Type   |Represents                                  |Set by                            |Read by                          |Valid range|
 |-------------------|-------|--------------------------------------------|----------------------------------|---------------------------------|-----------|
 |`currentRoom`      |INTEGER|Player’s current room (1–12)                |GO handler, Still Chamber, startup|All room-based logic             |1–12       |
-|`visited(12)`      |INTEGER|Whether room r has been entered before      |Room entry handler                |Room description selector        |0 or 1     |
-|`searched(12)`     |INTEGER|Whether room r has been searched            |SEARCH handler                    |SEARCH handler, loot display     |0 or 1     |
-|`monsterAlive(12)` |INTEGER|Whether the fixed monster in room r is alive|Combat end handler                |Room entry, encounter check      |0 or 1     |
-|`exitRoom(30)`     |INTEGER|Owning room for each exit slot              |Initialisation                    |Navigation handler               |1–12       |
-|`exitDir(30)`      |INTEGER|Direction code for each exit slot           |Initialisation                    |Navigation handler, display      |1–5        |
-|`exitDest(30)`     |INTEGER|Destination room for each exit slot         |Initialisation                    |Navigation handler, zombie wander|1–12       |
-|`exitHidden(30)`   |INTEGER|Whether exit is hidden until SEARCH         |Initialisation                    |Exit display handler             |0 or 1     |
-|`roomExitStart(12)`|INTEGER|Index of first exit slot for room r         |Initialisation                    |Navigation, zombie wander        |1–30       |
-|`roomExitCount(12)`|INTEGER|Number of exits for room r                  |Initialisation                    |Navigation, zombie wander        |0–4        |
+|`visited[12]`      |INTEGER|Whether room r has been entered before      |Room entry handler                |Room description selector        |0 or 1     |
+|`searched[12]`     |INTEGER|Whether room r has been searched            |SEARCH handler                    |SEARCH handler, loot display     |0 or 1     |
+|`monsterAlive[12]` |INTEGER|Whether the fixed monster in room r is alive|Combat end handler                |Room entry, encounter check      |0 or 1     |
+|`exitDir[30]`     |INTEGER|Owning room for each exit slot              |Initialisation                    |Navigation handler               |1–12       |
+|`exitDir[30]`      |INTEGER|Direction code for each exit slot           |Initialisation                    |Navigation handler, display      |1–5        |
+|`exitDest[30]`     |INTEGER|Destination room for each exit slot         |Initialisation                    |Navigation handler, zombie wander|1–12       |
+|`exitHidden[30]`   |INTEGER|Whether exit is hidden until SEARCH         |Initialisation                    |Exit display handler             |0 or 1     |
+|`roomExitStart[12]`|INTEGER|Index of first exit slot for room r         |Initialisation                    |Navigation, zombie wander        |1–30       |
+|`roomExitCount[12]`|INTEGER|Number of exits for room r                  |Initialisation                    |Navigation, zombie wander        |0–4        |
 
 ### Loot and Items
 
 |Variable         |Type   |Represents                             |Set by            |Read by                     |Valid range         |
 |-----------------|-------|---------------------------------------|------------------|----------------------------|--------------------|
-|`slotContents(6)`|INTEGER|Item code in each loot slot (0 = empty)|Startup shuffle   |SEARCH handler, TAKE handler|0–4 (shuffled codes)|
-|`slotTaken(6)`   |INTEGER|Whether loot slot has been collected   |TAKE handler      |SEARCH handler              |0 or 1              |
-|`armoury Locked` |INTEGER|Whether Armoury chest is still locked  |TAKE handler (key)|SEARCH handler in room [3]  |0 or 1              |
+|`slotContents[6]`|INTEGER|Item code in each loot slot (0 = empty)|Startup shuffle   |SEARCH handler, TAKE handler|0–5 (shuffled item codes, 0=empty)|
+|`slotTaken[6]`   |INTEGER|Whether loot slot has been collected   |TAKE handler      |SEARCH handler              |0 or 1              |
+|`armouryLocked` |INTEGER|Whether Armoury chest is still locked  |TAKE handler (key)|SEARCH handler in room [3]  |0 or 1              |
 
-**Note:** `armouryLocked` can be derived from `hasItem(KEY)` being false after the
+**Note:** `armouryLocked` can be derived from `hasItem[KEY]` being false after the
 Brute has been killed and searched. A dedicated flag is cleaner.
 
 ### Zombie
@@ -502,7 +532,7 @@ MAIN PROGRAM
 │   │   │   │   └── [calls event checks, WanderZombie 3×]
 │   │   │   ├── FUNCTION TestLuck() AS INTEGER
 │   │   │   └── SUB TeleportPlayer()
-│   │   └── IF monsterAlive(roomId): SUB MonsterEncounterPrompt(roomId)
+│   │   └── IF monsterAlive[roomId]: SUB MonsterEncounterPrompt(roomId)
 │   │
 │   ├── SUB HandleZombieEncounter()   ' if zombieRoom = currentRoom
 │   │   └── → leads to SUB CombatLoop(...)
@@ -570,6 +600,14 @@ MAIN PROGRAM
 
 **Key signatures:**
 
+**Note on SELECT CASE:** Multi-branch dispatch (room names, item names, riddle text,
+atmospheric events, command routing) uses `SELECT CASE` throughout. This replaces
+the nested IF/ELSE chains that would otherwise be required. See spec §7.4.
+
+**Note on 2D arrays:** The exit map uses a 2D array for room-to-exit data where
+the structure is regular. Parallel 1D arrays are used where the structure is
+irregular (per ADR-001). Both patterns coexist in the codebase.
+
 ```
 FUNCTION RollDice(n AS INTEGER) AS INTEGER
     ' Sums n d6 rolls. Single source of all randomness.
@@ -583,10 +621,13 @@ FUNCTION AttackStrength(statSkill AS INTEGER) AS INTEGER
 SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
                hasArmour AS INTEGER, hasRegen AS INTEGER,
                hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER,
-               hasPoison AS INTEGER, isBoss AS INTEGER)
+               hasPoison AS INTEGER, isBoss AS INTEGER,
+               searchInterrupt AS INTEGER)
     ' Parameterised combat — all monster special flags passed in.
+    ' searchInterrupt = 1 adds SKILL -1 to round 1 (additive with Lesser Terror).
     ' Boss-specific mechanics (Crushing Blow, Terror) handled by isBoss flag
     ' and pre-combat setup, not inside this SUB.
+    ' All writes to global state (stamina, skill, luck, etc.) use SET GLOBAL.
 
 SUB WanderZombie()
     ' Moves zombie one step via exit array, respecting exclusion list.

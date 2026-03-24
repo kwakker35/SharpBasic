@@ -31,7 +31,19 @@
 > - All output is plain text rendered at 80 characters wide
 > - Commands are normalised with UPPER$ before comparison throughout
 >
-> **Last updated:** March 2026
+> **Last updated:** March 2026 — language spec updated
+>
+> **Paging model:** The game targets a 30-row terminal with 20 content rows available
+> after chrome (separators, header, location, exits, prompt). Text blocks that exceed
+> 20 lines must insert a `[PAUSE]` marker at a natural break point. The generator
+> implements each `[PAUSE]` as `CALL Pause()`. Only the win sequence currently requires
+> a pause. All other blocks fit within 20 lines. If text is added or rewritten, recount.
+>
+> **CHR$(34) note:** All quoted speech in the win text, Bound King sequences, and
+> Riddle Room death text contains double-quote characters. Since SharpBASIC v1 has
+> no string escape sequences, these must be rendered in code using `CHR$(34)`.
+> The text in this file shows the intended output — the code uses `CHR$(34)` to produce it.
+> Example: `PRINT CHR$(34) & "You survived." & CHR$(34)` prints `"You survived."`
 
 ---
 
@@ -163,19 +175,14 @@ You hear it before you see it — a dry, chitinous skittering from somewhere in 
 
 ---
 
-**Revisit — monster alive, passage not yet found**
+**Revisit — monster alive, passage hidden**
 
 The skittering starts again the moment you step through the doorway.
 
 The rubble at the far end sits undisturbed. Whatever is buried under it, you haven't looked yet.
 
----
-
-**Revisit — monster alive, passage found**
-
-The skittering starts again the moment you step through the doorway.
-
-The gap in the rubble is where you left it. South, if you want it. First you have to deal with what's in the room with you.
+*Note: The passage cannot be found while the Horror is alive — SEARCH while the*
+*Horror lives triggers immediate combat. This is the only valid monster-alive revisit state.*
 
 ---
 
@@ -196,6 +203,8 @@ The gap in the rubble is visible from the doorway now that you know where to loo
 ---
 
 **SEARCH result — finding the passage**
+
+*(Only reachable when the Horror is dead. SEARCH while Horror is alive triggers combat.)*
 
 You work through the rubble methodically. Most of it is solid — ceiling stone, heavy, immovable. But toward the base of the fall, where the collapse met the floor, there is a gap. Low, tight, passable if you commit to it.
 
@@ -251,9 +260,7 @@ The room waits.
 
 **Revisit — already solved**
 
-The doors are open. Both of them — standing wide, the passage beyond the correct one exactly as you left it.
-
-The riddle is still carved into the wall between them. You don't need to read it again.
+The door you chose stands open. The passage beyond is exactly as you left it. The riddle is still carved into the wall between them. The other door is sealed. There is no handle, no gap, no way through. Whatever is on the other side stays there.
 
 ---
 
@@ -802,7 +809,7 @@ This is the architecture the entire game is built on. Every room, every combat f
 
 **What to try**
 
-Add a second room description — write the Guardroom text and add it as `IF roomId = 2 THEN` inside `PrintRoom`. Then call it from the REPL with `CALL PrintRoom(2)`. The dungeon grows by one room. This is exactly how the rest of the game gets built.
+Add a second room description — write the Guardroom text and add it as `IF roomId = 2 THEN` inside `PrintRoom`. To test it, temporarily change `CALL EnterRoom(1)` to `CALL EnterRoom(2)` in the top-level code. Run the program. The Guardroom renders. Change it back when you are done. This is exactly how the rest of the game gets built.
 
 ---
 
@@ -851,12 +858,12 @@ Navigation is the skeleton of the game. Everything else hangs off it.
 The dungeon's rooms and exits live in arrays — fixed-size collections of values, each slot numbered from zero.
 
 ```
-DIM roomExitCount(12) AS INTEGER
-DIM exitDest(30) AS INTEGER
-DIM exitDir(30) AS INTEGER
+DIM roomExitCount[12] AS INTEGER
+DIM exitDest[30] AS INTEGER
+DIM exitDir[30] AS INTEGER
 ```
 
-`roomExitCount(4)` holds the number of exits from room 4. `exitDest(7)` holds the destination of exit slot 7. The navigation handler reads these arrays to decide where GO NORTH takes you.
+`roomExitCount[4]` holds the number of exits from room 4. `exitDest[7]` holds the destination of exit slot 7. The navigation handler reads these arrays to decide where GO NORTH takes you.
 
 Arrays are how the dungeon knows its own shape. Without them, every room connection would be a separate IF statement — dozens of them, impossible to maintain. With them, the entire map lives in a handful of initialisation lines and the navigation handler is clean and general.
 
@@ -911,13 +918,13 @@ The Armoury chest is the first locked thing. You need the Brute's key to open it
 Inventory is stored as an array of item codes:
 
 ```
-DIM inventory(4) AS INTEGER
+DIM inventory[4] AS INTEGER
 LET invCount = 0
 ```
 
 Each slot holds a number. Zero means empty. One means Healing Potion. Seven means Bangle of Courage. The item is just a number — everything about what that number means lives in the code that reads it.
 
-This is parallel array design. `inventory(1)` holds what's in slot one. `invCount` tracks how many slots are filled. `overburdened` is set to 1 when `invCount = 4`. Three arrays, one concept, kept in sync by the TAKE and DROP handlers.
+This is parallel array design. `inventory[1]` holds what's in slot one. `invCount` tracks how many slots are filled. `overburdened` is set to 1 when `invCount = 4`. Three arrays, one concept, kept in sync by the TAKE and DROP handlers.
 
 Keeping parallel arrays in sync is one of the most common sources of bugs in this kind of program. If you add to `inventory` without incrementing `invCount`, or decrement `invCount` without clearing the slot, the game's accounting breaks silently. The discipline of updating all of them together, every time, is what keeps it honest.
 
@@ -1161,6 +1168,8 @@ down here finds you first.*
 
 *Then he steps forward. Alone. The guards don't move.*
 
+*[PAUSE — call Pause() here before continuing]*
+
 *"You survived."*
 
 *It is not a question. It is not a compliment. It is the pronouncement of something that was not supposed to happen, delivered by a man who has made his peace with occasionally being wrong.*
@@ -1209,6 +1218,14 @@ Play again? (YES / NO)
 *You feel the last of your luck leave you. Whatever happens next, it happens without fortune's favour.*
 
 *(Luck floors at zero. This line prints once when the drain fires and luck is already at zero. Silent thereafter.)*
+
+---
+
+### Bound King — TAKE Before Combat Refused
+
+*(Fires when player attempts TAKE BAG or TAKE CROWN while the Bound King is still alive.)*
+
+*The King sits between you and the gold.*
 
 ---
 
@@ -1337,6 +1354,173 @@ Play again? (YES / NO)
 1. *Your foot finds a loose piece of old armour. The rattle of it fills the room and the zombie turns with absolute certainty — not toward the sound, toward you.*
 2. *Dry bones shift as you crouch near the wall. The sound is faint. The zombie does not need loud.*
 3. *A gauntlet shifts under your hand. Iron on stone, barely audible. The zombie was already turning before it finished.*
+
+---
+
+### Opening Sequence — Narrative Text
+
+*These lines print during the opening sequence before attribute rolling.
+They are not room descriptions — they run once before the dungeon begins.*
+
+---
+
+*You have sold everything. Your home, your tools, what little remained after the
+debts. Malachar's men took it all — converted to coin, dropped down a chute into
+the dark beneath the keep. You watched it go.*
+
+*If you don't walk out of that dungeon, there is nothing to walk back to.*
+
+---
+
+### Still Chamber — Lucky Wake Text
+
+*You open your eyes. Stone ceiling. Cold floor. You are alive and — remarkably — unharmed. Whatever this place did to you, it could have done worse.*
+
+---
+
+### Still Chamber — Unlucky Wake Text
+
+*You open your eyes. Stone ceiling. Cold floor. You curse under your breath. Of all the places to wake up.*
+
+---
+
+### Riddle Room — Holding Response (invalid input)
+
+*The door does not move. The room waits.*
+
+---
+
+### Riddle Room — LUCK Command Refused
+
+*There is no fortune to invoke here. The dungeon offers you the riddle and nothing else.*
+
+*(LUCK is not consumed. The player returns to the riddle prompt.)*
+
+---
+
+### Riddle Room — Wrong Door Death Text
+
+*You pass through the door into a room straight from your worst nightmare. The mouldy bones of previous adventurers litter the floor. Realising your mistake you turn to leave — only to find the door has no handle. On closer examination you notice bloody scratches, and is that a fingernail?*
+
+*A deep rumble shakes your body and turns your bowels to water. You look up to see the ceiling, slow but inexorably, lowering.*
+
+*You frantically try to open the door, adding to the bloody legacy, as the room crushes the life out of you.*
+
+---
+
+### Already Searched — Second Search Response
+
+*You go through the room again. You find nothing you missed the first time.*
+
+*(Note: this replaces the earlier Deliverable 4 string 5 which read "You have already been through everything this room has to offer." The design log version above is the authoritative text.)*
+
+---
+
+### Combat Tension Lines
+
+*These lines fire inside CombatLoop based on STAMINA thresholds. Each fires once
+per combat encounter — a flag inside CombatLoop tracks whether each has fired
+this fight. They do not fire again if STAMINA fluctuates back above the threshold.*
+
+---
+
+**Player STAMINA ≤ 4 — all combat:**
+
+*You are barely standing. So is your chance of walking out of here.*
+
+---
+
+**Player STAMINA ≤ 2 — all combat:**
+
+*You are one blow from the end. You both know it.*
+
+---
+
+**Monster STAMINA ≤ 4 — all combat:**
+
+*You can feel the momentum shifting. It is yours to lose now.*
+
+---
+
+**Monster STAMINA ≤ 2 — all combat:**
+
+*It is nearly done. Don't give it a way back.*
+
+---
+
+### Crushing Blow — Bound King Only
+
+*(Fires when the Bound King wins a round by 3 or more attack strength. isBoss = 1 only.)*
+
+*The blow lands with the weight of three hundred years of experience. It takes you to one knee and you feel something break inside.*
+
+---
+
+### General Low STAMINA — Outside Combat
+
+*(Fires on room entry when player STAMINA ≤ 4. Once per room visit. Not combat-specific.)*
+
+*You have paid dearly just to be standing here. You drive your battered body on.*
+
+---
+
+### Mouldy Bread — Troll Drop Description
+
+*Beneath the body you find a heel of bread, wrapped in cloth. It has seen better days. It has seen better decades. But it is food.*
+
+*(Appears in SEARCH results in room [10] after Troll is dead. Restores 3 STAMINA on USE.)*
+
+---
+
+### End State Messages
+
+**endState = 1 — Win via Gate**
+*(Full win text in Deliverable 7. End screen:)*
+```
+You survived The Sunken Crown.
+You escaped with X bag(s) of gold.
+
+Your SKILL was X. Your STAMINA reached as low as Y. You tested your LUCK Z times.
+
+Play again? (YES / NO)
+```
+
+**endState = 2 — Took the Crown**
+*(Crown sequence text in Deliverable 6. End screen:)*
+```
+You are the Bound King now.
+
+Play again? (YES / NO)
+```
+
+**endState = 3 — Wrong answer in Riddle Room**
+*(Wrong door death text above fires first. End screen:)*
+```
+The ceiling lowered. The room did not care.
+
+Your SKILL was X. Your STAMINA reached as low as Y. You tested your LUCK Z times.
+
+Play again? (YES / NO)
+```
+
+**endState = 4 — Wrong door at Gate**
+*(Gate death text in Deliverable 7 fires first. End screen:)*
+```
+The torch went out. The dungeon kept you.
+
+Your SKILL was X. Your STAMINA reached as low as Y. You tested your LUCK Z times.
+
+Play again? (YES / NO)
+```
+
+**endState = 5 — STAMINA reached zero**
+```
+Your STAMINA reached zero.
+
+Your SKILL was X. Your STAMINA reached as low as Y. You tested your LUCK Z times.
+
+Play again? (YES / NO)
+```
 
 ---
 
