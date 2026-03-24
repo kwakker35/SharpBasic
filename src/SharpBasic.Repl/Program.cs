@@ -40,24 +40,34 @@ static int Execute(string source, SymbolTable table)
 static void PrintHelp()
 {
     Console.WriteLine();
-    Console.WriteLine("REPL commands:");
-    Console.WriteLine("  HELP    Show this help");
-    Console.WriteLine("  EXIT    Quit the REPL");
+    Console.WriteLine("Commands:  HELP  EXIT");
+    Console.WriteLine();
+    Console.WriteLine("Syntax:");
+    Console.WriteLine("  LET x AS INTEGER = 42           Variable declaration");
+    Console.WriteLine("  LET x = x + 1                   Assignment");
+    Console.WriteLine("  CONST PI = 3.14159              Named constant");
+    Console.WriteLine("  PRINT \"hello \" & x              Output");
+    Console.WriteLine("  INPUT \"Name? \"; name            Input");
+    Console.WriteLine("  IF x > 0 THEN ... END IF        Conditional");
+    Console.WriteLine("  IF x > 0 THEN ... ELSE ... END IF");
+    Console.WriteLine("  SELECT CASE op                  Multi-way branch");
+    Console.WriteLine("    CASE \"+\" : ...  CASE ELSE : ...");
+    Console.WriteLine("  END SELECT");
+    Console.WriteLine("  FOR i = 1 TO 10 ... NEXT i      Counted loop");
+    Console.WriteLine("  FOR i = 10 TO 1 STEP -1 ... NEXT i");
+    Console.WriteLine("  WHILE x > 0 ... WEND            Conditional loop");
+    Console.WriteLine("  DIM a[5] AS INTEGER             1D array (0-indexed)");
+    Console.WriteLine("  DIM m[3][3] AS INTEGER          2D array");
+    Console.WriteLine("  SUB name(p AS INTEGER)          Subroutine");
+    Console.WriteLine("  END SUB  /  CALL name(arg)");
+    Console.WriteLine("  FUNCTION f(n AS INTEGER) AS INTEGER   Function");
+    Console.WriteLine("  END FUNCTION  /  RETURN value");
+    Console.WriteLine("  REM comment                     Comment (inline or full-line)");
     Console.WriteLine();
     Console.WriteLine("Built-in functions:");
-    Console.WriteLine("  LEN(s)          Length of string");
-    Console.WriteLine("  MID$(s,n,l)     Substring");
-    Console.WriteLine("  LEFT$(s,n)      Left n characters");
-    Console.WriteLine("  RIGHT$(s,n)     Right n characters");
-    Console.WriteLine("  UPPER$(s)       Uppercase");
-    Console.WriteLine("  LOWER$(s)       Lowercase");
-    Console.WriteLine("  TRIM$(s)        Trim whitespace");
-    Console.WriteLine("  STR$(n)         Number to string");
-    Console.WriteLine("  VAL(s)          String to number");
-    Console.WriteLine("  INT(n)          Floor to integer");
-    Console.WriteLine("  ABS(n)          Absolute value");
-    Console.WriteLine("  RND()           Random float 0..1");
-    Console.WriteLine("  TYPENAME(v)     Type name of value");
+    Console.WriteLine("  LEN(s)  MID$(s,n,l)  LEFT$(s,n)  RIGHT$(s,n)");
+    Console.WriteLine("  UPPER$(s)  LOWER$(s)  TRIM$(s)  CHR$(n)");
+    Console.WriteLine("  STR$(n)  VAL(s)  INT(n)  ABS(n)  SQR(n)  RND()  TYPENAME(v)");
     Console.WriteLine();
 }
 
