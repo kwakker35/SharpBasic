@@ -26,6 +26,21 @@ LET skill = 0
 LET stamina = 0
 LET luck = 0
 
+REM ----------------------------------------------------------------
+REM  Navigation state
+REM  currentRoom: the room the player is currently in (1-12)
+REM  visited[12]: 0 = first visit, 1 = revisited. Index = roomId - 1.
+REM ----------------------------------------------------------------
+LET currentRoom = 1
+DIM visited[12] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Game loop control
+REM  gameOver: 0 = game running, 1 = game ended
+REM  Not set to 1 in this issue -- loop runs until interrupted.
+REM ----------------------------------------------------------------
+LET gameOver = 0
+
 REM =================================================================
 REM  SUB PrintHeader
 REM  Prints the full header frame: an = separator, then the title
@@ -56,9 +71,80 @@ SUB PrintSeparator()
 END SUB
 
 REM =================================================================
-REM  Main program
+REM  SUB Pause
+REM  Prints a continue prompt and waits for the player to press
+REM  ENTER. Used wherever long text sequences exceed the screen.
+REM  The terminal scrolls naturally -- no clearing is performed.
 REM =================================================================
-CALL PrintHeader()
-PRINT ""
-CALL PrintSeparator()
-PRINT " > "
+SUB Pause()
+    INPUT "  Press ENTER to continue."; p$
+END SUB
+
+REM =================================================================
+REM  SUB PrintRoom -- roomId AS INTEGER
+REM  Selects and prints the room description for the given room.
+REM  Chooses first-visit or revisit text based on the visited flag.
+REM  Room 1: Entry Hall. Additional rooms added in Issue 4.
+REM  Note: visited flag is read here, set by EnterRoom after this call.
+REM =================================================================
+SUB PrintRoom(roomId AS INTEGER)
+    IF roomId = 1 THEN
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  You have been here before. The torches are still burning."
+            PRINT "  Whatever tends them has been and gone since you passed through."
+            PRINT ""
+            PRINT "  The gates are still closed."
+        ELSE
+            PRINT "  The hall is wide and low, the ceiling barely clearing your head. The stone"
+            PRINT "  is older here than anywhere you have ever stood -- worn smooth by centuries"
+            PRINT "  of feet, most of which never came back. Torches burn in iron brackets on"
+            PRINT "  either wall. Someone keeps them lit. You have not seen who."
+            PRINT ""
+            PRINT "  The air smells of cold and damp and something faintly animal. Behind you,"
+            PRINT "  the gates are closed. You heard the bar drop. You did not look back."
+            PRINT ""
+            PRINT "  South is a doorway with no door. Beyond it, the sound of the dungeon"
+            PRINT "  settling into itself."
+        END IF
+        PRINT ""
+        PRINT "  Exits: SOUTH"
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB EnterRoom -- roomId AS INTEGER
+REM  Renders a full room screen: header, location line, description,
+REM  separator. Sets the visited flag for the room after rendering.
+REM  Room name lookup: Room 1 = Entry Hall. Extended in Issue 4.
+REM =================================================================
+SUB EnterRoom(roomId AS INTEGER)
+    CALL PrintHeader()
+    IF roomId = 1 THEN
+        PRINT "  LOCATION: Entry Hall"
+    END IF
+    PRINT ""
+    CALL PrintRoom(roomId)
+    PRINT ""
+    CALL PrintSeparator()
+    LET visited[roomId - 1] = 1
+END SUB
+
+REM =================================================================
+REM  Main program
+REM  EnterRoom renders the first room before the command loop starts.
+REM  The loop reads and normalises input, then dispatches commands.
+REM  GO SOUTH: prints the no-exit response (navigation not yet wired).
+REM  All other input: prints the unknown command response.
+REM =================================================================
+CALL EnterRoom(1)
+
+WHILE gameOver = 0
+    INPUT " > "; cmd$
+    LET cmd$ = UPPER$(cmd$)
+    IF cmd$ = "GO SOUTH" THEN
+        PRINT "  There is no way through in that direction."
+    ELSE
+        PRINT "  The dungeon does not respond to that."
+    END IF
+    PRINT ""
+WEND
