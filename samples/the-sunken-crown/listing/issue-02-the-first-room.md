@@ -21,6 +21,7 @@ Writing the room description and putting it on screen is the moment SharpBASIC s
 - Entry Hall description wired up as room 1, with first-visit and revisit variants
 - A basic command loop — reads input, recognises GO SOUTH, prints a placeholder response
 - The `visited` flag array introduced — room 1 tracks whether you have been there before
+- `SUB Pause()` — prints a continue prompt and waits for ENTER. Used wherever long text sequences exceed the screen. Introduced here, used throughout.
 
 This issue does not wire navigation to a second room. GO SOUTH is recognised but goes nowhere yet. That comes in Issue 4.
 
@@ -54,6 +55,8 @@ SUBs are the architecture the entire game is built on. Every room, every combat 
 
 One important note: SharpBASIC hoists all SUB and FUNCTION declarations before running any top-level code. This means you can declare `PrintRoom` anywhere in the file and call it anywhere else, regardless of order. Convention is to put all SUBs together near the top of the file, above the main game loop. That is the pattern this game follows throughout.
 
+A second note on scope that matters for every SUB in this game: `LET` inside a SUB writes to local scope only. If a SUB needs to update a global variable — the player's STAMINA, the current room, the visited flag — it must use `SET GLOBAL name = expression` instead of `LET`. This is the pattern used throughout the game for all global state mutations.
+
 ---
 
 ## How It Fits
@@ -74,7 +77,9 @@ If the room description does not appear, check that `CALL PrintRoom(1)` is being
 
 ## What to Try
 
-Add a second room description — write the Guardroom text and add it as `IF roomId = 2 THEN` inside `PrintRoom`. Then call `CALL PrintRoom(2)` directly at the bottom of the file to see it render. The dungeon grows by one room.
+Add a second room description — write the Guardroom text and add it as `IF roomId = 2 THEN` inside `PrintRoom`. To test it, temporarily change `CALL EnterRoom(1)` to `CALL EnterRoom(2)` in the top-level code. Run the program. The Guardroom renders instead of the Entry Hall.
+
+Change it back to `CALL EnterRoom(1)` when you are done.
 
 This is exactly how every room in the game gets added. The pattern is always the same: a new `IF` branch, a new room number, the text from the content file. Twelve rooms means twelve branches. Understanding the pattern now means Issue 4 holds no surprises.
 

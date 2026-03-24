@@ -60,7 +60,7 @@ Here is the complete item code table. These codes are locked and must not change
 
 This is the parallel array pattern. `inventory[1]` holds what is in slot one. `invCount` tracks how many slots are filled. `overburdened` is derived from `invCount` — it is set to 1 whenever `invCount` reaches 4, and cleared to 0 whenever `invCount` drops below 4.
 
-These three must always be in sync. The pattern for every TAKE operation:
+These three must always be in sync. The pattern for every TAKE operation — note the use of `SET GLOBAL` for all global writes:
 
 ```
 ' Find the first empty slot
@@ -72,9 +72,9 @@ FOR i = 1 TO 4
 NEXT i
 ' Place the item and update carry state
 LET inventory[slot] = itemCode
-LET invCount = invCount + 1
+SET GLOBAL invCount = invCount + 1
 IF invCount = 4 THEN
-    LET overburdened = 1
+    SET GLOBAL overburdened = 1
 END IF
 ```
 
@@ -82,10 +82,27 @@ And every DROP operation:
 
 ```
 LET inventory[slot] = 0
-LET invCount = invCount - 1
+SET GLOBAL invCount = invCount - 1
 IF invCount < 4 THEN
-    LET overburdened = 0
+    SET GLOBAL overburdened = 0
 END IF
+```
+
+`LET` is used for the array element assignment because array elements are not globals — they are slots within a global array. `SET GLOBAL` is used for the scalar globals `invCount` and `overburdened` because those are the values that must be visible to the rest of the program.
+
+The item name lookup uses `SELECT CASE` — one of the cleanest uses of the pattern in the game:
+
+```
+SELECT CASE code
+    CASE 1
+        RETURN "Healing Potion"
+    CASE 7
+        RETURN "Bangle of Courage"
+    CASE 11
+        RETURN "Gold Bag"
+    CASE ELSE
+        RETURN "Unknown Item"
+END SELECT
 ```
 
 If you add to `inventory` without incrementing `invCount`, the game thinks you have fewer items than you do. If you decrement `invCount` without clearing the slot, the slot is invisible but still occupied. Either breaks every system that depends on the count. The discipline of updating all three together, every time, is what keeps the accounting honest.

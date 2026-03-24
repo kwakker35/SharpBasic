@@ -20,12 +20,15 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 ## What's New This Issue
 
 - The `.sbx` file is created for the first time
+- `CONST FRAME_WIDTH = 80` — the terminal width, used throughout
+- `CONST SCREEN_HEIGHT = 30` — total terminal rows
+- `CONST CONTENT_ROWS = 20` — rows available for content after chrome
 - `SUB PrintHeader()` — draws the title bar and stats line
 - `SUB PrintSeparator()` — draws the dividing line
 - Placeholder stats so the frame has something to display
 - The `>` prompt
 
-This issue introduces the frame that every subsequent issue will use. Get it right here and you won't need to touch it again.
+This issue introduces the frame and the screen constants that every subsequent issue will use. Get them right here and you won't need to touch them again.
 
 ---
 

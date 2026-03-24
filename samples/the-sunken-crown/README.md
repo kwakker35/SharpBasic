@@ -15,7 +15,7 @@ If you don't walk out of that dungeon, there is nothing to walk back to.
 ## Running the Game
 
 ```
-sharpbasic the-sunken-crown.sbx
+sharpbasic run the-sunken-crown.sbx
 ```
 
 No installation. No dependencies. One file.
@@ -37,10 +37,10 @@ It was written to demonstrate that SharpBASIC v1 is a real, usable language capa
 | File | Contents |
 |------|----------|
 | `the-sunken-crown.sbx` | The complete game — run this |
-| [HOWTOPLAY.md](HOWTOPLAY.md) | Player guide — commands, combat, inventory, rules |
-| [LORE.md](LORE.md) | Background on the world and the trial. No spoilers. |
-| [LORE-SPOILERS.md](LORE-SPOILERS.md) | The full story. Finish the game first. |
-| [listing/](listing/) | The game in 10 issues — build it yourself, step by step |
+| `HOWTOPLAY.md` | Player guide — commands, combat, inventory, rules |
+| `LORE.md` | Background on the world and the trial. No spoilers. |
+| `LORE-SPOILERS.md` | The full story. Finish the game first. |
+| `listing/` | The game in 10 issues — build it yourself, step by step |
 
 ---
 
@@ -50,16 +50,16 @@ The `listing/` folder contains the game broken into 10 issues in the tradition o
 
 | Issue | Title | Feature |
 |-------|-------|---------|
-| 1 | [The Gates Open](listing/issue-01-the-gates-open.md) | PRINT and string concatenation |
-| 2 | [The First Room](listing/issue-02-the-first-room.md) | SUBs |
-| 3 | [The Dice and the Dark](listing/issue-03-the-dice-and-the-dark.md) | FUNCTIONs and RND |
-| 4 | [Moving Through Stone](listing/issue-04-moving-through-stone.md) | Arrays |
-| 5 | [Something in the Dark](listing/issue-05-something-in-the-dark.md) | WHILE loops |
-| 6 | [What You Carry](listing/issue-06-what-you-carry.md) | Parallel arrays and item tracking |
-| 7 | [The Dungeon Breathes](listing/issue-07-the-dungeon-breathes.md) | Turn counter and RND-driven events |
-| 8 | [Traps and Riddles](listing/issue-08-traps-and-riddles.md) | IF / ELSE chains and INPUT |
-| 9 | [The Bound King](listing/issue-09-the-bound-king.md) | Nested loops and state flags |
-| 10 | [The Gate](listing/issue-10-the-gate.md) | Putting it together |
+| 1 | The Gates Open | PRINT and string concatenation |
+| 2 | The First Room | SUBs |
+| 3 | The Dice and the Dark | FUNCTIONs and RND |
+| 4 | Moving Through Stone | Arrays |
+| 5 | Something in the Dark | WHILE loops |
+| 6 | What You Carry | Parallel arrays and item tracking |
+| 7 | The Dungeon Breathes | Turn counter and RND-driven events |
+| 8 | Traps and Riddles | IF / ELSE chains and INPUT |
+| 9 | The Bound King | Nested loops and state flags |
+| 10 | The Gate | Putting it together |
 
 ---
 
