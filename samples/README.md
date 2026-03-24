@@ -17,7 +17,7 @@ sharpbasic <sample-folder>/<sample-name>.sbx
 | 1 | [hello-world](hello-world/) | `PRINT` — the starting point | ⭐ |
 | 2 | [variables](variables/) | Typed variables, `LET`, `STR$`, `TYPENAME` | ⭐ |
 | 3 | [user-input](user-input/) | `INPUT`, string concatenation with `&` | ⭐ |
-| 4 | [calculator](calculator/) | `INPUT`, `VAL`, `STR$`, `IF`/`ELSE` decision tree | ⭐⭐ |
+| 4 | [calculator](calculator/) | `INPUT`, `VAL`, `STR$`, `SELECT CASE` | ⭐⭐ |
 | 5 | [fizzbuzz](fizzbuzz/) | `FOR`/`NEXT`, `MOD`, nested conditionals | ⭐⭐ |
 | 6 | [times-tables](times-tables/) | Nested `FOR`/`NEXT` loops | ⭐⭐ |
 | 7 | [guess-the-number](guess-the-number/) | `WHILE`/`WEND`, `RND`, `INT`, attempt counter | ⭐⭐⭐ |
@@ -27,7 +27,6 @@ sharpbasic <sample-folder>/<sample-name>.sbx
 | 11 | [hangman](hangman/) | `SUB`, `FUNCTION`, boolean arrays, string ops, game loop | ⭐⭐⭐⭐ |
 | 12 | [tic-tac-toe](tic-tac-toe/) | Flat array as 2D grid, ASCII board, win detection | ⭐⭐⭐⭐ |
 | 13 | [wordle](wordle/) | Two-pass scoring algorithm, function-scoped arrays, complex game logic | ⭐⭐⭐⭐⭐ |
-| 14 | [capstone](capstone/) | *Coming soon* — the full-language showcase | ⭐⭐⭐⭐⭐ |
 
 ---
 
@@ -40,10 +39,13 @@ sharpbasic <sample-folder>/<sample-name>.sbx
 | `STR$`, `TYPENAME` | variables |
 | `INPUT`, `&` concat | user-input |
 | `VAL`, `IF`/`ELSE`/`END IF` | calculator |
+| `SELECT CASE`, `CASE`, `END SELECT` | calculator |
+| `CONST` | variables |
+| `SET GLOBAL` | variables |
 | `FOR`/`NEXT`, `MOD` | fizzbuzz |
 | `WHILE`/`WEND`, `RND`, `INT` | guess-the-number |
 | `FUNCTION`, `RETURN`, recursion | fibonacci |
-| `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$` | string-utilities |
-| `DIM`, array indexing | arrays |
+| `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `CHR$` | string-utilities |
+| `DIM`, array indexing, 2D arrays | arrays |
 | `SUB`, `CALL` | hangman |
 | Multi-array programs, algorithms | wordle |

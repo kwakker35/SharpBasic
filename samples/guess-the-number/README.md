@@ -3,7 +3,7 @@
 A classic number-guessing game. The interpreter picks a random number between 1 and 100; the player keeps guessing until they find it.
 
 ```
-sharpbasic guess-the-number.bas
+sharpbasic guess-the-number.sbx
 ```
 
 ## What it demonstrates
@@ -14,6 +14,7 @@ sharpbasic guess-the-number.bas
 | `RND()` + `INT` | Generate a random integer in a range |
 | Attempt counter | `LET attempts = attempts + 1` |
 | `<>` (not-equal) | Loop condition `guess <> secret` |
+| `CONST` | `CONST MIN = 1` / `CONST MAX = 100` — name the bounds |
 
 ## Pedagogical note
 

@@ -3,7 +3,7 @@
 The classic programming exercise: count from 1 to 30, substituting Fizz for multiples of 3, Buzz for multiples of 5, and FizzBuzz for multiples of both.
 
 ```
-sharpbasic fizzbuzz.bas
+sharpbasic fizzbuzz.sbx
 ```
 
 ## What it demonstrates

@@ -20,17 +20,17 @@ NEXT i
 PRINT ""
 
 REM Calculate total and average
-LET total = 0  REM FIXED: LET does not support AS TYPE annotation
+LET total = 0
 FOR i = 0 TO 4
     LET total = total + scores[i]
 NEXT i
 
-LET avg = total / 5  REM FIXED: LET does not support AS TYPE annotation
+LET avg = total / 5
 PRINT "Total:   " & STR$(total)
 PRINT "Average: " & STR$(avg)
 
 REM Find highest score
-LET highest = scores[0]  REM FIXED: LET does not support AS TYPE annotation
+LET highest = scores[0]
 FOR i = 1 TO 4
     IF scores[i] > highest THEN
         LET highest = scores[i]
@@ -38,3 +38,23 @@ FOR i = 1 TO 4
 NEXT i
 
 PRINT "Highest: " & STR$(highest)
+
+REM -------------------------------------------------------
+REM 2D Arrays — 4×4 multiplication grid
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== 4x4 Multiplication Grid ==="
+
+DIM grid[4][4] AS INTEGER
+
+FOR r = 0 TO 3
+    FOR c = 0 TO 3
+        LET grid[r][c] = (r + 1) * (c + 1)
+    NEXT c
+NEXT r
+
+FOR r = 0 TO 3
+    FOR c = 0 TO 3
+        PRINT STR$(r + 1) & "x" & STR$(c + 1) & "=" & STR$(grid[r][c])
+    NEXT c
+NEXT r

@@ -6,35 +6,30 @@ PRINT ""
 
 PRINT "First number:"
 INPUT aStr
-LET a = VAL(aStr)  REM FIXED: LET does not support AS TYPE annotation
+LET a = VAL(aStr)
 
 PRINT "Operator:"
 INPUT op
 
 PRINT "Second number:"
 INPUT bStr
-LET b = VAL(bStr)  REM FIXED: LET does not support AS TYPE annotation
+LET b = VAL(bStr)
 
 PRINT ""
 
-IF op = "+" THEN
-    PRINT STR$(a) & " + " & STR$(b) & " = " & STR$(a + b)
-ELSE
-    IF op = "-" THEN
+SELECT CASE op
+    CASE "+"
+        PRINT STR$(a) & " + " & STR$(b) & " = " & STR$(a + b)
+    CASE "-"
         PRINT STR$(a) & " - " & STR$(b) & " = " & STR$(a - b)
-    ELSE
-        IF op = "*" THEN
-            PRINT STR$(a) & " * " & STR$(b) & " = " & STR$(a * b)
+    CASE "*"
+        PRINT STR$(a) & " * " & STR$(b) & " = " & STR$(a * b)
+    CASE "/"
+        IF b = 0 THEN
+            PRINT "Error: division by zero"
         ELSE
-            IF op = "/" THEN
-                IF b = 0 THEN
-                    PRINT "Error: division by zero"
-                ELSE
-                    PRINT STR$(a) & " / " & STR$(b) & " = " & STR$(a / b)
-                END IF
-            ELSE
-                PRINT "Unknown operator: " & op
-            END IF
+            PRINT STR$(a) & " / " & STR$(b) & " = " & STR$(a / b)
         END IF
-    END IF
-END IF
+    CASE ELSE
+        PRINT "Unknown operator: " & op
+END SELECT

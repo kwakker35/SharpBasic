@@ -68,7 +68,7 @@ cd SharpBasic
 
 **VS Code syntax highlighting (optional):**
 
-Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In VS Code: Extensions panel → `...` menu → Install from VSIX → select `sharpbasic-syntax-0.2.0.vsix`.
+Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In VS Code: Extensions panel → `...` menu → Install from VSIX → select `sharpbasic-syntax-0.3.0.vsix`.
 
 ---
 
@@ -78,12 +78,14 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 |---|---|
 | Data types | `Integer` (32-bit), `Float` (64-bit), `String`, `Boolean`, typed `Array<T>` |
 | Variables | `LET` for declaration and assignment; lexical scope — reads walk the parent chain, writes are local only |
-| Arrays | `DIM name[size] AS type`; 0-indexed; zero-initialised on declaration; bounds checked at runtime |
+| Arrays | `DIM name[size] AS type`; 0-indexed; zero-initialised on declaration; bounds checked at runtime; 2D: `DIM name[rows][cols] AS type`, indexed with `name[r][c]` |
 | Operators | Arithmetic (`+`, `-`, `*`, `/`, `MOD`); string concatenation (`&`); comparison (`=`, `<>`, `<`, `>`, `<=`, `>=`); logical (`AND`, `OR`); unary (`-`, `NOT`) |
-| Control flow | `IF`/`THEN`/`ELSE`/`END IF`; `FOR`/`NEXT`/`STEP` (positive and negative step); `WHILE`/`WEND` |
+| Control flow | `IF`/`THEN`/`ELSE`/`END IF`; `FOR`/`NEXT`/`STEP` (positive and negative step); `WHILE`/`WEND`; `SELECT CASE`/`CASE`/`END SELECT` |
+| Constants | `CONST name = value`; named compile-time constants, scoped like variables |
+| Global scope | `SET GLOBAL name = value`; writes a value to a variable in an enclosing scope by name |
 | Subroutines | `SUB`/`END SUB`; typed parameters; invoked with `CALL`; hoisted — call before declaration is valid |
 | Functions | `FUNCTION`/`END FUNCTION`; typed return value; called in expression position; recursive; hoisted |
-| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `ABS`, `SQR`, `RND`, `TYPENAME` |
+| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `ABS`, `SQR`, `RND`, `CHR$`, `TYPENAME` |
 | I/O | `PRINT expression` (always appends newline); `INPUT varname` and `INPUT "prompt"; varname` |
 | Comments | `REM` — full-line or inline |
 
@@ -101,7 +103,7 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 | [times-tables.sbx](samples/times-tables/times-tables.sbx) | Nested FOR loops generating the complete 1–12 multiplication table |
 | [arrays.sbx](samples/arrays/arrays.sbx) | DIM, indexed read/write, and aggregate calculations (total, average, maximum) over a score array |
 | [fibonacci.sbx](samples/fibonacci/fibonacci.sbx) | Recursive FUNCTION computing the Fibonacci sequence from F(0) to F(15) |
-| [calculator.sbx](samples/calculator/calculator.sbx) | Four-function calculator using INPUT, VAL, and nested IF/ELSE chains |
+| [calculator.sbx](samples/calculator/calculator.sbx) | Four-function calculator using INPUT, VAL, and SELECT CASE |
 | [guess-the-number.sbx](samples/guess-the-number/guess-the-number.sbx) | Number guessing game using WHILE, RND, and higher/lower feedback |
 | [tic-tac-toe.sbx](samples/tic-tac-toe/tic-tac-toe.sbx) | Two-player ASCII Tic-Tac-Toe with a flat array board, SUBs for drawing, and a FUNCTION for win detection |
 | [hangman.sbx](samples/hangman/hangman.sbx) | Word guessing game with a letter-tracking array, ASCII scaffold drawing SUB, and recursive-position display FUNCTION |

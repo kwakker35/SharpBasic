@@ -3,7 +3,7 @@
 Introduces the four built-in types in SharpBASIC: `INTEGER`, `FLOAT`, `STRING`, and `BOOLEAN`.
 
 ```
-sharpbasic variables.bas
+sharpbasic variables.sbx
 ```
 
 ## What it demonstrates
@@ -14,6 +14,8 @@ sharpbasic variables.bas
 | String concatenation | `"Language: " & name` |
 | `STR$` conversion | `STR$(version)` |
 | `TYPENAME` builtin | Reports the runtime type of any value |
+| `CONST` | `CONST PI = 3.14159` — named constant, scoped like a variable |
+| `SET GLOBAL` | `SET GLOBAL counter = counter + 1` — writes to an enclosing scope |
 
 ## Pedagogical note
 

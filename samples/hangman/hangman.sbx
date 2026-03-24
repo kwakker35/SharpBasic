@@ -14,9 +14,9 @@ LET words[6] = "SHARPBASIC"
 LET words[7] = "COMPILER"
 
 REM Pick a random word
-LET wordIndex = VAL(STR$(INT(RND() * 8)))  REM FIXED: LET does not support AS TYPE annotation; INT returns Float so VAL(STR$(INT(n))) converts to Integer for array index
-LET secret = words[wordIndex]  REM FIXED: LET does not support AS TYPE annotation
-LET wordLen = LEN(secret)  REM FIXED: LET does not support AS TYPE annotation
+LET wordIndex = VAL(STR$(INT(RND() * 8)))
+LET secret = words[wordIndex]
+LET wordLen = LEN(secret)
 
 REM -------------------------------------------------------
 REM Guessed letters array (26 slots, one per letter A-Z)
@@ -26,30 +26,30 @@ FOR i = 0 TO 25
     LET guessed[i] = FALSE
 NEXT i
 
-LET maxWrong = 6  REM FIXED: LET does not support AS TYPE annotation
-LET wrongCount = 0  REM FIXED: LET does not support AS TYPE annotation
-LET solved = FALSE  REM FIXED: LET does not support AS TYPE annotation
+CONST MAXWRONG = 6
+LET wrongCount = 0
+LET solved = FALSE
 
 REM -------------------------------------------------------
 REM FUNCTION: build the display word, replacing unguessed
 REM letters with underscores
 REM -------------------------------------------------------
 FUNCTION BuildDisplay(word AS STRING) AS STRING
-    LET display = ""  REM FIXED: LET does not support AS TYPE annotation
-    LET wLen = LEN(word)  REM FIXED: LET does not support AS TYPE annotation
+    LET display = ""
+    LET wLen = LEN(word)
     FOR k = 1 TO wLen
-        LET ch = MID$(word, k, 1)  REM FIXED: LET does not support AS TYPE annotation
+        LET ch = MID$(word, k, 1)
         REM ch is always a letter A-Z, so index = ASC - 65
         REM We can't call ASC() yet, so we check each letter manually
-        LET found = FALSE  REM FIXED: LET does not support AS TYPE annotation
+        LET found = FALSE
         FOR a = 0 TO 25
-            IF ch = MID$("ABCDEFGHIJKLMNOPQRSTUVWXYZ", a + 1, 1) THEN
-                IF guessed[a] THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
+            IF ch = CHR$(65 + a) THEN
+                IF guessed[a] THEN
                     LET found = TRUE
                 END IF
             END IF
         NEXT a
-        IF found THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
+        IF found THEN
             LET display = display & ch & " "
         ELSE
             LET display = display & "_ "
@@ -62,19 +62,19 @@ REM -------------------------------------------------------
 REM FUNCTION: count how many letters are still hidden
 REM -------------------------------------------------------
 FUNCTION CountHidden(word AS STRING) AS INTEGER
-    LET hidden = 0  REM FIXED: LET does not support AS TYPE annotation
-    LET wLen = LEN(word)  REM FIXED: LET does not support AS TYPE annotation
+    LET hidden = 0
+    LET wLen = LEN(word)
     FOR k = 1 TO wLen
-        LET ch = MID$(word, k, 1)  REM FIXED: LET does not support AS TYPE annotation
-        LET found = FALSE  REM FIXED: LET does not support AS TYPE annotation
+        LET ch = MID$(word, k, 1)
+        LET found = FALSE
         FOR a = 0 TO 25
-            IF ch = MID$("ABCDEFGHIJKLMNOPQRSTUVWXYZ", a + 1, 1) THEN
-                IF guessed[a] THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
+            IF ch = CHR$(65 + a) THEN
+                IF guessed[a] THEN
                     LET found = TRUE
                 END IF
             END IF
         NEXT a
-        IF NOT found THEN  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
+        IF NOT found THEN
             LET hidden = hidden + 1
         END IF
     NEXT k
@@ -123,20 +123,20 @@ REM -------------------------------------------------------
 PRINT "=== HANGMAN ==="
 PRINT ""
 
-WHILE wrongCount < maxWrong AND NOT solved  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
+WHILE wrongCount < MAXWRONG AND NOT solved
     CALL DrawHangman(wrongCount)
     PRINT ""
     PRINT "Word: " & BuildDisplay(secret)
-    PRINT "Wrong guesses: " & STR$(wrongCount) & " / " & STR$(maxWrong)
+    PRINT "Wrong guesses: " & STR$(wrongCount) & " / " & STR$(MAXWRONG)
     PRINT ""
     PRINT "Guess a letter:"
     INPUT rawGuess
-    LET letterGuess = UPPER$(LEFT$(TRIM$(rawGuess), 1))  REM FIXED: LET does not support AS TYPE annotation
+    LET letterGuess = UPPER$(LEFT$(TRIM$(rawGuess), 1))
 
     REM Find the letter's index in the alphabet
-    LET letterIndex = -1  REM FIXED: LET does not support AS TYPE annotation
+    LET letterIndex = -1
     FOR a = 0 TO 25
-        IF letterGuess = MID$("ABCDEFGHIJKLMNOPQRSTUVWXYZ", a + 1, 1) THEN
+        IF letterGuess = CHR$(65 + a) THEN
             LET letterIndex = a
         END IF
     NEXT a
@@ -144,20 +144,20 @@ WHILE wrongCount < maxWrong AND NOT solved  REM FIXED: Boolean = FALSE compariso
     IF letterIndex = -1 THEN
         PRINT "Please enter a letter A-Z."
     ELSE
-        IF guessed[letterIndex] THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
+        IF guessed[letterIndex] THEN
             PRINT "You already guessed " & letterGuess & "."
         ELSE
             LET guessed[letterIndex] = TRUE
 
             REM Check if the letter is in the word
-            LET inWord = FALSE  REM FIXED: LET does not support AS TYPE annotation
+            LET inWord = FALSE
             FOR k = 1 TO wordLen
                 IF MID$(secret, k, 1) = letterGuess THEN
                     LET inWord = TRUE
                 END IF
             NEXT k
 
-            IF NOT inWord THEN  REM FIXED: Boolean = FALSE comparison unsupported; use NOT
+            IF NOT inWord THEN
                 LET wrongCount = wrongCount + 1
                 PRINT letterGuess & " is not in the word."
             ELSE
@@ -177,7 +177,7 @@ REM Result
 REM -------------------------------------------------------
 CALL DrawHangman(wrongCount)
 PRINT ""
-IF solved THEN  REM FIXED: Boolean = TRUE comparison unsupported; use Boolean directly
+IF solved THEN
     PRINT "You won! The word was: " & secret
 ELSE
     PRINT "Game over. The word was: " & secret

@@ -3,7 +3,7 @@
 Computes Fibonacci numbers recursively, demonstrating `FUNCTION` declarations and recursive calls.
 
 ```
-sharpbasic fibonacci.bas
+sharpbasic fibonacci.sbx
 ```
 
 ## What it demonstrates

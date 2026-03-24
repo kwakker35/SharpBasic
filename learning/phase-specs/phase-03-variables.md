@@ -28,6 +28,10 @@ Moderate. The symbol table is straightforward. The important work is establishin
 
 **Variables do not need to be declared before use.** The first `LET` for a name creates it. Re-assigning with `LET` replaces the value. There is no type enforcement on re-assignment.
 
+**v1 additions built on top of Phase 3.** Two features arrived in the pre-release feature set that extend the variable system:
+- `CONST name = literal` — a global, immutable binding. The constant is stored in the symbol table with a write-protect flag. Re-assigning with `LET` is a runtime error. Constants are global only and accept only literal values.
+- `SET GLOBAL name = expression` — the only way to write to the global scope from inside a SUB or FUNCTION. Complements the Phase 3 scope rule ("LET always writes local") by making global mutations explicit and greppable.
+
 ## New tokens
 
 None — all tokens were defined in Phase 1.

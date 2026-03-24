@@ -3,7 +3,7 @@
 Prints the complete multiplication table from 1×1 to 12×12 using nested loops.
 
 ```
-sharpbasic times-tables.bas
+sharpbasic times-tables.sbx
 ```
 
 ## What it demonstrates

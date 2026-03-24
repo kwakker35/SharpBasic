@@ -3,7 +3,7 @@
 A two-player Tic-Tac-Toe game with an ASCII board. Players X and O take turns choosing cells numbered 1-9.
 
 ```
-sharpbasic tic-tac-toe.bas
+sharpbasic tic-tac-toe.sbx
 ```
 
 ## What the board looks like

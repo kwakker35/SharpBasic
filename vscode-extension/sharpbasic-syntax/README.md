@@ -16,12 +16,12 @@ Install from the `.vsix`:
 
 1. In VS Code open the **Extensions** view (`Ctrl+Shift+X`)
 2. Click the `...` menu → **Install from VSIX…**
-3. Select `sharpbasic-syntax-0.2.0.vsix`
+3. Select `sharpbasic-syntax-0.3.0.vsix`
 
 Or from the terminal:
 
 ```
-code --install-extension sharpbasic-syntax-0.2.0.vsix
+code --install-extension sharpbasic-syntax-0.3.0.vsix
 ```
 
 ## Building the .vsix
