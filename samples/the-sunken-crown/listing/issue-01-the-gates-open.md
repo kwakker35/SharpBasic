@@ -20,9 +20,9 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 ## What's New This Issue
 
 - The `.sbx` file is created for the first time
-- `CONST FRAME_WIDTH = 80` — the terminal width, used throughout
-- `CONST SCREEN_HEIGHT = 30` — total terminal rows
-- `CONST CONTENT_ROWS = 20` — rows available for content after chrome
+- `CONST FRAMEWIDTH = 80` — the terminal width, used throughout
+- `CONST SCREENHEIGHT = 30` — total terminal rows
+- `CONST CONTENTROWS = 20` — rows available for content after chrome
 - `SUB PrintHeader()` — draws the title bar and stats line
 - `SUB PrintSeparator()` — draws the dividing line
 - Placeholder stats so the frame has something to display
@@ -104,6 +104,72 @@ Width is a design decision that affects every issue that follows. 80 is the righ
 
 ## The Listing
 
+> This is Issue 1. There is no prior code. Create a new file called
+> `the-sunken-crown.sbx` and type in this listing in full.
+
 ```
-' Issue 1 listing — to be added once built and tested
+REM =================================================================
+REM  THE SUNKEN CROWN -- A SharpBASIC v1 Adventure
+REM =================================================================
+REM  Issue 1: The Gates Open
+REM  Establishes the display frame -- header, separator, prompt.
+REM  Everything that follows in subsequent issues goes inside it.
+REM =================================================================
+
+REM ----------------------------------------------------------------
+REM  Constants
+REM  FRAMEWIDTH governs every separator and alignment calculation
+REM  throughout the game. SCREENHEIGHT and CONTENTROWS govern
+REM  the paging model used by Pause() in later issues.
+REM ----------------------------------------------------------------
+CONST FRAMEWIDTH = 80
+CONST SCREENHEIGHT = 30
+CONST CONTENTROWS = 20
+
+REM ----------------------------------------------------------------
+REM  Player stats
+REM  Declared here at zero. RollStartingStats (Issue 3) sets the
+REM  real values when the opening sequence runs. PrintHeader reads
+REM  these via the parent scope chain -- no SET GLOBAL required.
+REM ----------------------------------------------------------------
+LET skill = 0
+LET stamina = 0
+LET luck = 0
+
+REM =================================================================
+REM  SUB PrintHeader
+REM  Prints the full header frame: an = separator, then the title
+REM  and current stats on one line, then another = separator.
+REM  Reads skill, stamina, luck from global scope -- read-only.
+REM =================================================================
+SUB PrintHeader()
+    LET line = ""
+    FOR i = 1 TO FRAMEWIDTH
+        LET line = line & "="
+    NEXT i
+    PRINT line
+    PRINT "  THE SUNKEN CROWN                                 SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    PRINT line
+END SUB
+
+REM =================================================================
+REM  SUB PrintSeparator
+REM  Prints a line of 80 - characters. Divides the header chrome
+REM  from the room content area below it.
+REM =================================================================
+SUB PrintSeparator()
+    LET sep = ""
+    FOR i = 1 TO FRAMEWIDTH
+        LET sep = sep & "-"
+    NEXT i
+    PRINT sep
+END SUB
+
+REM =================================================================
+REM  Main program
+REM =================================================================
+CALL PrintHeader()
+PRINT ""
+CALL PrintSeparator()
+PRINT " > "
 ```

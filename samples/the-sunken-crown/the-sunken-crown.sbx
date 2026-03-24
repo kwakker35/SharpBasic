@@ -1,0 +1,64 @@
+REM =================================================================
+REM  THE SUNKEN CROWN -- A SharpBASIC v1 Adventure
+REM =================================================================
+REM  Issue 1: The Gates Open
+REM  Establishes the display frame -- header, separator, prompt.
+REM  Everything that follows in subsequent issues goes inside it.
+REM =================================================================
+
+REM ----------------------------------------------------------------
+REM  Constants
+REM  FRAME_WIDTH governs every separator and alignment calculation
+REM  throughout the game. SCREEN_HEIGHT and CONTENT_ROWS govern
+REM  the paging model used by Pause() in later issues.
+REM ----------------------------------------------------------------
+CONST FRAMEWIDTH = 80
+CONST SCREENHEIGHT = 30
+CONST CONTENTROWS = 20
+
+REM ----------------------------------------------------------------
+REM  Player stats
+REM  Declared here at zero. RollStartingStats (Issue 3) sets the
+REM  real values when the opening sequence runs. PrintHeader reads
+REM  these via the parent scope chain -- no SET GLOBAL required.
+REM ----------------------------------------------------------------
+LET skill = 0
+LET stamina = 0
+LET luck = 0
+
+REM =================================================================
+REM  SUB PrintHeader
+REM  Prints the full header frame: an = separator, then the title
+REM  and current stats on one line, then another = separator.
+REM  Reads skill, stamina, luck from global scope -- read-only.
+REM =================================================================
+SUB PrintHeader()
+    LET line = ""
+    FOR i = 1 TO FRAMEWIDTH
+        LET line = line & "="
+    NEXT i
+    PRINT line
+    PRINT "  THE SUNKEN CROWN                                 SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    PRINT line
+END SUB
+
+REM =================================================================
+REM  SUB PrintSeparator
+REM  Prints a line of 80 - characters. Divides the header chrome
+REM  from the room content area below it.
+REM =================================================================
+SUB PrintSeparator()
+    LET sep = ""
+    FOR i = 1 TO FRAMEWIDTH
+        LET sep = sep & "-"
+    NEXT i
+    PRINT sep
+END SUB
+
+REM =================================================================
+REM  Main program
+REM =================================================================
+CALL PrintHeader()
+PRINT ""
+CALL PrintSeparator()
+PRINT " > "
