@@ -277,4 +277,4 @@ FodyWeavers.xsd
 *.received.txt
 
 # SharpBASIC — generated spec content
-spec/codegen/
+samples/the-sunken-crown/spec/codegen/
