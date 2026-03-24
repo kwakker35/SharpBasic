@@ -2,7 +2,7 @@
   "name": "sharpbasic-syntax",
   "displayName": "SharpBASIC",
   "description": "Syntax highlighting for SharpBASIC (.sbx) files",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "kwakker35",
   "engines": {
     "vscode": "^1.85.0"

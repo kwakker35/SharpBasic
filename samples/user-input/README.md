@@ -3,7 +3,7 @@
 Reads a name from the user and prints a personalised greeting.
 
 ```
-sharpbasic user-input.bas
+sharpbasic user-input.sbx
 ```
 
 ## What it demonstrates

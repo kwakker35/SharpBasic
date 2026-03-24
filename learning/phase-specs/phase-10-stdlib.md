@@ -10,7 +10,7 @@ Easy. This phase is mostly additive — new built-in functions registered in the
 
 ## What you'll build
 
-- Built-in string functions: `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `TRIM$`, `UPPER$`, `LOWER$`
+- Built-in string functions: `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `TRIM$`, `UPPER$`, `LOWER$`, `CHR$`
 - Built-in numeric functions: `INT`, `ABS`, `SQR`, `RND`
 - Built-in conversion functions: `STR$`, `VAL`
 - Built-in diagnostic function: `TYPENAME`

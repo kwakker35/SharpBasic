@@ -196,3 +196,17 @@ stmt.TypeName.ToUpperInvariant() switch { "INTEGER" => ... }
 ```
 
 **Rule of thumb:** `ToUpper()` / `ToLower()` are for *display* (user-facing output). `ToUpperInvariant()` / `ToLowerInvariant()` are for *comparison* (internal logic). When in doubt, use invariant.
+
+---
+
+### Implementation Note — `_builtins` is a static field on `Evaluator`
+
+`Evaluator` spawns a new instance for every SUB/FUNCTION call (this is the call-frame model — see Bug 6 above). The builtin dictionary is identical across every instance because `CreateBuiltins()` is a pure factory with no arguments.
+
+The field is declared `private static readonly`:
+
+```csharp
+private static readonly Dictionary<string, Func<List<Value>, Value?>> _builtins = CreateBuiltins();
+```
+
+This means the dictionary is built once per process and shared. If you see `private readonly` here in a fork or earlier version, changing it to `private static readonly` is correct — the dictionary is never mutated after creation (`ContainsKey` and `TryGetValue` only), so sharing it across instances is safe and avoids one allocation per call frame.

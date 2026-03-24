@@ -3,8 +3,8 @@ namespace SharpBasic.Ast;
 public enum TokenType
 {
     //Keywords
-    Print, Let, If, Then, Else, End, While, Wend, For, To, Step, Next, Sub, Function, Dim,
-    Return, Call, As, Input,
+    Print, Let, If, Then, Else, End, While, Wend, For, To, Step, Next, Sub, Function, Dim, Const,
+    Return, Call, As, Input, Select, Case, Set, Global,
 
     //Identifiers and Literals
     Identifier, StringLiteral, IntLiteral, FloatLiteral, True, False,

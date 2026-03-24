@@ -277,8 +277,13 @@ public class Lexer
             "TRUE" => TokenType.True,
             "FALSE" => TokenType.False,
             "DIM" => TokenType.Dim,
+            "CONST" => TokenType.Const,
             "MOD" => TokenType.Mod,
             "INPUT" => TokenType.Input,
+            "SELECT" => TokenType.Select,
+            "CASE" => TokenType.Case,
+            "SET" => TokenType.Set,
+            "GLOBAL" => TokenType.Global,
             _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?
                         TokenType.Identifier : TokenType.Unknown
         };

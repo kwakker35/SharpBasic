@@ -19,10 +19,13 @@
 4. [Variables](#4-variables)
    - 4.1 [Declaration and Assignment](#41-declaration-and-assignment)
    - 4.2 [Scope Rules](#42-scope-rules)
+   - 4.3 [Constants](#43-constants)
+   - 4.4 [SET GLOBAL](#44-set-global)
 5. [Arrays](#5-arrays)
    - 5.1 [Declaration](#51-declaration)
    - 5.2 [Access and Assignment](#52-access-and-assignment)
    - 5.3 [Bounds Behaviour](#53-bounds-behaviour)
+   - 5.4 [Two-Dimensional Arrays](#54-two-dimensional-arrays)
 6. [Operators](#6-operators)
    - 6.1 [Arithmetic Operators](#61-arithmetic-operators)
    - 6.2 [String Operator](#62-string-operator)
@@ -34,6 +37,7 @@
    - 7.1 [IF / THEN / ELSE / END IF](#71-if--then--else--end-if)
    - 7.2 [FOR / NEXT / STEP](#72-for--next--step)
    - 7.3 [WHILE / WEND](#73-while--wend)
+   - 7.4 [SELECT CASE](#74-select-case)
 8. [Subroutines](#8-subroutines)
 9. [Functions](#9-functions)
 10. [Built-in Functions](#10-built-in-functions)
@@ -164,6 +168,61 @@ PRINT x
 
 ---
 
+### 4.3 Constants
+
+A constant is a named value that cannot be changed after declaration. Use `CONST` to declare it:
+
+```
+CONST name = literal
+```
+
+- The value must be a **literal** — integer, float, string, or boolean. Variable expressions and function calls are not permitted.
+- Constants are **global only**. Declaring `CONST` inside a `SUB` or `FUNCTION` is a runtime error.
+- Re-assigning a constant with `LET` after declaration is a runtime error: *"Cannot assign to constant {name}."*
+- No `AS type` annotation — the type is inferred from the literal.
+- Constants are resolved through the parent chain like variables but are stored with a write-protect flag.
+
+```
+CONST MAX = 100
+CONST MIN = 1
+CONST GREETING = "Hello"
+CONST PI = 3.14159
+
+PRINT MAX        REM → 100
+PRINT GREETING   REM → Hello
+```
+
+---
+
+### 4.4 SET GLOBAL
+
+`SET GLOBAL` writes a value to a variable that already exists in the **global** (topmost) scope. It is the only way to mutate global state from inside a SUB or FUNCTION.
+
+```
+SET GLOBAL name = expression
+```
+
+- `SET GLOBAL` is only valid **inside a SUB or FUNCTION**. Using it at the top level is a runtime error: *"SET GLOBAL can only be used inside a SUB or FUNCTION."*
+- The named variable must already exist in the global scope. If it does not exist, the statement fails: *"SET GLOBAL: variable {name} not found in global scope."*
+- The expression is evaluated in the local scope of the current sub/function, then the result is stored directly in the global scope.
+- `SET GLOBAL` cannot target a `CONST`-declared name — attempting to do so is a runtime error.
+
+```
+LET counter = 0
+
+SUB Increment()
+    SET GLOBAL counter = counter + 1
+END SUB
+
+CALL Increment()
+CALL Increment()
+PRINT counter   REM → 2
+```
+
+> **Gotcha:** `counter + 1` inside the SUB reads `counter` from the global scope (via the parent chain), then writes the result back to the global scope via `SET GLOBAL`. If you used `LET counter = counter + 1` instead, `LET` would create a local variable — the global `counter` would remain unchanged.
+
+---
+
 ## 5. Arrays
 
 ### 5.1 Declaration
@@ -213,6 +272,48 @@ Supplied index {idx} is outside of the range 0-{size} defined for the array: {na
 The valid index range is `0` to `size - 1`. Any access or assignment using an index outside this range produces a clean diagnostic — it does not crash.
 
 > **Note:** The upper bound in the error message is the declared `size` (e.g. `0-5` for a 5-element array). This is the **exclusive** limit; the last valid index is `size - 1`.
+
+---
+
+### 5.4 Two-Dimensional Arrays
+
+Declare a two-dimensional array by supplying two size brackets:
+
+```
+DIM name[rows][cols] AS type
+```
+
+Access and assignment use the same double-bracket syntax. Both indices are 0-based:
+
+```
+LET name[row][col] = expression
+PRINT name[row][col]
+```
+
+Bounds checking applies to each dimension independently.
+
+```
+REM 3×3 identity matrix
+DIM matrix[3][3] AS INTEGER
+
+FOR r = 0 TO 2
+    FOR c = 0 TO 2
+        IF r = c THEN
+            LET matrix[r][c] = 1
+        ELSE
+            LET matrix[r][c] = 0
+        END IF
+    NEXT c
+NEXT r
+
+FOR r = 0 TO 2
+    FOR c = 0 TO 2
+        PRINT matrix[r][c]
+    NEXT c
+NEXT r
+```
+
+> **Note:** The declaration uses two separate bracket pairs — `DIM name[rows][cols]`, not `DIM name(rows, cols)`. The parser distinguishes this from a function call by the `[` token: `name(r, c)` would parse as a call expression.
 
 ---
 
@@ -321,7 +422,7 @@ ELSE
 END IF
 ```
 
-There is no single-line `IF`. `THEN` must be followed by a newline.  
+Single-line `IF` is permitted: `THEN` may be followed by a statement on the same line. `END IF` is always required to close the block.  
 There is no `ELSEIF` / `ELSIF`. Nest `IF` blocks for multiple branches.
 
 **Example:**
@@ -396,6 +497,46 @@ WHILE n <= 5
     PRINT n
     LET n = n + 1
 WEND
+```
+
+---
+
+### 7.4 SELECT CASE
+
+`SELECT CASE` dispatches on the value of an expression. It is an alternative to nested `IF / ELSE` blocks when branching on a single value.
+
+**Syntax:**
+
+```
+SELECT CASE expression
+    CASE value1
+        statements
+    CASE value2, value3
+        statements
+    CASE ELSE
+        statements
+END SELECT
+```
+
+- The expression is evaluated once.
+- Each `CASE` clause lists one or more comma-separated match values. If the expression equals **any** of them, that clause executes.
+- **First match wins.** Subsequent clauses are skipped — there is no fall-through.
+- `CASE ELSE` is optional. If provided, it must be the last clause and executes when no earlier clause matched.
+- `END SELECT` closes the block (two tokens: `END` then `SELECT`).
+
+**Example:**
+
+```
+SELECT CASE op
+    CASE "+"
+        PRINT "Addition"
+    CASE "-"
+        PRINT "Subtraction"
+    CASE "*", "/"
+        PRINT "Multiplication or division"
+    CASE ELSE
+        PRINT "Unknown operator"
+END SELECT
 ```
 
 ---
@@ -520,8 +661,11 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 | `TRIM$(s)` | `String` | Remove leading/trailing whitespace | `TRIM$("  hi  ")` → `"hi"` |
 | `UPPER$(s)` | `String` | Convert to upper-case | `UPPER$("hello")` → `"HELLO"` |
 | `LOWER$(s)` | `String` | Convert to lower-case | `LOWER$("HELLO")` → `"hello"` |
+| `CHR$(n)` | `String` | Character from Unicode code point `n` | `CHR$(65)` → `"A"`, `CHR$(34)` → `"\""`  |
 
 > **`MID$` uses 1-based indexing.** `MID$("abc", 1, 1)` → `"a"`, not `MID$("abc", 0, 1)`.
+
+> **`CHR$(34)` is the only way to embed a double-quote in a string**, since string literals have no escape sequence syntax. `CHR$(10)` produces a newline character.
 
 > **Gotcha:** `MID$`, `LEFT$`, and `RIGHT$` perform no internal bounds checking. Providing a `length` or `n` value that exceeds the string length (e.g. `LEFT$("hi", 10)`) throws an unhandled C# `ArgumentOutOfRangeException` that halts the interpreter. Validate string lengths before calling these functions.
 

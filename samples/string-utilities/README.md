@@ -3,7 +3,7 @@
 A tour of every built-in string function in SharpBASIC.
 
 ```
-sharpbasic string-utilities.bas
+sharpbasic string-utilities.sbx
 ```
 
 ## What it demonstrates
@@ -17,6 +17,7 @@ sharpbasic string-utilities.bas
 | `LEFT$(s, n)` | First `n` characters |
 | `RIGHT$(s, n)` | Last `n` characters |
 | `MID$(s, start, len)` | Substring from `start` with length `len` |
+| `CHR$(n)` | Returns the character for ASCII code `n` |
 
 ## Pedagogical note
 

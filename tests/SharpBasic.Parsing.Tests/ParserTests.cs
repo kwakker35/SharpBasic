@@ -1035,4 +1035,257 @@ public class ParserTests
         Assert.Equal("name$", stmt.Target.Name);
         Assert.Equal("Enter name", stmt.Prompt);
     }
+
+    // --- SELECT CASE structural ---
+
+    [Fact]
+    public void Parser_SelectCase_Two_Cases_Produces_Correct_AST()
+    {
+        // SELECT CASE x
+        //   CASE 1
+        //     PRINT "one"
+        //   CASE 2
+        //     PRINT "two"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",    1, 1),
+            new(TokenType.Case,          "",    1, 8),
+            new(TokenType.Identifier,    "x",   1, 13),
+            new(TokenType.NewLine,       "",    1, 14),
+            new(TokenType.Case,          "",    2, 3),
+            new(TokenType.IntLiteral,    "1",   2, 8),
+            new(TokenType.NewLine,       "",    2, 9),
+            new(TokenType.Print,         "",    3, 5),
+            new(TokenType.StringLiteral, "one", 3, 11),
+            new(TokenType.NewLine,       "",    3, 16),
+            new(TokenType.Case,          "",    4, 3),
+            new(TokenType.IntLiteral,    "2",   4, 8),
+            new(TokenType.NewLine,       "",    4, 9),
+            new(TokenType.Print,         "",    5, 5),
+            new(TokenType.StringLiteral, "two", 5, 11),
+            new(TokenType.NewLine,       "",    5, 16),
+            new(TokenType.End,           "",    6, 1),
+            new(TokenType.Select,        "",    6, 5),
+            new(TokenType.Eof,           "",    6, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        var subject = Assert.IsType<IdentifierExpression>(stmt.Subject);
+        Assert.Equal("x", subject.Name);
+
+        Assert.Equal(2, stmt.Cases.Count);
+
+        // First clause: CASE 1
+        var clause1 = stmt.Cases[0];
+        Assert.NotNull(clause1.Values);
+        Assert.Single(clause1.Values!);
+        var val1 = Assert.IsType<IntLiteralExpression>(clause1.Values![0]);
+        Assert.Equal(1, val1.Value);
+        Assert.Single(clause1.Body);
+        Assert.IsType<PrintStatement>(clause1.Body[0]);
+
+        // Second clause: CASE 2
+        var clause2 = stmt.Cases[1];
+        Assert.NotNull(clause2.Values);
+        Assert.Single(clause2.Values!);
+        var val2 = Assert.IsType<IntLiteralExpression>(clause2.Values![0]);
+        Assert.Equal(2, val2.Value);
+        Assert.Single(clause2.Body);
+        Assert.IsType<PrintStatement>(clause2.Body[0]);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_CaseElse_PopulatesElseField()
+    {
+        // SELECT CASE x
+        //   CASE ELSE
+        //     PRINT "other"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",      1, 1),
+            new(TokenType.Case,          "",      1, 8),
+            new(TokenType.Identifier,    "x",     1, 13),
+            new(TokenType.NewLine,       "",      1, 14),
+            new(TokenType.Case,          "",      2, 3),
+            new(TokenType.Else,          "",      2, 8),
+            new(TokenType.NewLine,       "",      2, 13),
+            new(TokenType.Print,         "",      3, 5),
+            new(TokenType.StringLiteral, "other", 3, 11),
+            new(TokenType.NewLine,       "",      3, 18),
+            new(TokenType.End,           "",      4, 1),
+            new(TokenType.Select,        "",      4, 5),
+            new(TokenType.Eof,           "",      4, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        Assert.Empty(stmt.Cases);           // no regular CASE clauses
+        Assert.NotNull(stmt.Else);          // CASE ELSE lives in the Else field
+        Assert.Single(stmt.Else!.Body);
+    }
+
+    [Fact]
+    public void Parser_SelectCase_MultiValue_Case_Parses_All_Values()
+    {
+        // SELECT CASE x
+        //   CASE 1, 2, 3
+        //     PRINT "low"
+        // END SELECT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Select,        "",    1, 1),
+            new(TokenType.Case,          "",    1, 8),
+            new(TokenType.Identifier,    "x",   1, 13),
+            new(TokenType.NewLine,       "",    1, 14),
+            new(TokenType.Case,          "",    2, 3),
+            new(TokenType.IntLiteral,    "1",   2, 8),
+            new(TokenType.Comma,         "",    2, 9),
+            new(TokenType.IntLiteral,    "2",   2, 11),
+            new(TokenType.Comma,         "",    2, 12),
+            new(TokenType.IntLiteral,    "3",   2, 14),
+            new(TokenType.NewLine,       "",    2, 15),
+            new(TokenType.Print,         "",    3, 5),
+            new(TokenType.StringLiteral, "low", 3, 11),
+            new(TokenType.NewLine,       "",    3, 16),
+            new(TokenType.End,           "",    4, 1),
+            new(TokenType.Select,        "",    4, 5),
+            new(TokenType.Eof,           "",    4, 11),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SelectCaseStatement>(success.Program.Statements[0]);
+
+        Assert.Single(stmt.Cases);
+        var clause = stmt.Cases[0];
+        Assert.NotNull(clause.Values);
+        Assert.Equal(3, clause.Values!.Count);
+        Assert.Equal(1, Assert.IsType<IntLiteralExpression>(clause.Values[0]).Value);
+        Assert.Equal(2, Assert.IsType<IntLiteralExpression>(clause.Values[1]).Value);
+        Assert.Equal(3, Assert.IsType<IntLiteralExpression>(clause.Values[2]).Value);
+    }
+
+    // --- SET GLOBAL structural ---
+
+    [Fact]
+    public void Parser_SetGlobal_Produces_Correct_AST()
+    {
+        // SET GLOBAL x = 42
+        var tokens = new List<Token>
+        {
+            new(TokenType.Set,        "",   1, 1),
+            new(TokenType.Global,     "",   1, 5),
+            new(TokenType.Identifier, "x",  1, 12),
+            new(TokenType.Eq,         "",   1, 14),
+            new(TokenType.IntLiteral, "42", 1, 16),
+            new(TokenType.Eof,        "",   1, 18),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<SetGlobalStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("x", stmt.Identifier);
+        var val = Assert.IsType<IntLiteralExpression>(stmt.Value);
+        Assert.Equal(42, val.Value);
+    }
+
+    // --- 2D Arrays ---
+
+    [Fact]
+    public void Parser_2d_Dim_Produces_Dim2dStatement()
+    {
+        // DIM map[5][8] AS INTEGER
+        var tokens = new List<Token>
+        {
+            new(TokenType.Dim,        "",          1, 1),
+            new(TokenType.Identifier, "map",       1, 5),
+            new(TokenType.LBracket,   "",          1, 8),
+            new(TokenType.IntLiteral, "5",         1, 9),
+            new(TokenType.RBracket,   "",          1, 10),
+            new(TokenType.LBracket,   "",          1, 11),
+            new(TokenType.IntLiteral, "8",         1, 12),
+            new(TokenType.RBracket,   "",          1, 13),
+            new(TokenType.As,         "",          1, 15),
+            new(TokenType.Integer,    "",          1, 18),
+            new(TokenType.Eof,        "",          1, 25),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<Dim2dStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("map", stmt.Name);
+        Assert.Equal("Integer", stmt.TypeName);
+        Assert.Equal(5, stmt.Rows);
+        Assert.Equal(8, stmt.Cols);
+    }
+
+    [Fact]
+    public void Parser_2d_Let_Produces_Array2dAssignStatement()
+    {
+        // LET map[2][3] = 42
+        var tokens = new List<Token>
+        {
+            new(TokenType.Let,        "",    1, 1),
+            new(TokenType.Identifier, "map", 1, 5),
+            new(TokenType.LBracket,   "",    1, 8),
+            new(TokenType.IntLiteral, "2",   1, 9),
+            new(TokenType.RBracket,   "",    1, 10),
+            new(TokenType.LBracket,   "",    1, 11),
+            new(TokenType.IntLiteral, "3",   1, 12),
+            new(TokenType.RBracket,   "",    1, 13),
+            new(TokenType.Eq,         "",    1, 15),
+            new(TokenType.IntLiteral, "42",  1, 17),
+            new(TokenType.Eof,        "",    1, 19),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var stmt = Assert.IsType<Array2dAssignStatement>(success.Program.Statements[0]);
+
+        Assert.Equal("map", stmt.Name);
+        var rowIdx = Assert.IsType<IntLiteralExpression>(stmt.RowIndex);
+        Assert.Equal(2, rowIdx.Value);
+        var colIdx = Assert.IsType<IntLiteralExpression>(stmt.ColIndex);
+        Assert.Equal(3, colIdx.Value);
+        var value = Assert.IsType<IntLiteralExpression>(stmt.Value);
+        Assert.Equal(42, value.Value);
+    }
+
+    [Fact]
+    public void Parser_2d_Print_Produces_Array2dAccessExpression()
+    {
+        // PRINT map[2][3]
+        var tokens = new List<Token>
+        {
+            new(TokenType.Print,      "",    1, 1),
+            new(TokenType.Identifier, "map", 1, 7),
+            new(TokenType.LBracket,   "",    1, 10),
+            new(TokenType.IntLiteral, "2",   1, 11),
+            new(TokenType.RBracket,   "",    1, 12),
+            new(TokenType.LBracket,   "",    1, 13),
+            new(TokenType.IntLiteral, "3",   1, 14),
+            new(TokenType.RBracket,   "",    1, 15),
+            new(TokenType.Eof,        "",    1, 16),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var success = Assert.IsType<ParseSuccess>(result);
+        var print = Assert.IsType<PrintStatement>(success.Program.Statements[0]);
+        var expr = Assert.IsType<Array2dAccessExpression>(print.Value);
+
+        Assert.Equal("map", expr.Name);
+        var row = Assert.IsType<IntLiteralExpression>(expr.RowIndex);
+        Assert.Equal(2, row.Value);
+        var col = Assert.IsType<IntLiteralExpression>(expr.ColIndex);
+        Assert.Equal(3, col.Value);
+    }
 }

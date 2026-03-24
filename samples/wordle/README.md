@@ -3,7 +3,7 @@
 A clone of the popular word game. You have 6 tries to guess a hidden 5-letter word. After each guess you get colour-coded feedback.
 
 ```
-sharpbasic wordle.bas
+sharpbasic wordle.sbx
 ```
 
 ## Feedback key

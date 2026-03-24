@@ -1,17 +1,47 @@
 REM Demonstrates variable declaration and the four built-in types
 
-LET name = "SharpBASIC"  REM FIXED: LET does not support AS TYPE annotation
-LET version = 0.1  REM FIXED: LET does not support AS TYPE annotation
-LET year = 2026  REM FIXED: LET does not support AS TYPE annotation
-LET isOpen = TRUE  REM FIXED: LET does not support AS TYPE annotation
+LET name = "SharpBASIC"
+LET version = 0.1
+LET year = 2026
+LET isOpen = TRUE
 
 PRINT "Language: " & name
 PRINT "Version:  " & STR$(version)
 PRINT "Year:     " & STR$(year)
-PRINT "Open source: " & isOpen  REM FIXED: STR$ does not accept Boolean; use & for concatenation
+PRINT "Open source: " & isOpen
 
 REM TYPENAME tells you the runtime type of any value
 PRINT "Type of name:    " & TYPENAME(name)
 PRINT "Type of version: " & TYPENAME(version)
 PRINT "Type of year:    " & TYPENAME(year)
 PRINT "Type of isOpen:  " & TYPENAME(isOpen)
+
+REM -------------------------------------------------------
+REM CONST — immutable named values
+REM -------------------------------------------------------
+CONST MAX_SCORE = 100
+CONST MIN_SCORE = 0
+CONST PASS_MARK = 60
+CONST GRADE_LABEL = "Score"
+
+PRINT ""
+PRINT "=== Constants ==="
+PRINT GRADE_LABEL & " range: " & STR$(MIN_SCORE) & " to " & STR$(MAX_SCORE)
+PRINT "Pass mark: " & STR$(PASS_MARK)
+
+REM -------------------------------------------------------
+REM SET GLOBAL — write to global scope from inside a SUB
+REM -------------------------------------------------------
+LET globalCount = 0
+
+SUB BumpCounter()
+    SET GLOBAL globalCount = globalCount + 1
+END SUB
+
+CALL BumpCounter()
+CALL BumpCounter()
+CALL BumpCounter()
+
+PRINT ""
+PRINT "=== SET GLOBAL ==="
+PRINT "Counter after 3 calls: " & STR$(globalCount)

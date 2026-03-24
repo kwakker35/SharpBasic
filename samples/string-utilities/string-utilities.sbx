@@ -1,6 +1,6 @@
 REM String utilities showcase — all the built-in string functions
 
-LET s = "  Hello, SharpBASIC World!  "  REM FIXED: LET does not support AS TYPE annotation
+LET s = "  Hello, SharpBASIC World!  "
 
 PRINT "Original:   [" & s & "]"
 PRINT "TRIM$:      [" & TRIM$(s) & "]"
@@ -9,13 +9,31 @@ PRINT "LOWER$:     [" & LOWER$(TRIM$(s)) & "]"
 PRINT "LEN:        " & STR$(LEN(TRIM$(s)))
 PRINT ""
 
-LET word = "SharpBASIC"  REM FIXED: LET does not support AS TYPE annotation
+LET word = "SharpBASIC"
 PRINT "Word: " & word
 PRINT "LEFT$(6):  " & LEFT$(word, 6)
 PRINT "RIGHT$(6): " & RIGHT$(word, 6)
-PRINT "MID$(6,5): " & MID$(word, 6, 5)  REM FIXED: position 7 leaves only 4 chars; position 6 yields "BASIC" within bounds
+PRINT "MID$(6,5): " & MID$(word, 6, 5)
 PRINT ""
 
 REM Build a simple title-casing demo
-LET first = UPPER$(LEFT$("alice", 1)) & LOWER$(RIGHT$("alice", LEN("alice") - 1))  REM FIXED: LET does not support AS TYPE annotation
+LET first = UPPER$(LEFT$("alice", 1)) & LOWER$(RIGHT$("alice", LEN("alice") - 1))
 PRINT "Title-cased 'alice': " & first
+
+REM -------------------------------------------------------
+REM CHR$ — character from Unicode code point
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== CHR$ ==="
+PRINT "CHR$(65):  " & CHR$(65)    REM A
+PRINT "CHR$(90):  " & CHR$(90)    REM Z
+PRINT "CHR$(97):  " & CHR$(97)    REM a
+PRINT "CHR$(48):  " & CHR$(48)    REM 0
+PRINT "CHR$(34):  " & CHR$(34)    REM double-quote (no escape sequence — this is the workaround)
+
+REM Build the sequence A to E using CHR$
+LET letters = ""
+FOR i = 0 TO 4
+    LET letters = letters & CHR$(65 + i)
+NEXT i
+PRINT "A to E: " & letters

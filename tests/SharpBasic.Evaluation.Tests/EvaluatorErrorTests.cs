@@ -1,3 +1,4 @@
+using SharpBasic.Ast;
 using Xunit;
 
 namespace SharpBasic.Evaluation.Tests;
@@ -234,5 +235,61 @@ public class EvaluatorErrorTests
       """;
     var result = RunHelper.RunResult(code);
     Assert.IsType<EvalFailure>(result);
+  }
+
+  // --- CONST reassignment errors ---
+
+  [Fact]
+  public void Evaluator_Let_Reassigns_Const_Returns_EvalFailure()
+  {
+    // CONST X = 5 then LET X = 10 must be a runtime error
+    var result = RunHelper.RunResult("CONST X = 5\nLET X = 10");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Let_Reassigns_String_Const_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("CONST GREETING = \"hello\"\nLET GREETING = \"world\"");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Let_Reassigns_Float_Const_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("CONST PI = 3.14\nLET PI = 3.0");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Let_Reassigns_Bool_Const_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("CONST FLAG = TRUE\nLET FLAG = FALSE");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Const_Error_Message_Names_The_Constant()
+  {
+    var result = RunHelper.RunResult("CONST MAX = 10\nLET MAX = 99");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("MAX", StringComparison.OrdinalIgnoreCase));
+  }
+
+  [Fact]
+  public void Evaluator_Const_Redefinition_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("CONST X = 10\nCONST X = 5");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void Evaluator_Const_Redefinition_Error_Message_Names_The_Constant()
+  {
+    var result = RunHelper.RunResult("CONST LIMIT = 100\nCONST LIMIT = 200");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("LIMIT", StringComparison.OrdinalIgnoreCase));
   }
 }

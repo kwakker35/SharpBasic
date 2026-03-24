@@ -103,3 +103,53 @@ Read `theory/pratt-parsing.md` before Phase 4.
 **Rejected:** A rolling scope where interesting ideas get added as they arise.
 
 **Reason:** A project without a defined end point does not end. File I/O, compile-to-executable, a VS Code extension, a bytecode VM — all of these came up during planning and all of them were deferred. The discipline of saying "that belongs to Grob, not SharpBASIC" kept the project completable. A clean finish at Phase 10 is more valuable than a richer but unfinished language.
+
+---
+
+## 11. CONST — global only, literal values only
+
+**Chosen:** `CONST` is global-only and accepts only literal values — integers, floats, strings, and booleans. No expressions, no function calls.
+
+**Rejected:** Allowing `CONST` inside a SUB/FUNCTION, or accepting arbitrary expressions (e.g. `CONST PI = 4 * ATN(1)`).
+
+**Reason:** Constants are global names by design. Placing a `CONST` inside a local scope creates confusing shadowing and reduces the diagnostic value of "this name is immutable everywhere". Literal-only restriction means a constant is guaranteed to have no side effects and be fully knowable at a glance. The restriction is enforced at runtime with a clear error message.
+
+---
+
+## 12. SET GLOBAL — explicit keyword for global mutation
+
+**Chosen:** A dedicated `SET GLOBAL name = expression` statement that explicitly writes to the global scope from inside a SUB or FUNCTION.
+
+**Rejected:** Allowing `LET` to optionally write to an outer scope, or a reference/output-parameter mechanism.
+
+**Reason:** The scope rule "LET always writes local" is a load-bearing invariant that makes programs easier to reason about. Silently violating it would make bugs very hard to find. `SET GLOBAL` makes the intent fully explicit and visible — you can grep the file for `SET GLOBAL` to find every global mutation. The cost is one extra keyword; the benefit is clarity.
+
+---
+
+## 13. SELECT CASE — first-match, no fall-through
+
+**Chosen:** The first matching `CASE` clause executes and the block exits. No fall-through to subsequent clauses.
+
+**Rejected:** C-style fall-through where execution continues to the next case unless `BREAK` is written explicitly.
+
+**Reason:** Fall-through is a well-documented source of bugs. First-match semantics are the norm in modern pattern-matching languages (F# `match`, Swift `switch`). Classic BASIC never had fall-through in `ON … GOSUB` forms either — this is consistent with the language heritage and eliminates an entire class of errors.
+
+---
+
+## 14. 2D array syntax — `[rows][cols]` double brackets, not `(r, c)` parentheses
+
+**Chosen:** `DIM name[rows][cols]` and element access `name[r][c]` — two separate bracket pairs.
+
+**Rejected:** `DIM name(rows, cols)` and `name(r, c)` — parentheses with a comma-separated pair as seen in some early BASICs.
+
+**Reason:** `name(arg1, arg2)` already parses as a `CallExpression` in the parser. At the point the parser sees `name(`, it cannot yet know whether what follows is a function call or a 2D array access. `[r][c]` is unambiguous — `[` cannot begin an argument list, so it can only mean indexing. It is also naturally consistent with the 1D `name[index]` syntax: 2D is just two sequential index operations.
+
+---
+
+## 15. CHR$ — the only way to embed a double-quote in a string
+
+**Chosen:** `CHR$(34)` as the standard workaround for embedding a double-quote character, since string literals have no escape sequence support.
+
+**Rejected:** Adding an escape sequence syntax (e.g. `\"` or doubling `""`) to string literals.
+
+**Reason:** Escape sequences require changes in the lexer (handling `\"` inside a quoted string without treating it as the closing delimiter), in the AST (representing escape sequences), and everywhere strings are printed. `CHR$()` solves the problem by composing existing mechanisms — the built-in registry and integer-to-character conversion. Zero parser complexity added; the workaround is explicit and memorable.

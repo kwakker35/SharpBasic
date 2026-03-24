@@ -6,6 +6,7 @@ public class Parser(IReadOnlyList<Token> tokens)
 {
     private readonly IReadOnlyList<Token> _tokens = tokens;
     private int _pos = 0;
+    private bool _inSubOrFunction = false;
 
     private readonly List<Diagnostic> _diagnostics = [];
 
@@ -169,8 +170,17 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Dim:
                 AddStatement(target, ParseDimStatement());
                 break;
+            case TokenType.Const:
+                AddStatement(target, ParseConstStatement());
+                break;
             case TokenType.Input:
                 AddStatement(target, ParseInputStatement());
+                break;
+            case TokenType.Select:
+                AddStatement(target, ParseSelectCaseStatement());
+                break;
+            case TokenType.Set:
+                AddStatement(target, ParseSetGlobalStatement());
                 break;
             default:
                 _diagnostics.Add(
@@ -196,6 +206,157 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             _diagnostics.Add(pf.Diagnostic);
         }
+    }
+
+    private ParseStatementResult ParseSetGlobalStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); // consume SET
+
+        err = ExpectToken(TokenType.Global, "after SET");
+        if (err is not null) return err;
+        Advance(); // consume GLOBAL
+
+        err = ExpectToken(TokenType.Identifier, "identifier after SET GLOBAL");
+        if (err is not null) return err;
+        var ident = Current.Value;
+        Advance(); // consume identifier
+
+        err = ExpectToken(TokenType.Eq, "= after SET GLOBAL <identifier>");
+        if (err is not null) return err;
+        Advance(); // consume =
+
+        var value = ParseExpression();
+        err = ExpectExpression(value, "expression after SET GLOBAL <identifier> =");
+        if (err is not null) return err;
+
+        return new ParseStatementSuccess(new SetGlobalStatement(ident, value!, loc));
+    }
+
+    private ParseStatementResult ParseSelectCaseStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); // consume SELECT
+
+        // SELECT must be followed by CASE
+        err = ExpectToken(TokenType.Case, "after SELECT");
+        if (err is not null) return err;
+        Advance(); // consume CASE
+
+        var subject = ParseExpression();
+        err = ExpectExpression(subject, "subject expression after SELECT CASE");
+        if (err is not null) return err;
+
+        if (Current.Type is TokenType.NewLine)
+            Advance(); // consume NewLine
+
+        List<CaseClause> cases = [];
+        CaseClause? elseClause = null;
+
+        while (Current.Type is TokenType.Case)
+        {
+            var caseLoc = new SourceLocation(Current.Line, Current.Column);
+            Advance(); // consume CASE
+
+            if (Current.Type is TokenType.Else)
+            {
+                // CASE ELSE
+                Advance(); // consume ELSE
+                if (Current.Type is TokenType.NewLine)
+                    Advance(); // consume NewLine
+
+                List<Statement> elseBody = [];
+                while (Current.Type is not TokenType.Case &&
+                       Current.Type is not TokenType.End &&
+                       Current.Type is not TokenType.Eof)
+                {
+                    ParseStatement(elseBody);
+                }
+
+                elseClause = new CaseClause([], elseBody, caseLoc);
+
+                // CASE ELSE must be last - error if another CASE follows
+                if (Current.Type is TokenType.Case)
+                {
+                    return new ParseStatementFailure(
+                        new Diagnostic(
+                            Current.Line,
+                            Current.Column,
+                            $"CASE clause found after CASE ELSE at {Current.Line}:{Current.Column}",
+                            DiagnosticSeverity.Error
+                        )
+                    );
+                }
+
+                break;
+            }
+            else
+            {
+                // regular CASE with one or more comma-separated values
+                List<Expression> values = [];
+
+                var val = ParseExpression();
+                err = ExpectExpression(val, "value after CASE");
+                if (err is not null) return err;
+                values.Add(val!);
+
+                while (Current.Type is TokenType.Comma)
+                {
+                    Advance(); // consume comma
+                    val = ParseExpression();
+                    err = ExpectExpression(val, "value after ','");
+                    if (err is not null) return err;
+                    values.Add(val!);
+                }
+
+                if (Current.Type is TokenType.NewLine)
+                    Advance(); // consume NewLine
+
+                List<Statement> body = [];
+                while (Current.Type is not TokenType.Case &&
+                       Current.Type is not TokenType.End &&
+                       Current.Type is not TokenType.Eof)
+                {
+                    ParseStatement(body);
+                }
+
+                cases.Add(new CaseClause(values, body, caseLoc));
+            }
+        }
+
+        // must end with END SELECT
+        if (Current.Type is TokenType.Eof)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected END SELECT but reached end of file",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        if (Current.Type is not TokenType.End || Peek().Type is not TokenType.Select)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    $"Expected END SELECT but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        Advance(); // consume END
+        Advance(); // consume SELECT
+
+        return new ParseStatementSuccess(
+            new SelectCaseStatement(subject!, cases, elseClause, loc)
+        );
     }
 
     private ParseStatementFailure? ExpectToken(TokenType expected, string context)
@@ -388,6 +549,49 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
         Advance(); //consume ]
 
+        // 2D: if next token is [ it's DIM name[rows][cols]
+        if (Current.Type == TokenType.LBracket)
+        {
+            Advance(); //consume [
+
+            err = ExpectToken(TokenType.IntLiteral, "Integer as 2D column size.");
+            if (err is not null) return err;
+
+            var colsValid = int.TryParse(Current.Value, out int cols);
+            if (!colsValid)
+            {
+                return new ParseStatementFailure(new Diagnostic(
+                    Current.Line, Current.Column,
+                    $"Expected integer column size but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error));
+            }
+            Advance(); //consume cols size
+
+            err = ExpectToken(TokenType.RBracket, "] after 2D column size");
+            if (err is not null) return err;
+            Advance(); //consume ]
+
+            err = ExpectToken(TokenType.As, "AS after 2D array size");
+            if (err is not null) return err;
+            Advance(); //consume AS
+
+            if (Current.Type is not TokenType.Integer &&
+                    Current.Type is not TokenType.Float &&
+                    Current.Type is not TokenType.String &&
+                    Current.Type is not TokenType.Boolean)
+            {
+                return new ParseStatementFailure(new Diagnostic(
+                    Current.Line, Current.Column,
+                    $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    DiagnosticSeverity.Error));
+            }
+
+            typeName = Current.Type.ToString();
+            Advance(); //consume type
+
+            return new ParseStatementSuccess(new Dim2dStatement(name, typeName, size, cols, loc));
+        }
+
         //expecting AS
         err = ExpectToken(TokenType.As, "AS after array size");
         if (err is not null) return err;
@@ -420,6 +624,67 @@ public class Parser(IReadOnlyList<Token> tokens)
         );
     }
 
+    private ParseStatementResult ParseConstStatement()
+    {
+        var loc = new SourceLocation(Current.Line, Current.Column);
+
+        if (_inSubOrFunction)
+        {
+            Advance(); // consume CONST so the body loop can progress
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    "CONST declarations are not allowed inside SUB or FUNCTION.",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        Advance(); //consume CONST
+
+        var err = ExpectToken(TokenType.Identifier, "Identifier after CONST");
+        if (err is not null) return err;
+
+        var nameToken = Current;
+        Advance(); //consume Identifier
+
+        err = ExpectToken(TokenType.Eq, "= after CONST <Identifier>");
+        if (err is not null) return err;
+        Advance(); //consume =
+
+        var valueExpr = ParseExpression();
+
+        if (valueExpr is null)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    Current.Line,
+                    Current.Column,
+                    "Expected a literal value after CONST =.",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        if (valueExpr is not IntLiteralExpression &&
+            valueExpr is not FloatLiteralExpression &&
+            valueExpr is not StringLiteralExpression &&
+            valueExpr is not BoolLiteralExpression)
+        {
+            return new ParseStatementFailure(
+                new Diagnostic(
+                    loc.Line,
+                    loc.Col,
+                    "CONST value must be a literal (integer, float, string, or boolean).",
+                    DiagnosticSeverity.Error
+                )
+            );
+        }
+
+        return new ParseStatementSuccess(new ConstStatement(nameToken, valueExpr, loc));
+    }
+
     private Expression? ParseArrayAccessExpression()
     {
         ParseStatementFailure? err;
@@ -438,6 +703,21 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         err = ExpectExpression(expr, "expression in array access");
         if (err is not null) return null;
+
+        // 2D: current = ], peek ahead — if next is [ it's name[row][col]
+        if (Peek().Type == TokenType.LBracket)
+        {
+            Advance(); //consume ]
+            Advance(); //consume [
+
+            var colExpr = ParseExpression();
+
+            err = ExpectExpression(colExpr, "column index in 2D array access");
+            if (err is not null) return null;
+
+            return new Array2dAccessExpression(name, expr, colExpr, loc);
+            // caller (ParseExpression) will Advance() to consume the final ]
+        }
 
         return new ArrayAccessExpression(
                 name,
@@ -662,11 +942,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             Advance(); //consume NewLine
 
         //break on END
+        _inSubOrFunction = true;
         while (Current.Type is not TokenType.End &&
                 Current.Type is not TokenType.Eof)
         {
             ParseStatement(body);
         }
+        _inSubOrFunction = false;
 
         //expecting END FUNCTION
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Function)
@@ -766,11 +1048,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             Advance(); //consume NewLine
 
         //break on END
+        _inSubOrFunction = true;
         while (Current.Type is not TokenType.End &&
                 Current.Type is not TokenType.Eof)
         {
             ParseStatement(body);
         }
+        _inSubOrFunction = false;
 
         //expecting END SUB
         if (Current.Type is TokenType.End && Peek().Type is not TokenType.Sub)
@@ -926,6 +1210,40 @@ public class Parser(IReadOnlyList<Token> tokens)
             err = ExpectToken(TokenType.RBracket, "] after array index expression");
             if (err is not null) return err;
             Advance();// consume ]
+
+            // 2D: if next token is [ it's LET name[row][col] = value
+            if (Current.Type == TokenType.LBracket)
+            {
+                Advance(); //consume [
+
+                var exprColIndex = ParseExpression();
+
+                err = ExpectExpression(exprColIndex, "column index after LET <identifier>[row][");
+                if (err is not null) return err;
+
+                err = ExpectToken(TokenType.RBracket, "] after 2D column index");
+                if (err is not null) return err;
+                Advance(); //consume ]
+
+                err = ExpectToken(TokenType.Eq, "= after LET <identifier>[row][col]");
+                if (err is not null) return err;
+                Advance(); //consume =
+
+                var exprValue2d = ParseExpression();
+
+                err = ExpectExpression(exprValue2d, "value after LET <identifier>[row][col] =");
+                if (err is not null) return err;
+
+                return new ParseStatementSuccess(
+                    new Array2dAssignStatement(
+                        ident.Value,
+                        exprIndex!,
+                        exprColIndex!,
+                        exprValue2d!,
+                        letLoc
+                    )
+                );
+            }
 
             err = ExpectToken(TokenType.Eq, "after LET <identifier>[]");
             if (err is not null) return err;

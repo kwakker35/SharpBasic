@@ -5,7 +5,7 @@ The simplest SharpBASIC program.
 ## Run
 
 ```
-sharpbasic hello-world.bas
+sharpbasic hello-world.sbx
 ```
 
 > Requires `sharpbasic` on your PATH. See the project README for installation instructions.
