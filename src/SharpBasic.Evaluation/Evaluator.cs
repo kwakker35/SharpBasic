@@ -13,7 +13,7 @@ public class Evaluator(
     private Dictionary<string, FunctionDeclaration> _functions = functions ?? new();
     private List<Diagnostic> _diagnostics = [];
 
-    private readonly Dictionary<string, Func<List<Value>, Value?>> _builtins = CreateBuiltins();
+    private static readonly Dictionary<string, Func<List<Value>, Value?>> _builtins = CreateBuiltins();
 
     private static Dictionary<string, Func<List<Value>, Value?>> CreateBuiltins() => new()
     {
