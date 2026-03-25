@@ -2,6 +2,6 @@ namespace SharpBasic.Ast;
 
 public record DimStatement(string Name,
                             string TypeName,
-                            int Size,
+                            Expression SizeExpr,
                             SourceLocation Location)
     : Statement(Location);

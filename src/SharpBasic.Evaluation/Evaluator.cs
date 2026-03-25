@@ -282,9 +282,23 @@ public class Evaluator(
             );
         }
 
-        var arrVal = new Value[stmt.Size];
+        var sizeResult = EvaluateExpression(stmt.SizeExpr);
+        if (sizeResult is EvalFailure) return sizeResult;
+        if (((EvalSuccess)sizeResult).Value is not IntValue sizeVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+        var size = sizeVal.V;
 
-        for (var i = 0; i < stmt.Size; i++)
+        var arrVal = new Value[size];
+
+        for (var i = 0; i < size; i++)
         {
             arrVal[i] = stmt.TypeName.ToUpperInvariant() switch
             {
@@ -320,7 +334,33 @@ public class Evaluator(
             );
         }
 
-        var total = stmt.Rows * stmt.Cols;
+        var rowsResult = EvaluateExpression(stmt.RowsExpr);
+        if (rowsResult is EvalFailure) return rowsResult;
+        if (((EvalSuccess)rowsResult).Value is not IntValue rowsVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array row size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        var colsResult = EvaluateExpression(stmt.ColsExpr);
+        if (colsResult is EvalFailure) return colsResult;
+        if (((EvalSuccess)colsResult).Value is not IntValue colsVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array column size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        var total = rowsVal.V * colsVal.V;
         var arrVal = new Value[total];
         var defaultVal = stmt.TypeName.ToUpperInvariant() switch
         {
@@ -334,7 +374,7 @@ public class Evaluator(
         for (var i = 0; i < total; i++)
             arrVal[i] = defaultVal;
 
-        var val = new ArrayValue(arrVal, stmt.TypeName, stmt.Cols);
+        var val = new ArrayValue(arrVal, stmt.TypeName, colsVal.V);
         _table.Set(name, val);
         return new EvalSuccess(new VoidValue());
     }

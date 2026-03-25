@@ -197,12 +197,20 @@ public class Lexer
                 default:
                     if (char.IsDigit(Current))
                     {
-                        if (token.Length > 0)
+                        // A digit mid-way through a letter-started token is part of the identifier (e.g. a1_b2_c3).
+                        if (token.Length > 0 && char.IsAsciiLetter(token[0]))
                         {
-                            tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
-                            token = new();
+                            token.Append(Current);
                         }
-                        tokens.Add(GetNumberLiteral());
+                        else
+                        {
+                            if (token.Length > 0)
+                            {
+                                tokens.Add(new Token(GetTokenType(token.ToString()), token.ToString(), _line, startCol));
+                                token = new();
+                            }
+                            tokens.Add(GetNumberLiteral());
+                        }
                     }
                     else if (Current == '$' && !char.IsAsciiLetterOrDigit(Peek()))
                     {
@@ -284,10 +292,17 @@ public class Lexer
             "CASE" => TokenType.Case,
             "SET" => TokenType.Set,
             "GLOBAL" => TokenType.Global,
-            _ => token.All(c => char.IsAsciiLetterOrDigit(c)) || token.EndsWith('$') ?
+            _ => IsValidIdentifier(token) || token.EndsWith('$') ?
                         TokenType.Identifier : TokenType.Unknown
         };
     }
+
+    private static bool IsValidIdentifier(string token) =>
+        token.Length > 0 &&
+        char.IsAsciiLetter(token[0]) &&
+        token.All(c => char.IsAsciiLetterOrDigit(c) || c == '_') &&
+        !token.EndsWith('_') &&
+        !token.Contains("__");
 
     private Token GetStringLiteral()
     {

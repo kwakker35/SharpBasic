@@ -204,27 +204,9 @@ public class ParserErrorTests
             d.Message.Contains("Expected"));
     }
 
-    // --- DIM with float size (non-integer) ---
-
-    [Fact]
-    public void Parser_Dim_With_Float_Literal_Size_Produces_ParseFailure()
-    {
-        // DIM scores[3.5] As Integer   ← size must be an integer literal
-        var tokens = new List<Token>
-        {
-            new(TokenType.Dim,          "", 1, 1),
-            new(TokenType.Identifier,   "scores", 1, 5),
-            new(TokenType.LBracket,     "", 1, 11),
-            new(TokenType.FloatLiteral, "3.5", 1, 12), // float, not int
-            new(TokenType.RBracket,     "", 1, 15),
-            new(TokenType.As,           "", 1, 17),
-            new(TokenType.Integer,      "", 1, 20),
-            new(TokenType.Eof,          "", 1, 27),
-        };
-
-        var result = new Parser(tokens).Parse();
-        Assert.IsType<ParseFailure>(result);
-    }
+    // --- DIM with float size — parser now accepts any expression, evaluator rejects non-integers ---
+    // (This test is intentionally removed. Float bounds now parse successfully and are
+    //  rejected at evaluation time with a clear EvalFailure. See EvaluatorTests for coverage.)
 
     // --- Unexpected token at statement level ---
 

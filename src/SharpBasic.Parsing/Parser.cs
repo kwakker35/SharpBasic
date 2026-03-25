@@ -508,12 +508,11 @@ public class Parser(IReadOnlyList<Token> tokens)
         ParseStatementFailure? err;
         var loc = new SourceLocation(Current.Line, Current.Column);
         string name = string.Empty;
-        int size = 0;
         string typeName = string.Empty;
 
         Advance(); //Consume DIM
 
-        //expecting Identifer
+        //expecting Identifier
         err = ExpectToken(TokenType.Identifier, "<Identifier> after DIM");
         if (err is not null) return err;
 
@@ -525,24 +524,13 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
         Advance(); //consume [
 
-        //expecting Identifer
-        err = ExpectToken(TokenType.IntLiteral, "Integer as array size.");
-        if (err is not null) return err;
-
-        var sizeValid = int.TryParse(Current.Value, out size);
-
-        if (!sizeValid)
-        {
-            var errEnd = new Diagnostic(
-            Current.Line,
-            Current.Column,
-            $"Expected TYPE after AS but got {Current.Type} at {Current.Line}:{Current.Column}",
-            DiagnosticSeverity.Error
-            );
-            return new ParseStatementFailure(errEnd);
-        }
-
-        Advance(); //consume size expression
+        // parse the size as a full expression (literal, identifier, arithmetic)
+        var sizeExpr = ParseExpression();
+        if (sizeExpr is null)
+            return new ParseStatementFailure(new Diagnostic(
+                Current.Line, Current.Column,
+                $"Expected expression as array size at {Current.Line}:{Current.Column}",
+                DiagnosticSeverity.Error));
 
         //expecting ]
         err = ExpectToken(TokenType.RBracket, "] after array size");
@@ -554,18 +542,12 @@ public class Parser(IReadOnlyList<Token> tokens)
         {
             Advance(); //consume [
 
-            err = ExpectToken(TokenType.IntLiteral, "Integer as 2D column size.");
-            if (err is not null) return err;
-
-            var colsValid = int.TryParse(Current.Value, out int cols);
-            if (!colsValid)
-            {
+            var colsExpr = ParseExpression();
+            if (colsExpr is null)
                 return new ParseStatementFailure(new Diagnostic(
                     Current.Line, Current.Column,
-                    $"Expected integer column size but got {Current.Type} at {Current.Line}:{Current.Column}",
+                    $"Expected expression as 2D column size at {Current.Line}:{Current.Column}",
                     DiagnosticSeverity.Error));
-            }
-            Advance(); //consume cols size
 
             err = ExpectToken(TokenType.RBracket, "] after 2D column size");
             if (err is not null) return err;
@@ -589,7 +571,7 @@ public class Parser(IReadOnlyList<Token> tokens)
             typeName = Current.Type.ToString();
             Advance(); //consume type
 
-            return new ParseStatementSuccess(new Dim2dStatement(name, typeName, size, cols, loc));
+            return new ParseStatementSuccess(new Dim2dStatement(name, typeName, sizeExpr, colsExpr, loc));
         }
 
         //expecting AS
@@ -612,13 +594,13 @@ public class Parser(IReadOnlyList<Token> tokens)
         }
 
         typeName = Current.Type.ToString();
-        Advance(); //consume  type
+        Advance(); //consume type
 
         return new ParseStatementSuccess(
                                 new DimStatement(
                                     name,
                                     typeName,
-                                    size,
+                                    sizeExpr,
                                     loc
                                 )
         );

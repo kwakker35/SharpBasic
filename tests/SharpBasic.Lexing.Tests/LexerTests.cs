@@ -733,4 +733,86 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[3].Type);
     }
 
+    // --- Underscore identifier tests ---
+
+    [Fact]
+    public void Lex_Underscore_MidIdentifier_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("MAX_WIDTH").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("MAX_WIDTH", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_LowerCase_MidIdentifier_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("start_time").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("start_time", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_MultipleSegments_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("x_y_z").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("x_y_z", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_AlphanumericSegments_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("a1_b2_c3").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a1_b2_c3", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Leading_ReturnsUnknown()
+    {
+        var tokens = new Lexer("_name").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Trailing_ReturnsUnknown()
+    {
+        var tokens = new Lexer("done_").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Consecutive_ReturnsUnknown()
+    {
+        var tokens = new Lexer("x__y").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_BareUnderscore_ReturnsUnknown()
+    {
+        var tokens = new Lexer("_").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_InLetStatement_ReturnsCorrectTokens()
+    {
+        var tokens = new Lexer("LET item_count = 5").Tokenise();
+        Assert.Equal(TokenType.Let, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("item_count", tokens[1].Value);
+        Assert.Equal(TokenType.Eq, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_DollarSuffix_Unaffected()
+    {
+        var tokens = new Lexer("UPPER$").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("UPPER$", tokens[0].Value);
+    }
+
 }

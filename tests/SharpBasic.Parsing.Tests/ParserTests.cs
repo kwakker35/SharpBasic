@@ -646,7 +646,8 @@ public class ParserTests
         var stmt = Assert.IsType<DimStatement>(success.Program.Statements[0]);
 
         Assert.Equal("scores", stmt.Name);
-        Assert.Equal(10, stmt.Size);
+        var sizeExpr = Assert.IsType<IntLiteralExpression>(stmt.SizeExpr);
+        Assert.Equal(10, sizeExpr.Value);
         Assert.Equal("Integer", stmt.TypeName);
     }
 
@@ -1224,8 +1225,10 @@ public class ParserTests
 
         Assert.Equal("map", stmt.Name);
         Assert.Equal("Integer", stmt.TypeName);
-        Assert.Equal(5, stmt.Rows);
-        Assert.Equal(8, stmt.Cols);
+        var rowsExpr = Assert.IsType<IntLiteralExpression>(stmt.RowsExpr);
+        Assert.Equal(5, rowsExpr.Value);
+        var colsExpr = Assert.IsType<IntLiteralExpression>(stmt.ColsExpr);
+        Assert.Equal(8, colsExpr.Value);
     }
 
     [Fact]

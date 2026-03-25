@@ -66,6 +66,12 @@ Source files are read as text. Line endings are normalised at load time: `\r\n` 
 
 **Identifiers are case-sensitive.** `myVar` and `MYVAR` are two distinct symbols at runtime. The symbol table uses a case-sensitive key. Always use consistent casing for identifiers throughout your program.
 
+Underscores are permitted within identifiers between word characters.
+An underscore may not appear as the first or last character of an identifier,
+and consecutive underscores (`__`) are not permitted.
+Valid: `MAX_WIDTH`, `item_count`, `DIR_N`
+Invalid: `_name`, `done_`, `x__y`, `_`
+
 ### 2.3 Whitespace and Newlines
 
 Spaces are the primary token delimiter. The lexer accumulates characters into a buffer and flushes the buffer when it encounters a space, a recognised symbol character, a digit at the start of a token, or a newline.
