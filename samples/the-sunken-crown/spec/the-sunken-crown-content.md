@@ -99,6 +99,14 @@ You have been through here already. Whatever there is to find, you know where it
 
 ---
 
+**Post-fight**
+
+The Brute is down. It fell the way big things fall — all at once, without grace. The impact is still ringing in the floor.
+
+Your breathing is the loudest thing in the room now. The gouges in the stone are at your feet. The dark stain has company.
+
+---
+
 ### Room [3] — Armoury
 
 **First visit**
@@ -202,6 +210,14 @@ The gap in the rubble is visible from the doorway now that you know where to loo
 
 ---
 
+**Post-fight**
+
+The skittering has stopped.
+
+The creature lies where it fell, legs folded at angles they were not built to reach. The cold passage is quiet. The rubble at the far end is exactly as it was — whatever the thing was guarding, it is no longer guarding it.
+
+---
+
 **SEARCH result — finding the passage**
 
 *(Only reachable when the Horror is dead. SEARCH while Horror is alive triggers combat.)*
@@ -237,6 +253,14 @@ It is still there. Still waiting. It turns to face you again with the same unhur
 The armoured figure is down. The pit sits in the centre of the room, dropping into the same darkness it always did.
 
 South is clear.
+
+---
+
+**Post-fight**
+
+The armoured figure is down at last. The old armour settles with a sound like a door closing for good.
+
+The pit is behind you, dropping into the same darkness it always did. South is open.
 
 ---
 
@@ -290,6 +314,14 @@ The room is warmer without it. The water sounds are clearer now — just water, 
 
 ---
 
+**Post-fight**
+
+The cold leaves all at once — not gradually, just gone, the moment it stopped moving.
+
+The water sounds come back. Channels, stone, the dungeon's old plumbing tending to itself. The recess in the north wall is still there.
+
+---
+
 ### Room [10] — The Underhall
 
 **First visit**
@@ -319,6 +351,14 @@ It remembers you. The small dark eyes find you immediately.
 The Troll is down. The room is the same — the bones along the walls, the high ceiling, the smell that does not quite go away.
 
 South is open. You are nearly through.
+
+---
+
+**Post-fight**
+
+The Troll is down. Something that size takes a moment to accept. The floor still feels the weight of it.
+
+The room is the same — the bones along the walls, the high ceiling, the smell that does not quite go away. But south is open now.
 
 ---
 
