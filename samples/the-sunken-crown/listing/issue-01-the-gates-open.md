@@ -20,9 +20,9 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 ## What's New This Issue
 
 - The `.sbx` file is created for the first time
-- `CONST FRAMEWIDTH = 80` — the terminal width, used throughout
-- `CONST SCREENHEIGHT = 30` — total terminal rows
-- `CONST CONTENTROWS = 20` — rows available for content after chrome
+- `CONST FRAME_WIDTH = 80` — the terminal width, used throughout
+- `CONST SCREEN_HEIGHT = 30` — total terminal rows
+- `CONST CONTENT_ROWS = 20` — rows available for content after chrome
 - `SUB PrintHeader()` — draws the title bar and stats line
 - `SUB PrintSeparator()` — draws the dividing line
 - Placeholder stats so the frame has something to display
@@ -118,13 +118,13 @@ REM =================================================================
 
 REM ----------------------------------------------------------------
 REM  Constants
-REM  FRAMEWIDTH governs every separator and alignment calculation
-REM  throughout the game. SCREENHEIGHT and CONTENTROWS govern
+REM  FRAME_WIDTH governs every separator and alignment calculation
+REM  throughout the game. SCREEN_HEIGHT and CONTENT_ROWS govern
 REM  the paging model used by Pause() in later issues.
 REM ----------------------------------------------------------------
-CONST FRAMEWIDTH = 80
-CONST SCREENHEIGHT = 30
-CONST CONTENTROWS = 20
+CONST FRAME_WIDTH = 80
+CONST SCREEN_HEIGHT = 30
+CONST CONTENT_ROWS = 20
 
 REM ----------------------------------------------------------------
 REM  Player stats
@@ -144,7 +144,7 @@ REM  Reads skill, stamina, luck from global scope -- read-only.
 REM =================================================================
 SUB PrintHeader()
     LET line = ""
-    FOR i = 1 TO FRAMEWIDTH
+    FOR i = 1 TO FRAME_WIDTH
         LET line = line & "="
     NEXT i
     PRINT line
@@ -159,7 +159,7 @@ REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
     LET sep = ""
-    FOR i = 1 TO FRAMEWIDTH
+    FOR i = 1 TO FRAME_WIDTH
         LET sep = sep & "-"
     NEXT i
     PRINT sep
