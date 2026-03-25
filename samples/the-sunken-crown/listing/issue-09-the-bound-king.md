@@ -36,11 +36,11 @@ The gold mechanic runs inside the Throne Room sequence — a loop within a loop,
 ```
 LET wantsMoreGold = 1
 WHILE goldBags < 4 AND wantsMoreGold = 1 AND stamina > 0
-    ' prompt: TAKE BAG or LEAVE
-    ' if TAKE BAG:
+    REM prompt: TAKE BAG or LEAVE
+    REM if TAKE BAG:
     LET goldBags = goldBags + 1
     IF goldBags > 1 THEN
-        ' roll for regeneration — threshold tightens each bag
+        REM roll for regeneration — threshold tightens each bag
         IF regenRoll >= threshold THEN
             LET secondFight = 1
             LET wantsMoreGold = 0
@@ -96,5 +96,5 @@ Take all four bags every time you reach the Throne Room across multiple runs. Tr
 ## The Listing
 
 ```
-' Issue 9 listing — to be added once built and tested
+REM Issue 9 listing — to be added once built and tested
 ```

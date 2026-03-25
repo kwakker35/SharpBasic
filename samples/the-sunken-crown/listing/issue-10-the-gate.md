@@ -42,16 +42,16 @@ INPUT cmd$
 LET cmd$ = UPPER$(cmd$)
 IF cmd$ = "LEFT" THEN
     IF gateCorrectDoor = 1 THEN
-        ' win sequence
+        REM win sequence
     ELSE
-        ' death sequence
+        REM death sequence
     END IF
 ELSE
     IF cmd$ = "RIGHT" THEN
         IF gateCorrectDoor = 2 THEN
-            ' win sequence
+            REM win sequence
         ELSE
-            ' death sequence
+            REM death sequence
         END IF
     ELSE
         PRINT "  The dungeon does not respond to that."
@@ -108,5 +108,5 @@ That was always the point.
 ## The Listing
 
 ```
-' Issue 10 listing — to be added once built and tested
+REM Issue 10 listing — to be added once built and tested
 ```

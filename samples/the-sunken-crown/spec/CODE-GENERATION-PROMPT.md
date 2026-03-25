@@ -54,6 +54,8 @@ of code. When documents conflict, the hierarchy below determines which one wins.
 - `SET GLOBAL` requires the variable to already exist in global scope
 - `CONST name = literal` declares an immutable global — `LET` or `SET GLOBAL` on a CONST is a runtime error
 - CONST is global only — declaring CONST inside a SUB or FUNCTION is a runtime error
+- Underscores are valid between word characters in identifiers: `CONST MAX_WIDTH = 80`, `LET start_time = 0`
+- Leading underscore, trailing underscore, consecutive underscores, and bare `_` are all invalid
 
 **Arrays:**
 - Array declaration syntax is `DIM name[size] AS TYPE` with square brackets
@@ -197,7 +199,7 @@ At the end of each file is a placeholder:
 ## The Listing
 
 ​```
-' Issue N listing goes here
+REM Issue N listing goes here
 ​```
 ```
 
@@ -262,20 +264,20 @@ Every new block of code must begin with a comment that tells the reader
 exactly where in the existing file it goes:
 
 ```
-' === ADD TO: top of file, after existing DIM declarations ===
-DIM slotContents[6] AS INTEGER  ' item code in each loot slot, 0 = empty
-DIM slotTaken[6] AS INTEGER     ' 0 = available, 1 = collected
+REM === ADD TO: top of file, after existing DIM declarations ===
+DIM slotContents[6] AS INTEGER  REM item code in each loot slot, 0 = empty
+DIM slotTaken[6] AS INTEGER     REM 0 = available, 1 = collected
 ```
 
 ```
-' === ADD TO: SUB InitialiseGame(), after CALL InitMonsters() ===
+REM === ADD TO: SUB InitialiseGame(), after CALL InitMonsters() ===
 CALL ShuffleLoot()
 ```
 
 ```
-' === NEW SUB: add after SUB InitMonsters() ===
+REM === NEW SUB: add after SUB InitMonsters() ===
 SUB ShuffleLoot()
-    ' Fisher-Yates shuffle across lootPool array
+    REM Fisher-Yates shuffle across lootPool array
     ...
 END SUB
 ```
@@ -316,7 +318,7 @@ Code standards:
 - Every SUB and FUNCTION has a header comment stating its purpose and parameters
 - Every DIM array has an inline comment stating what it tracks
 - All named constants are declared with `CONST` at the top of the file — never `LET`
-- State flag values (0/1) are commented at declaration — `' 0 = false, 1 = true`
+- State flag values (0/1) are commented at declaration — `REM 0 = false, 1 = true`
 - All text strings are pulled from the content asset file — no inline invented strings
 - Combat, navigation, inventory, and event logic each live in their own named SUBs
 - No SUB or FUNCTION exceeds what can reasonably be understood in one reading

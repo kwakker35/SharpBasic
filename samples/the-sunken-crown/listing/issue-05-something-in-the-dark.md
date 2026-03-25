@@ -35,7 +35,7 @@ Combat runs in a loop. The loop continues while both sides are still standing:
 WHILE stamina > 0 AND monsterStamina > 0
     LET playerAttack = AttackStrength(skill)
     LET monsterAttack = AttackStrength(monsterSkill)
-    ' compare, apply damage, print result
+    REM compare, apply damage, print result
 WEND
 ```
 
@@ -81,5 +81,5 @@ Raise the Brute's SKILL by 3 and fight it again. Then lower yours by 3 instead. 
 ## The Listing
 
 ```
-' Issue 5 listing — to be added once built and tested
+REM Issue 5 listing — to be added once built and tested
 ```

@@ -35,9 +35,9 @@ This issue changes that. Inventory goes in. TAKE, DROP, USE, and SEARCH all star
 Inventory is stored as an array of item codes:
 
 ```
-DIM inventory[4] AS INTEGER    ' item code per slot, 0 = empty
-LET invCount = 0               ' number of items currently carried
-LET overburdened = 0           ' 0 = normal, 1 = carrying 4 items
+DIM inventory[4] AS INTEGER    REM  item code per slot, 0 = empty
+LET invCount = 0               REM  number of items currently carried
+LET overburdened = 0           REM  0 = normal, 1 = carrying 4 items
 ```
 
 Each slot holds a number. Zero means empty. The item is just a number — everything the game knows about what that number means lives in the code that reads it.
@@ -45,17 +45,17 @@ Each slot holds a number. Zero means empty. The item is just a number — everyt
 Here is the complete item code table. These codes are locked and must not change:
 
 ```
-' 0  = empty slot
-' 1  = Healing Potion
-' 2  = Lucky Charm
-' 3  = Armour Shard
-' 4  = Dark Bread
-' 5  = Medal of Valour
-' 6  = Antidote Vial
-' 7  = Bangle of Courage
-' 8  = Sword of Sharpness
-' 9  = Mouldy Bread
-' 10 = Guardroom Key
+REM 0  = empty slot
+REM 1  = Healing Potion
+REM 2  = Lucky Charm
+REM 3  = Armour Shard
+REM 4  = Dark Bread
+REM 5  = Medal of Valour
+REM 6  = Antidote Vial
+REM 7  = Bangle of Courage
+REM 8  = Sword of Sharpness
+REM 9  = Mouldy Bread
+REM 10 = Guardroom Key
 ```
 
 This is the parallel array pattern. `inventory[1]` holds what is in slot one. `invCount` tracks how many slots are filled. `overburdened` is derived from `invCount` — it is set to 1 whenever `invCount` reaches 4, and cleared to 0 whenever `invCount` drops below 4.
@@ -63,14 +63,14 @@ This is the parallel array pattern. `inventory[1]` holds what is in slot one. `i
 These three must always be in sync. The pattern for every TAKE operation — note the use of `SET GLOBAL` for all global writes:
 
 ```
-' Find the first empty slot
+REM Find the first empty slot
 LET slot = 0
 FOR i = 1 TO 4
     IF inventory[i] = 0 AND slot = 0 THEN
         LET slot = i
     END IF
 NEXT i
-' Place the item and update carry state
+REM Place the item and update carry state
 LET inventory[slot] = itemCode
 SET GLOBAL invCount = invCount + 1
 IF invCount = 4 THEN
@@ -136,5 +136,5 @@ Drop an item and pick it up again. Check `invCount` before and after. Does it re
 ## The Listing
 
 ```
-' Issue 6 listing — to be added once built and tested
+REM Issue 6 listing — to be added once built and tested
 ```

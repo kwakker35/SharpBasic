@@ -37,10 +37,10 @@ WHILE riddleSolved = 0
     INPUT cmd$
     LET cmd$ = UPPER$(cmd$)
     IF cmd$ = "LEFT" THEN
-        ' resolve left door
+        REM resolve left door
     ELSE
         IF cmd$ = "RIGHT" THEN
-            ' resolve right door
+            REM resolve right door
         ELSE
             PRINT "  The door does not move. The room waits."
         END IF
@@ -93,5 +93,5 @@ There is no right answer. It is a design question. The published version does no
 ## The Listing
 
 ```
-' Issue 8 listing — to be added once built and tested
+REM Issue 8 listing — to be added once built and tested
 ```

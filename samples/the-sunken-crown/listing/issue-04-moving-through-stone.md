@@ -35,11 +35,11 @@ This issue changes that. The full map goes in — all 12 rooms, all exits, the c
 The dungeon's rooms and exits live in arrays — fixed-size collections of values, each slot numbered from zero.
 
 ```
-DIM roomExitCount[12] AS INTEGER   ' how many exits each room has
-DIM roomExitStart[12] AS INTEGER   ' index of first exit slot for each room
-DIM exitDir[30] AS INTEGER         ' direction code for each exit slot
-DIM exitDest[30] AS INTEGER        ' destination room for each exit slot
-DIM exitHidden[30] AS INTEGER      ' 1 = hidden until SEARCH finds it
+DIM roomExitCount[12] AS INTEGER   REM  how many exits each room has
+DIM roomExitStart[12] AS INTEGER   REM  index of first exit slot for each room
+DIM exitDir[30] AS INTEGER         REM  direction code for each exit slot
+DIM exitDest[30] AS INTEGER        REM  destination room for each exit slot
+DIM exitHidden[30] AS INTEGER      REM  1 = hidden until SEARCH finds it
 ```
 
 This is the parallel array pattern. Five separate arrays, but they describe one thing: the map. They are kept in sync by the initialisation code that populates them.
@@ -50,9 +50,9 @@ Here is how to read a room's exits at runtime:
 LET start = roomExitStart[currentRoom]
 LET count = roomExitCount[currentRoom]
 FOR i = start TO start + count - 1
-    ' exitDir[i] is the direction code
-    ' exitDest[i] is where it goes
-    ' exitHidden[i] is whether it is visible
+    REM exitDir[i] is the direction code
+    REM exitDest[i] is where it goes
+    REM exitHidden[i] is whether it is visible
 NEXT i
 ```
 
@@ -95,5 +95,5 @@ Does the navigation handler cope? Does anything break? Understanding what the co
 ## The Listing
 
 ```
-' Issue 4 listing — to be added once built and tested
+REM Issue 4 listing — to be added once built and tested
 ```
