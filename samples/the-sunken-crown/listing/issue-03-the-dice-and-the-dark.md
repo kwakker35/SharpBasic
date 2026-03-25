@@ -96,5 +96,73 @@ Does the distribution look right? You are looking for roughly equal frequency ac
 ## The Listing
 
 ```
-REM Issue 3 listing — to be added once built and tested
+REM === ADD TO: player stats block, after LET luck = 0 ===
+LET startSkill = 0   REM starting SKILL -- reference value for end screen
+LET startStamina = 0 REM starting STAMINA -- healing cap; never changes after RollStartingStats
+
+REM === NEW FUNCTION: add after SUB Pause(), before SUB PrintRoom() ===
+REM =================================================================
+REM  FUNCTION RollDice -- n AS INTEGER -> INTEGER
+REM  Rolls n six-sided dice and returns the sum. Called with 1 or 2.
+REM  Note: INT(Float) returns Float, so total promotes to Float after
+REM  the first iteration. Return type is advisory -- the caller
+REM  receives the Float value and arithmetic works correctly.
+REM =================================================================
+FUNCTION RollDice(n AS INTEGER) AS INTEGER
+    LET total = 0
+    FOR i = 1 TO n
+        LET total = total + INT(RND() * 6) + 1
+    NEXT i
+    RETURN total
+END FUNCTION
+
+REM === NEW SUB: add after FUNCTION RollDice() ===
+REM =================================================================
+REM  SUB RollStartingStats
+REM  Rolls SKILL, STAMINA, and LUCK using Fighting Fantasy ranges.
+REM  Stores starting values in startSkill and startStamina for the
+REM  healing cap and end screen. Uses SET GLOBAL for all five writes.
+REM =================================================================
+SUB RollStartingStats()
+    SET GLOBAL skill = RollDice(1) + 6
+    SET GLOBAL startSkill = skill
+    SET GLOBAL stamina = RollDice(2) + 12
+    SET GLOBAL startStamina = stamina
+    SET GLOBAL luck = RollDice(1) + 6
+END SUB
+
+REM === NEW SUB: add after SUB RollStartingStats() ===
+REM =================================================================
+REM  SUB OpeningSequence
+REM  Runs once at startup before the main game loop. Prints the
+REM  opening narrative, pauses, rolls and displays starting
+REM  attributes, then pauses again before the dungeon begins.
+REM =================================================================
+SUB OpeningSequence()
+    PRINT ""
+    PRINT "  You have sold everything. Your home, your tools, what little remained"
+    PRINT "  after the debts. Malachar's men took it all — converted to coin, dropped"
+    PRINT "  down a chute into the dark beneath the keep. You watched it go."
+    PRINT ""
+    PRINT "  If you don't walk out of that dungeon, there is nothing to walk back to."
+    PRINT ""
+    CALL Pause()
+    PRINT ""
+    PRINT "  Rolling your attributes..."
+    PRINT ""
+    CALL RollStartingStats()
+    PRINT "  SKILL:    " & skill
+    PRINT "  STAMINA:  " & stamina
+    PRINT "  LUCK:     " & luck
+    PRINT ""
+    CALL Pause()
+END SUB
+
+REM === REPLACE: in the main program block at the bottom of the file ===
+REM  Remove:  CALL EnterRoom(1)
+REM  Add:     CALL OpeningSequence()
+REM           CALL EnterRoom(currentRoom)
+REM  (All lines above and below are unchanged.)
+CALL OpeningSequence()
+CALL EnterRoom(currentRoom)
 ```
