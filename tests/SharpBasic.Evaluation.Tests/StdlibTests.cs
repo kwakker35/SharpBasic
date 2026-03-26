@@ -182,24 +182,24 @@ public class StdlibTests
   }
 
   [Fact]
-  public void STRING_Dollar_Multi_Char_Arg_Returns_Null_EvalFailure()
+  public void STRING_Dollar_Multi_Char_Arg_Returns_Null_Prints_Empty()
   {
-    var result = RunHelper.RunResult("PRINT STRING$(\"ab\", 5)");
-    Assert.IsType<EvalFailure>(result);
+    var output = RunHelper.Run("PRINT STRING$(\"ab\", 5)");
+    Assert.Equal("", output);
   }
 
   [Fact]
-  public void STRING_Dollar_Empty_Char_Arg_Returns_Null_EvalFailure()
+  public void STRING_Dollar_Empty_Char_Arg_Returns_Null_Prints_Empty()
   {
-    var result = RunHelper.RunResult("PRINT STRING$(\"\", 5)");
-    Assert.IsType<EvalFailure>(result);
+    var output = RunHelper.Run("PRINT STRING$(\"\", 5)");
+    Assert.Equal("", output);
   }
 
   [Fact]
-  public void STRING_Dollar_Negative_Count_Returns_Null_EvalFailure()
+  public void STRING_Dollar_Negative_Count_Returns_Null_Prints_Empty()
   {
-    var result = RunHelper.RunResult("PRINT STRING$(\"=\", -1)");
-    Assert.IsType<EvalFailure>(result);
+    var output = RunHelper.Run("PRINT STRING$(\"=\", -1)");
+    Assert.Equal("", output);
   }
 
   [Fact]
@@ -210,6 +210,68 @@ public class StdlibTests
     var failure = Assert.IsType<EvalFailure>(result);
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("STRING$") && d.Message.Contains("built in"));
+  }
+
+  // --- ASC ---
+
+  [Fact]
+  public void ASC_Returns_Code_For_Uppercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"A\")");
+    Assert.Equal("65", output);
+  }
+
+  [Fact]
+  public void ASC_Returns_Code_For_Lowercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"a\")");
+    Assert.Equal("97", output);
+  }
+
+  [Fact]
+  public void ASC_Returns_Code_For_Space()
+  {
+    var output = RunHelper.Run("PRINT ASC(\" \")");
+    Assert.Equal("32", output);
+  }
+
+  [Fact]
+  public void ASC_Round_Trip_With_CHR_Dollar()
+  {
+    var output = RunHelper.Run("PRINT ASC(CHR$(65))");
+    Assert.Equal("65", output);
+  }
+
+  [Fact]
+  public void ASC_Multi_Char_String_Uses_First_Character()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"Hello\")");
+    Assert.Equal("72", output);
+  }
+
+  [Fact]
+  public void ASC_Result_Stored_In_Variable()
+  {
+    var output = RunHelper.Run("LET code = ASC(\"Z\")\nPRINT code");
+    Assert.Equal("90", output);
+  }
+
+  [Fact]
+  public void ASC_Empty_String_Returns_EvalFailure_With_Diagnostic()
+  {
+    var result = RunHelper.RunResult("PRINT ASC(\"\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-empty"));
+  }
+
+  [Fact]
+  public void ASC_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB ASC(s AS STRING)\nPRINT s\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("ASC") && d.Message.Contains("built in"));
   }
 
   // --- INT ---

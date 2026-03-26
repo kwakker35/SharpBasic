@@ -77,7 +77,13 @@ public class Evaluator(
             ? sv.V.Length == 1 && iv2.V >= 0
                 ? new StringValue(new string(sv.V[0], iv2.V))
                 : null
-            : null
+            : null,
+        ["ASC"] = args =>
+        {
+            if (args[0] is not StringValue sv) return null;
+            if (sv.V.Length == 0) throw new InvalidOperationException("ASC requires a non-empty string argument");
+            return new IntValue((int)sv.V[0]);
+        }
     };
 
     public EvalResult Evaluate()
@@ -791,7 +797,22 @@ public class Evaluator(
                 localArgs.Add(((EvalSuccess)argResult).Value!);
             }
 
-            return new EvalSuccess(builtIn!(localArgs));
+            try
+            {
+                return new EvalSuccess(builtIn!(localArgs));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new EvalFailure(
+                [
+                    new Diagnostic(
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0,
+                        ex.Message,
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+            }
         }
 
         var funcExists = _functions.TryGetValue(expr.Name, out var func);
