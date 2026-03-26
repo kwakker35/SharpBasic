@@ -39,7 +39,7 @@
     },
     "keyword-control": {
       "name": "keyword.control.sharpbasic",
-      "match": "(?i)\\b(IF|THEN|ELSE|END|WHILE|WEND|FOR|TO|STEP|NEXT|RETURN|CALL|SELECT|CASE)\\b"
+      "match": "(?i)\\b(IF|THEN|ELSE|END|WHILE|WEND|FOR|TO|STEP|NEXT|RETURN|CALL|SELECT|CASE|SLEEP)\\b"
     },
     "keyword-other": {
       "name": "keyword.other.sharpbasic",
@@ -59,7 +59,7 @@
     },
     "builtin-function": {
       "name": "support.function.builtin.sharpbasic",
-      "match": "(?i)\\b(LEN|MID\\$|LEFT\\$|RIGHT\\$|TRIM\\$|UPPER\\$|LOWER\\$|CHR\\$|STR\\$|INT|VAL|ABS|SQR|RND|TYPENAME)(?=\\s*\\()"
+      "match": "(?i)\\b(LEN|MID\\$|LEFT\\$|RIGHT\\$|TRIM\\$|UPPER\\$|LOWER\\$|CHR\\$|STR\\$|STRING\\$|INT|VAL|ABS|SQR|RND|TYPENAME|ASC|CINT|CLAMP|MAX|MIN)(?=\\s*\\()"
     },
     "identifier": {
       "name": "variable.other.sharpbasic",

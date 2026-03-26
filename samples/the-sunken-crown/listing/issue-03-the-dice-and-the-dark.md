@@ -35,7 +35,7 @@ Here is `RollDice` — the most important FUNCTION in the game:
 FUNCTION RollDice(n AS INTEGER) AS INTEGER
     LET total = 0
     FOR i = 1 TO n
-        LET total = total + INT(RND() * 6) + 1
+        LET total = total + CINT(RND() * 6) + 1
     NEXT i
     RETURN total
 END FUNCTION
@@ -46,7 +46,7 @@ Break this down line by line:
 - `FUNCTION RollDice(n AS INTEGER) AS INTEGER` — declares a function named `RollDice` that takes one integer parameter `n` and returns an integer
 - `LET total = 0` — initialises the accumulator to zero
 - `FOR i = 1 TO n` — loops `n` times — once per die being rolled
-- `LET total = total + INT(RND() * 6) + 1` — the die roll itself:
+- `LET total = total + CINT(RND() * 6) + 1` — the die roll itself:
   - `RND()` returns a random number from 0.0 up to (but not including) 1.0
   - Multiply by 6 to get a range from 0.0 to 5.999...
   - `INT()` floors it to one of 0, 1, 2, 3, 4, or 5
@@ -55,7 +55,6 @@ Break this down line by line:
 - `NEXT i` — go back and roll again
 - `RETURN total` — send the accumulated total back to the caller
 
-One important note about `INT()` in SharpBASIC: when given a Float, it returns a Float, not an Integer. `INT(3.9)` returns `3.0`, not `3`. The addition works correctly here — but be aware of this behaviour if you use `INT()` elsewhere and expect a whole number back.
 
 Call `RollDice(1)` for a single die roll. Call `RollDice(2)` for the sum of two dice. Every random event in this game — combat rounds, luck tests, monster stats, the loot shuffle — flows through this single FUNCTION. One source of truth for all randomness. If the game ever feels wrong, this is the first place to look.
 
@@ -99,6 +98,7 @@ Does the distribution look right? You are looking for roughly equal frequency ac
 REM === ADD TO: player stats block, after LET luck = 0 ===
 LET startSkill = 0   REM starting SKILL -- reference value for end screen
 LET startStamina = 0 REM starting STAMINA -- healing cap; never changes after RollStartingStats
+LET startLuck = 0 REM starting LUCK -- reference value for end screen
 
 REM === NEW FUNCTION: add after SUB Pause(), before SUB PrintRoom() ===
 REM =================================================================
@@ -111,7 +111,7 @@ REM =================================================================
 FUNCTION RollDice(n AS INTEGER) AS INTEGER
     LET total = 0
     FOR i = 1 TO n
-        LET total = total + INT(RND() * 6) + 1
+        LET total = total + CINT(RND() * 6) + 1
     NEXT i
     RETURN total
 END FUNCTION
@@ -129,6 +129,7 @@ SUB RollStartingStats()
     SET GLOBAL stamina = RollDice(2) + 12
     SET GLOBAL startStamina = stamina
     SET GLOBAL luck = RollDice(1) + 6
+    SET GLOBAL startLuck = luck
 END SUB
 
 REM === NEW SUB: add after SUB RollStartingStats() ===

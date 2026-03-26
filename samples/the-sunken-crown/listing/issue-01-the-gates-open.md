@@ -125,6 +125,7 @@ REM ----------------------------------------------------------------
 CONST FRAME_WIDTH = 80
 CONST SCREEN_HEIGHT = 30
 CONST CONTENT_ROWS = 20
+CONST COMBAT_DELAY = 1500   REM milliseconds between attack roll and outcome
 
 REM ----------------------------------------------------------------
 REM  Player stats
@@ -158,11 +159,7 @@ REM  Prints a line of 80 - characters. Divides the header chrome
 REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
-    LET sep = ""
-    FOR i = 1 TO FRAME_WIDTH
-        LET sep = sep & "-"
-    NEXT i
-    PRINT sep
+    PRINT STRING$("=", FRAME_WIDTH)
 END SUB
 
 REM =================================================================
