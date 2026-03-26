@@ -492,4 +492,130 @@ public class ParserErrorTests
         Assert.NotEmpty(failure.Diagnostics);
         Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
     }
+
+    // --- SLEEP parse errors ---
+
+    [Fact]
+    public void Parser_Sleep_Missing_LParen_Produces_ParseFailure()
+    {
+        // SLEEP 100  ← missing ( before argument
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sleep,      "",    1, 1),
+            new(TokenType.IntLiteral, "100", 1, 7),
+            new(TokenType.Eof,        "",    1, 10),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_Sleep_Empty_Parens_Produces_ParseFailure()
+    {
+        // SLEEP()  ← missing expression inside
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sleep,  "", 1, 1),
+            new(TokenType.LParen, "", 1, 6),
+            new(TokenType.RParen, "", 1, 7),
+            new(TokenType.Eof,    "", 1, 8),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    [Fact]
+    public void Parser_Sleep_Missing_RParen_Produces_ParseFailure()
+    {
+        // SLEEP(100  ← no closing )
+        var tokens = new List<Token>
+        {
+            new(TokenType.Sleep,      "",    1, 1),
+            new(TokenType.LParen,     "",    1, 6),
+            new(TokenType.IntLiteral, "100", 1, 7),
+            new(TokenType.Eof,        "",    1, 10),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.NotEmpty(failure.Diagnostics);
+        Assert.Equal(DiagnosticSeverity.Error, failure.Diagnostics[0].Severity);
+    }
+
+    // --- DIM type errors ---
+
+    [Fact]
+    public void Parser_Dim_InvalidType_1D_Produces_ParseFailure()
+    {
+        // DIM x[5] AS Foo  ← Foo is not a valid type keyword
+        var tokens = new List<Token>
+        {
+            new(TokenType.Dim,        "",    1, 1),
+            new(TokenType.Identifier, "x",   1, 5),
+            new(TokenType.LBracket,   "",    1, 6),
+            new(TokenType.IntLiteral, "5",   1, 7),
+            new(TokenType.RBracket,   "",    1, 8),
+            new(TokenType.As,         "",    1, 10),
+            new(TokenType.Identifier, "Foo", 1, 13),
+            new(TokenType.Eof,        "",    1, 16),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.Contains(failure.Diagnostics, d =>
+            d.Severity == DiagnosticSeverity.Error &&
+            d.Message.Contains("Expected TYPE after AS"));
+    }
+
+    [Fact]
+    public void Parser_Dim_InvalidType_2D_Produces_ParseFailure()
+    {
+        // DIM m[2][3] AS Foo  ← Foo is not a valid type keyword
+        var tokens = new List<Token>
+        {
+            new(TokenType.Dim,        "",    1, 1),
+            new(TokenType.Identifier, "m",   1, 5),
+            new(TokenType.LBracket,   "",    1, 6),
+            new(TokenType.IntLiteral, "2",   1, 7),
+            new(TokenType.RBracket,   "",    1, 8),
+            new(TokenType.LBracket,   "",    1, 9),
+            new(TokenType.IntLiteral, "3",   1, 10),
+            new(TokenType.RBracket,   "",    1, 11),
+            new(TokenType.As,         "",    1, 13),
+            new(TokenType.Identifier, "Foo", 1, 16),
+            new(TokenType.Eof,        "",    1, 19),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.Contains(failure.Diagnostics, d =>
+            d.Severity == DiagnosticSeverity.Error &&
+            d.Message.Contains("Expected TYPE after AS"));
+    }
+
+    // --- INPUT parse errors ---
+
+    [Fact]
+    public void Parser_Input_Literal_Instead_Of_Variable_Produces_ParseFailure()
+    {
+        // INPUT 42  ← a literal is not a valid assignment target for INPUT
+        var tokens = new List<Token>
+        {
+            new(TokenType.Input,      "",   1, 1),
+            new(TokenType.IntLiteral, "42", 1, 7),
+            new(TokenType.Eof,        "",   1, 9),
+        };
+
+        var result = new Parser(tokens).Parse();
+        var failure = Assert.IsType<ParseFailure>(result);
+        Assert.Contains(failure.Diagnostics, d =>
+            d.Severity == DiagnosticSeverity.Error &&
+            d.Message.Contains("INDENTIFIER"));
+    }
 }
