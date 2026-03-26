@@ -133,6 +133,22 @@ public class Evaluator(
             if (args[0] is IntValue iv) return new IntValue(iv.V);
             if (args[0] is FloatValue fv) return new IntValue((int)fv.V);
             throw new InvalidOperationException("CINT requires a numeric argument");
+        },
+        ["CLAMP"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            bool allNumeric = args[0] is IntValue or FloatValue
+                           && args[1] is IntValue or FloatValue
+                           && args[2] is IntValue or FloatValue;
+            if (!allNumeric)
+                throw new InvalidOperationException("CLAMP requires numeric arguments");
+            double min = ToDouble(args[1]);
+            double max = ToDouble(args[2]);
+            if (min > max)
+                throw new InvalidOperationException("CLAMP requires min to be less than or equal to max");
+            if (args[0] is IntValue iv && args[1] is IntValue && args[2] is IntValue)
+                return new IntValue(Math.Clamp(iv.V, (int)min, (int)max));
+            return new FloatValue(Math.Clamp(ToDouble(args[0]), min, max));
         }
     };
 

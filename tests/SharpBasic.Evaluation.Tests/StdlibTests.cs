@@ -1180,4 +1180,84 @@ public class StdlibTests
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("CINT") && d.Message.Contains("built in"));
   }
+
+  // --- CLAMP ---
+
+  [Fact]
+  public void CLAMP_Value_In_Range_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(5, 1, 10)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_Below_Min_Returns_Min()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(0, 1, 10)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_Above_Max_Returns_Max()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(15, 1, 10)");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_At_Lower_Boundary_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(1, 1, 10)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_At_Upper_Boundary_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(10, 1, 10)");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void CLAMP_Stamina_Healing_Cap_Use_Case()
+  {
+    var source = "LET stamina = 20\nLET startStamina = 18\nLET result = CLAMP(stamina, 0, startStamina)\nPRINT result";
+    var output = RunHelper.Run(source);
+    Assert.Equal("18", output);
+  }
+
+  [Fact]
+  public void CLAMP_Luck_Floor_Use_Case()
+  {
+    var source = "LET luck = -1\nLET result = CLAMP(luck, 0, 12)\nPRINT result";
+    var output = RunHelper.Run(source);
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void CLAMP_Min_Greater_Than_Max_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CLAMP(5, 10, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("min") && d.Message.Contains("max"));
+  }
+
+  [Fact]
+  public void CLAMP_Non_Numeric_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CLAMP(\"x\", 1, 10)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CLAMP_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB CLAMP(n AS INTEGER, lo AS INTEGER, hi AS INTEGER)\nPRINT n\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("CLAMP") && d.Message.Contains("built in"));
+  }
 }
