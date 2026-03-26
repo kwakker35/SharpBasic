@@ -1109,4 +1109,75 @@ public class StdlibTests
     var failure = Assert.IsType<EvalFailure>(result);
     Assert.Contains(failure.Diagnostics, d => d.Message.Contains("integer"));
   }
+
+  // --- CINT ---
+
+  [Fact]
+  public void CINT_Truncates_Float_Toward_Zero_Positive()
+  {
+    var output = RunHelper.Run("PRINT CINT(3.9)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void CINT_Truncates_Float_Toward_Zero_Fractional()
+  {
+    var output = RunHelper.Run("PRINT CINT(3.1)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void CINT_Truncates_Negative_Float_Toward_Zero()
+  {
+    // Key difference from INT: CINT(-3.9) = -3, INT(-3.9) = -4
+    var output = RunHelper.Run("PRINT CINT(-3.9)");
+    Assert.Equal("-3", output);
+  }
+
+  [Fact]
+  public void CINT_Zero_Float_Returns_Zero()
+  {
+    var output = RunHelper.Run("PRINT CINT(0.0)");
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void CINT_Integer_Passthrough()
+  {
+    var output = RunHelper.Run("PRINT CINT(7)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void CINT_Result_Is_Integer_Not_Float()
+  {
+    // Verify return type is Integer: integer arithmetic gives 4 not 4.0
+    var output = RunHelper.Run("LET i = CINT(3.9)\nPRINT i + 1");
+    Assert.Equal("4", output);
+  }
+
+  [Fact]
+  public void CINT_Result_Stored_In_Variable()
+  {
+    var output = RunHelper.Run("LET f = 7.8\nLET i = CINT(f)\nPRINT i");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void CINT_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CINT(\"foo\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CINT_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB CINT(n AS INTEGER)\nPRINT n\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("CINT") && d.Message.Contains("built in"));
+  }
 }

@@ -127,6 +127,12 @@ public class Evaluator(
             if (args[0] is not StringValue sv) return null;
             if (sv.V.Length == 0) throw new InvalidOperationException("ASC requires a non-empty string argument");
             return new IntValue((int)sv.V[0]);
+        },
+        ["CINT"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(iv.V);
+            if (args[0] is FloatValue fv) return new IntValue((int)fv.V);
+            throw new InvalidOperationException("CINT requires a numeric argument");
         }
     };
 
