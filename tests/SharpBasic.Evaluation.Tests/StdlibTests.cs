@@ -549,11 +549,11 @@ public class StdlibTests
   }
 
   [Fact]
-  public void SQR_Negative_Number_Returns_NaN()
+  public void SQR_Negative_Number_Returns_EvalFailure()
   {
-    // Math.Sqrt(-1) = NaN; FloatValue.ToString() renders it as "NaN".
-    var output = RunHelper.Run("PRINT SQR(-1)");
-    Assert.Equal("NaN", output);
+    var result = RunHelper.RunResult("PRINT SQR(-1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-negative"));
   }
 
   [Fact]
@@ -962,5 +962,151 @@ public class StdlibTests
       "    PRINT \"fallback\"\n" +
       "END SELECT");
     Assert.Equal("matched", output);
+  }
+
+  // --- Built-in argument errors ---
+
+  [Fact]
+  public void LEN_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEN(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Start_Index_Zero_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(\"Hello\", 0, 2)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("1"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Length_Overflow_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(\"Hello\", 2, 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("bounds"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(42, 1, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Count_Exceeds_Length_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(\"Hello\", 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Negative_Count_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(\"Hello\", -1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(42, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Count_Exceeds_Length_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(\"Hello\", 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Negative_Count_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(\"Hello\", -1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(42, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void TRIM_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT TRIM$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void UPPER_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT UPPER$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void LOWER_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LOWER$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void INT_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT INT(\"foo\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void STR_Dollar_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STR$(TRUE)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void ABS_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT ABS(\"hello\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void SQR_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT SQR(\"hello\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CHR_Dollar_String_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CHR$(\"H\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("integer"));
   }
 }

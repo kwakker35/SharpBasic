@@ -17,41 +17,70 @@ public class Evaluator(
 
     private static Dictionary<string, Func<List<Value>, Value?>> CreateBuiltins() => new()
     {
-        ["LEN"] = args => args[0] is StringValue sv ?
-                            new IntValue(sv.V.Length)
-                            : null,
-        ["MID$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 &&
-                            args[2] is IntValue iv2 ? new StringValue(
-                                sv.V.Substring(iv1.V - 1, iv2.V)
-                            ) : null,
-        ["LEFT$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 ? new StringValue(
-                                sv.V[..iv1.V]
-                            ) : null,
-        ["RIGHT$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 ? new StringValue(
-                                sv.V[^iv1.V..]
-                            ) : null,
-        ["TRIM$"] = args => args[0] is StringValue sv ? new StringValue(
-                                sv.V.Trim()
-                            ) : null,
-        ["UPPER$"] = args => args[0] is StringValue sv ? new StringValue(
-                            sv.V.ToUpperInvariant()
-                            ) : null,
-        ["LOWER$"] = args => args[0] is StringValue sv ? new StringValue(
-                            sv.V.ToLowerInvariant()
-                            ) : null,
-        ["INT"] = args => args[0] is IntValue iv ?
-                            new IntValue(iv.V) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Floor(fv.V))
-                            : null,
-        ["STR$"] = args => args[0] is IntValue iv ?
-                            new StringValue(iv.V.ToString()) :
-                            args[0] is FloatValue fv ?
-                            new StringValue(fv.V.ToString())
-                            : null,
+        ["LEN"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("LEN requires a string argument");
+            return new IntValue(sv.V.Length);
+        },
+        ["MID$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1 || args[2] is not IntValue iv2)
+                throw new InvalidOperationException("MID$ requires a string and two integer arguments");
+            if (iv1.V < 1)
+                throw new InvalidOperationException("MID$ start index must be at least 1");
+            if (iv2.V < 0)
+                throw new InvalidOperationException("MID$ length must be non-negative");
+            if (iv1.V - 1 + iv2.V > sv.V.Length)
+                throw new InvalidOperationException("MID$ length exceeds string bounds");
+            return new StringValue(sv.V.Substring(iv1.V - 1, iv2.V));
+        },
+        ["LEFT$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1)
+                throw new InvalidOperationException("LEFT$ requires a string and integer argument");
+            if (iv1.V < 0 || iv1.V > sv.V.Length)
+                throw new InvalidOperationException("LEFT$ length is out of range");
+            return new StringValue(sv.V[..iv1.V]);
+        },
+        ["RIGHT$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1)
+                throw new InvalidOperationException("RIGHT$ requires a string and integer argument");
+            if (iv1.V < 0 || iv1.V > sv.V.Length)
+                throw new InvalidOperationException("RIGHT$ length is out of range");
+            return new StringValue(iv1.V == 0 ? "" : sv.V[^iv1.V..]);
+        },
+        ["TRIM$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("TRIM$ requires a string argument");
+            return new StringValue(sv.V.Trim());
+        },
+        ["UPPER$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("UPPER$ requires a string argument");
+            return new StringValue(sv.V.ToUpperInvariant());
+        },
+        ["LOWER$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("LOWER$ requires a string argument");
+            return new StringValue(sv.V.ToLowerInvariant());
+        },
+        ["INT"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(iv.V);
+            if (args[0] is FloatValue fv) return new FloatValue(Math.Floor(fv.V));
+            throw new InvalidOperationException("INT requires a numeric argument");
+        },
+        ["STR$"] = args =>
+        {
+            if (args[0] is IntValue iv) return new StringValue(iv.V.ToString());
+            if (args[0] is FloatValue fv) return new StringValue(fv.V.ToString());
+            throw new InvalidOperationException("STR$ requires a numeric argument");
+        },
         ["VAL"] = args => args[0] is StringValue sv ?
                             int.TryParse(sv.V, out int ir) ? new IntValue(ir) :
                             double.TryParse(sv.V,
@@ -60,19 +89,34 @@ public class Evaluator(
                                 out double dr) ? new FloatValue(dr)
                             : null
                             : null,
-        ["ABS"] = args => args[0] is IntValue iv ?
-                            new IntValue(Math.Abs(iv.V)) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Abs(fv.V))
-                            : null,
-        ["SQR"] = args => args[0] is IntValue iv ?
-                            new FloatValue(Math.Sqrt(iv.V)) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Sqrt(fv.V))
-                            : null,
+        ["ABS"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(Math.Abs(iv.V));
+            if (args[0] is FloatValue fv) return new FloatValue(Math.Abs(fv.V));
+            throw new InvalidOperationException("ABS requires a numeric argument");
+        },
+        ["SQR"] = args =>
+        {
+            if (args[0] is IntValue iv)
+            {
+                if (iv.V < 0) throw new InvalidOperationException("SQR requires a non-negative argument");
+                return new FloatValue(Math.Sqrt(iv.V));
+            }
+            if (args[0] is FloatValue fv)
+            {
+                if (fv.V < 0) throw new InvalidOperationException("SQR requires a non-negative argument");
+                return new FloatValue(Math.Sqrt(fv.V));
+            }
+            throw new InvalidOperationException("SQR requires a numeric argument");
+        },
         ["RND"] = args => new FloatValue(Random.Shared.NextDouble()),
         ["TYPENAME"] = args => new StringValue(args[0].TypeName),
-        ["CHR$"] = args => args[0] is IntValue iv ? new StringValue(((char)iv.V).ToString()) : null,
+        ["CHR$"] = args =>
+        {
+            if (args[0] is not IntValue iv)
+                throw new InvalidOperationException("CHR$ requires an integer argument");
+            return new StringValue(((char)iv.V).ToString());
+        },
         ["STRING$"] = args => args[0] is StringValue sv && args[1] is IntValue iv2
             ? sv.V.Length == 1 && iv2.V >= 0
                 ? new StringValue(new string(sv.V[0], iv2.V))
@@ -801,7 +845,7 @@ public class Evaluator(
             {
                 return new EvalSuccess(builtIn!(localArgs));
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 return new EvalFailure(
                 [
