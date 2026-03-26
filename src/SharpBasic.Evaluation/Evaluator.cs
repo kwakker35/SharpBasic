@@ -160,6 +160,7 @@ public class Evaluator(
             ConstStatement cs => EvaluateConstStatement(cs),
             SelectCaseStatement scs => EvaluateSelectCaseStatement(scs),
             SetGlobalStatement sgs => EvaluateSetGlobalStatement(sgs),
+            SleepStatement ss => EvaluateSleepStatement(ss),
             _
                 => new EvalFailure(
                     [
@@ -399,6 +400,39 @@ public class Evaluator(
         if (result is EvalSuccess es)
             Console.WriteLine(es.Value?.ToString() ?? string.Empty);
 
+        return new EvalSuccess(new VoidValue());
+    }
+
+    private EvalResult EvaluateSleepStatement(SleepStatement s)
+    {
+        var result = EvaluateExpression(s.Milliseconds);
+        if (result is EvalFailure) return result;
+
+        var value = ((EvalSuccess)result).Value;
+
+        if (value is not IntValue iv)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        s.Location?.Line ?? 0,
+                        s.Location?.Col ?? 0,
+                        "SLEEP requires an integer argument.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        if (iv.V < 0)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        s.Location?.Line ?? 0,
+                        s.Location?.Col ?? 0,
+                        "SLEEP requires a non-negative integer argument.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        System.Threading.Thread.Sleep(iv.V);
         return new EvalSuccess(new VoidValue());
     }
 

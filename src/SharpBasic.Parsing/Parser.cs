@@ -182,6 +182,9 @@ public class Parser(IReadOnlyList<Token> tokens)
             case TokenType.Set:
                 AddStatement(target, ParseSetGlobalStatement());
                 break;
+            case TokenType.Sleep:
+                AddStatement(target, ParseSleepStatement());
+                break;
             default:
                 _diagnostics.Add(
                     new Diagnostic(
@@ -501,6 +504,28 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
 
         return new ParseStatementSuccess(new PrintStatement(expr, loc));
+    }
+
+    private ParseStatementResult ParseSleepStatement()
+    {
+        ParseStatementFailure? err;
+        var loc = new SourceLocation(Current.Line, Current.Column);
+        Advance(); //Consume SLEEP
+
+        err = ExpectToken(TokenType.LParen, "( after SLEEP");
+        if (err is not null) return err;
+        Advance(); //Consume (
+
+        var expr = ParseExpression();
+
+        err = ExpectExpression(expr, "expression inside SLEEP(...)");
+        if (err is not null) return err;
+
+        err = ExpectToken(TokenType.RParen, ") after SLEEP argument");
+        if (err is not null) return err;
+        Advance(); //Consume )
+
+        return new ParseStatementSuccess(new SleepStatement(expr, loc));
     }
 
     private ParseStatementResult ParseDimStatement()

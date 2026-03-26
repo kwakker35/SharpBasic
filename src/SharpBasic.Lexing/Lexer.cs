@@ -292,6 +292,7 @@ public class Lexer
             "CASE" => TokenType.Case,
             "SET" => TokenType.Set,
             "GLOBAL" => TokenType.Global,
+            "SLEEP" => TokenType.Sleep,
             _ => IsValidIdentifier(token) || token.EndsWith('$') ?
                         TokenType.Identifier : TokenType.Unknown
         };
