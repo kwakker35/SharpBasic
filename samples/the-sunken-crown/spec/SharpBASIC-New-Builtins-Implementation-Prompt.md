@@ -27,17 +27,27 @@ equivalents already working — use the same key format.
 ## Functions to Add
 
 ### 1 — SLEEP(milliseconds AS INTEGER)
-**Type:** Statement (void — no return value, cannot appear in an expression)
+**Type:** Built-in statement keyword — NOT a SUB, NOT called with CALL.
+`SLEEP` is parsed exactly like `PRINT` — recognised at the start of a statement,
+dispatched directly without going through the CALL mechanism.
+
+```
+SLEEP(1500)     REM correct — no CALL prefix
+CALL SLEEP(1500)  REM WRONG — do not use CALL with SLEEP
+```
+
 **Implementation:** `System.Threading.Thread.Sleep(milliseconds)`
+
+**Parser pattern:** Add a dedicated parse branch for the `SLEEP` token at statement
+level, the same way `PRINT`, `INPUT`, and `REM` are handled. Do NOT route through
+`EvaluateCallExpression` or the CALL dispatch path. SLEEP is a keyword statement,
+not a callable function.
+
 **Errors:**
 - Negative value → `SLEEP requires a non-negative integer argument`
 - Non-integer → `SLEEP requires an integer argument`
-- Used in expression context → parse or runtime error
-
-```
-SLEEP(1500)
-SLEEP(0)       REM valid no-op
-```
+- Used in expression context (e.g. `LET x = SLEEP(100)`) → parse or runtime error
+- Called with CALL prefix → parse error (SLEEP is not a SUB name)
 
 ---
 
@@ -47,10 +57,13 @@ SLEEP(0)       REM valid no-op
 **Registration:** Follow the exact same pattern as `UPPER$` — same key format in
 the built-in array, same resolution path in `EvaluateCallExpression`. The `$`
 suffix must be handled consistently with existing string built-ins.
-**Errors:**
-- `char` length ≠ 1 → `STRING$ requires a single character as its first argument`
-- Negative `count` → `STRING$ requires a non-negative integer as its second argument`
-- `count = 0` → returns empty string (valid)
+**Errors — return null, consistent with other built-ins:**
+- `char` length ≠ 1 (including empty string) → return null
+- Negative `count` → return null
+- `count = 0` → return empty string (valid, not an error)
+
+Do not throw diagnostics. Return null and let the interpreter surface the error
+naturally when null is used, exactly as `VAL()` does for unparseable input.
 
 ```
 PRINT STRING$("=", 80)     REM prints 80 = characters
@@ -176,7 +189,13 @@ SUB SLEEP(ms AS INTEGER)
     PRINT ms
 END SUB
 ```
-Expected: error at hoisting phase
+Expected: error at hoisting phase — `SLEEP` is a reserved keyword, cannot be used as a SUB name
+
+Cannot use with CALL:
+```
+CALL SLEEP(1500)
+```
+Expected: parse error — SLEEP is a statement keyword, not a SUB
 
 Cannot use in expression:
 ```
@@ -224,17 +243,17 @@ Expected: `====================`
 ```
 PRINT STRING$("ab", 5)
 ```
-Expected: runtime diagnostic containing `single character`
+Expected: null returned — runtime error when PRINT attempts to use null value
 
 ```
 PRINT STRING$("", 5)
 ```
-Expected: runtime diagnostic containing `single character`
+Expected: null returned — runtime error when PRINT attempts to use null value
 
 ```
 PRINT STRING$("=", -1)
 ```
-Expected: runtime diagnostic containing `non-negative`
+Expected: null returned — runtime error when PRINT attempts to use null value
 
 Cannot shadow:
 ```

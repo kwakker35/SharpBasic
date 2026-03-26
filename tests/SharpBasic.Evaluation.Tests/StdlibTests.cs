@@ -129,6 +129,89 @@ public class StdlibTests
     Assert.Equal("hello world", output);
   }
 
+  // --- STRING$ ---
+
+  [Fact]
+  public void STRING_Dollar_Repeats_Char_Five_Times()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"=\", 5)");
+    Assert.Equal("=====", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Repeats_Char_Once()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"*\", 1)");
+    Assert.Equal("*", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Count_Zero_Returns_Empty_String()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"x\", 0)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Count_80_Has_Correct_Length()
+  {
+    var output = RunHelper.Run("CONST FRAME_WIDTH = 80\nPRINT LEN(STRING$(\"=\", FRAME_WIDTH))");
+    Assert.Equal("80", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Concatenation_With_Ampersand()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"-\", 10) & \"X\" & STRING$(\"-\", 10)");
+    Assert.Equal("----------X----------", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_With_Variable_Char_And_Count()
+  {
+    var source = "LET ch = \"=\"\nLET n = 20\nPRINT STRING$(ch, n)";
+    var output = RunHelper.Run(source);
+    Assert.Equal("====================", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_With_CHR_Dollar_Argument()
+  {
+    var output = RunHelper.Run("PRINT STRING$(CHR$(34), 3)");
+    Assert.Equal("\"\"\"", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Multi_Char_Arg_Returns_Null_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(\"ab\", 5)");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Empty_Char_Arg_Returns_Null_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(\"\", 5)");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Negative_Count_Returns_Null_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(\"=\", -1)");
+    Assert.IsType<EvalFailure>(result);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB STRING$(c AS STRING, n AS INTEGER)\nPRINT c\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("STRING$") && d.Message.Contains("built in"));
+  }
+
   // --- INT ---
 
   [Fact]

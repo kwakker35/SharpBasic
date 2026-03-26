@@ -72,7 +72,12 @@ public class Evaluator(
                             : null,
         ["RND"] = args => new FloatValue(Random.Shared.NextDouble()),
         ["TYPENAME"] = args => new StringValue(args[0].TypeName),
-        ["CHR$"] = args => args[0] is IntValue iv ? new StringValue(((char)iv.V).ToString()) : null
+        ["CHR$"] = args => args[0] is IntValue iv ? new StringValue(((char)iv.V).ToString()) : null,
+        ["STRING$"] = args => args[0] is StringValue sv && args[1] is IntValue iv2
+            ? sv.V.Length == 1 && iv2.V >= 0
+                ? new StringValue(new string(sv.V[0], iv2.V))
+                : null
+            : null
     };
 
     public EvalResult Evaluate()
