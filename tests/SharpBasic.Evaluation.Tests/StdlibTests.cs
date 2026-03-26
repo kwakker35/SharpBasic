@@ -1260,4 +1260,126 @@ public class StdlibTests
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("CLAMP") && d.Message.Contains("built in"));
   }
+
+  // --- MAX ---
+
+  [Fact]
+  public void MAX_Returns_Larger_Value()
+  {
+    var output = RunHelper.Run("PRINT MAX(3, 7)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void MAX_Returns_Larger_Value_Reversed()
+  {
+    var output = RunHelper.Run("PRINT MAX(7, 3)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void MAX_Equal_Values_Returns_Same()
+  {
+    var output = RunHelper.Run("PRINT MAX(5, 5)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void MAX_Negative_Values()
+  {
+    var output = RunHelper.Run("PRINT MAX(-3, -7)");
+    Assert.Equal("-3", output);
+  }
+
+  [Fact]
+  public void MAX_Minimum_Damage_Use_Case()
+  {
+    var source = "LET rawDamage = 2\nLET damage = MAX(rawDamage - 2, 1)\nPRINT damage";
+    var output = RunHelper.Run(source);
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void MAX_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MAX(\"x\", 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void MAX_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB MAX(a AS INTEGER, b AS INTEGER)\nPRINT a\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("MAX") && d.Message.Contains("built in"));
+  }
+
+  // --- MIN ---
+
+  [Fact]
+  public void MIN_Returns_Smaller_Value()
+  {
+    var output = RunHelper.Run("PRINT MIN(3, 7)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void MIN_Returns_Smaller_Value_Reversed()
+  {
+    var output = RunHelper.Run("PRINT MIN(7, 3)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void MIN_Equal_Values_Returns_Same()
+  {
+    var output = RunHelper.Run("PRINT MIN(5, 5)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void MIN_Negative_Values()
+  {
+    var output = RunHelper.Run("PRINT MIN(-3, -7)");
+    Assert.Equal("-7", output);
+  }
+
+  [Fact]
+  public void MIN_Healing_Cap_Use_Case_At_Max()
+  {
+    // stamina = 16, startStamina = 18 → MIN(20, 18) = 18
+    var source = "LET stamina = 16\nLET startStamina = 18\nLET healed = MIN(stamina + 4, startStamina)\nPRINT healed";
+    var output = RunHelper.Run(source);
+    Assert.Equal("18", output);
+  }
+
+  [Fact]
+  public void MIN_Healing_Cap_Use_Case_Below_Max()
+  {
+    // stamina = 10, startStamina = 18 → MIN(14, 18) = 14
+    var source = "LET stamina = 10\nLET startStamina = 18\nLET healed = MIN(stamina + 4, startStamina)\nPRINT healed";
+    var output = RunHelper.Run(source);
+    Assert.Equal("14", output);
+  }
+
+  [Fact]
+  public void MIN_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MIN(\"x\", 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void MIN_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB MIN(a AS INTEGER, b AS INTEGER)\nPRINT a\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("MIN") && d.Message.Contains("built in"));
+  }
 }

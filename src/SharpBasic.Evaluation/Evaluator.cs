@@ -149,6 +149,24 @@ public class Evaluator(
             if (args[0] is IntValue iv && args[1] is IntValue && args[2] is IntValue)
                 return new IntValue(Math.Clamp(iv.V, (int)min, (int)max));
             return new FloatValue(Math.Clamp(ToDouble(args[0]), min, max));
+        },
+        ["MAX"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            if (args[0] is not (IntValue or FloatValue) || args[1] is not (IntValue or FloatValue))
+                throw new InvalidOperationException("MAX requires numeric arguments");
+            if (args[0] is IntValue a && args[1] is IntValue b)
+                return new IntValue(Math.Max(a.V, b.V));
+            return new FloatValue(Math.Max(ToDouble(args[0]), ToDouble(args[1])));
+        },
+        ["MIN"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            if (args[0] is not (IntValue or FloatValue) || args[1] is not (IntValue or FloatValue))
+                throw new InvalidOperationException("MIN requires numeric arguments");
+            if (args[0] is IntValue a && args[1] is IntValue b)
+                return new IntValue(Math.Min(a.V, b.V));
+            return new FloatValue(Math.Min(ToDouble(args[0]), ToDouble(args[1])));
         }
     };
 
