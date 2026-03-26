@@ -23,6 +23,7 @@ REM ----------------------------------------------------------------
 CONST FRAME_WIDTH = 80
 CONST SCREEN_HEIGHT = 30
 CONST CONTENT_ROWS = 20
+CONST COMBAT_DELAY = 1500   REM milliseconds between attack roll and outcome
 CONST DIR_N = 1
 CONST DIR_S = 2
 CONST DIR_E = 3
@@ -54,6 +55,7 @@ LET stamina = 0
 LET luck = 0
 LET startSkill = 0   REM starting SKILL -- reference value for end screen
 LET startStamina = 0 REM starting STAMINA -- healing cap; never changes after RollStartingStats
+LET startLuck = 0 REM starting LUCK -- reference value for end screen
 
 REM ----------------------------------------------------------------
 REM  Navigation state
@@ -126,11 +128,7 @@ REM  Prints a line of 80 - characters. Divides the header chrome
 REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
-    LET sep = ""
-    FOR i = 1 TO FRAME_WIDTH
-        LET sep = sep & "-"
-    NEXT i
-    PRINT sep
+    PRINT STRING$("=", FRAME_WIDTH)
 END SUB
 
 REM =================================================================
@@ -153,7 +151,7 @@ REM =================================================================
 FUNCTION RollDice(n AS INTEGER) AS INTEGER
     LET total = 0
     FOR i = 1 TO n
-        LET total = total + INT(RND() * 6) + 1
+        LET total = total + CINT(RND() * 6) + 1
     NEXT i
     RETURN total
 END FUNCTION
@@ -228,6 +226,7 @@ SUB RollStartingStats()
     SET GLOBAL stamina = RollDice(2) + 12
     SET GLOBAL startStamina = stamina
     SET GLOBAL luck = RollDice(1) + 6
+    SET GLOBAL startLuck = luck
     SET GLOBAL minStamina = stamina
 END SUB
 
@@ -894,9 +893,7 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
         REM  Monster regen fires before attack rolls (Troll).
         REM  Capped at starting STAMINA -- cannot heal above where it started.
         IF hasRegen = 1 THEN
-            IF monsterStamina < startMonsterStamina THEN
-                LET monsterStamina = monsterStamina + 1
-            END IF
+            LET monsterStamina = MIN(monsterStamina + 1, startMonsterStamina)
         END IF
 
         REM  Round-1 SKILL penalties: lesser terror and search interrupt
@@ -921,6 +918,8 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
         PRINT ""
         PRINT "  Round " & round & ":   Your attack " & playerAttack & "   --   Monster attack " & monsterAttack
         PRINT ""
+
+        SLEEP(COMBAT_DELAY)
 
         IF playerAttack > monsterAttack THEN
             REM  Player wins the round.
@@ -956,9 +955,7 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
                     END IF
                 END IF
                 SET GLOBAL stamina = stamina - baseDamage
-                IF stamina < minStamina THEN
-                    SET GLOBAL minStamina = stamina
-                END IF
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
                 PRINT "  It hits.  Your STAMINA: " & stamina
                 REM  Poison check: only when the monster has the poison flag and wins the round.
                 REM  Silent -- the player discovers the poison on next room entry.
@@ -987,6 +984,8 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
                 PRINT "  Neither blow lands cleanly. You circle."
             END IF
         END IF
+
+        SLEEP(COMBAT_DELAY)
 
         REM  Restore round-1 SKILL penalty at the end of round 1.
         IF penaltyApplied = 1 THEN
