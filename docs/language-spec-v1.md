@@ -668,23 +668,29 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 | `UPPER$(s)` | `String` | Convert to upper-case | `UPPER$("hello")` → `"HELLO"` |
 | `LOWER$(s)` | `String` | Convert to lower-case | `LOWER$("HELLO")` → `"hello"` |
 | `CHR$(n)` | `String` | Character from Unicode code point `n` | `CHR$(65)` → `"A"`, `CHR$(34)` → `"\""`  |
+| `STRING$(char, count)` | `String` | `char` repeated `count` times. `char` must be exactly one character. | `STRING$("=", 5)` → `"====="` |
+| `ASC(s)` | `Integer` | Unicode code point of first character of `s` | `ASC("A")` → `65` |
 
 > **`MID$` uses 1-based indexing.** `MID$("abc", 1, 1)` → `"a"`, not `MID$("abc", 0, 1)`.
 
 > **`CHR$(34)` is the only way to embed a double-quote in a string**, since string literals have no escape sequence syntax. `CHR$(10)` produces a newline character.
 
-> **Gotcha:** `MID$`, `LEFT$`, and `RIGHT$` perform no internal bounds checking. Providing a `length` or `n` value that exceeds the string length (e.g. `LEFT$("hi", 10)`) throws an unhandled C# `ArgumentOutOfRangeException` that halts the interpreter. Validate string lengths before calling these functions.
+> **`MID$`, `LEFT$`, and `RIGHT$` perform bounds checking.** Out-of-range arguments (e.g. a `length` that exceeds the string, a negative index, or a start of `0`) produce a runtime diagnostic and halt the program cleanly. Validate string lengths before calling these functions if you want to avoid the error.
 
 ### Numeric functions
 
 | Signature | Return type | Description | Example |
 |-----------|-------------|-------------|---------|
 | `ABS(n)` | Same as input | Absolute value | `ABS(-5)` → `5` |
-| `SQR(n)` | `Float` | Square root | `SQR(9)` → `3.0` |
+| `SQR(n)` | `Float` | Square root; negative argument is a runtime error | `SQR(9)` → `3.0` |
 | `INT(n)` | `Integer` (if int input) / `Float` (if float input) | Floor: if `n` is Integer returns it unchanged; if Float returns `Math.Floor(n)` as Float | `INT(3.9)` → `3.0` |
+| `CINT(n)` | `Integer` | Truncate to integer toward zero | `CINT(3.9)` → `3`, `CINT(-3.9)` → `-3` |
 | `RND()` | `Float` | Pseudo-random number in range `[0.0, 1.0)` | `RND()` → e.g. `0.7341…` |
+| `MAX(a, b)` | Same as inputs | Larger of two numeric values | `MAX(3, 7)` → `7` |
+| `MIN(a, b)` | Same as inputs | Smaller of two numeric values | `MIN(3, 7)` → `3` |
+| `CLAMP(n, min, max)` | Same as `n` | Constrain `n` between `min` and `max` inclusive. `min > max` is a runtime error. | `CLAMP(15, 1, 10)` → `10` |
 
-> **`INT` returns a `Float` when given a `Float` argument.** `INT(3.9)` returns the `Float` value `3.0`, not the `Integer` `3`. To get an `Integer` from a `Float`, use `VAL(STR$(INT(n)))`.
+> **`INT` returns a `Float` when given a `Float` argument.** `INT(3.9)` returns the `Float` value `3.0`, not the `Integer` `3`. Use `CINT(n)` to get an `Integer` from a `Float` — `CINT(3.9)` → `3`. `CINT` truncates toward zero, so `CINT(-3.9)` → `-3`.
 
 ### Conversion functions
 
@@ -696,6 +702,14 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 `VAL` returns `null` (which surfaces as a failure) if the string cannot be parsed as either integer or float.
 
 > **Gotcha (`STR$`):** `STR$` converts a `Float` via C# `double.ToString()` **without** an explicit culture argument. On systems where the decimal separator is `,` (e.g. many European locales), `STR$(3.14)` returns `"3,14"`. `PRINT` and `&` are not affected — `FloatValue.ToString()` uses invariant culture internally. If portability matters, avoid relying on `STR$` for float-to-string conversion.
+
+### Statement built-ins
+
+These are parsed as keyword statements, not as callable functions. They cannot be used in expression position and cannot be invoked with `CALL`.
+
+| Syntax | Description | Example |
+|--------|-------------|--------|
+| `SLEEP(ms)` | Pause execution for `ms` milliseconds. `ms` must be a non-negative integer. | `SLEEP(1500)` |
 
 ### Diagnostic function
 

@@ -66,8 +66,11 @@ static void PrintHelp()
     Console.WriteLine();
     Console.WriteLine("Built-in functions:");
     Console.WriteLine("  LEN(s)  MID$(s,n,l)  LEFT$(s,n)  RIGHT$(s,n)");
-    Console.WriteLine("  UPPER$(s)  LOWER$(s)  TRIM$(s)  CHR$(n)");
-    Console.WriteLine("  STR$(n)  VAL(s)  INT(n)  ABS(n)  SQR(n)  RND()  TYPENAME(v)");
+    Console.WriteLine("  UPPER$(s)  LOWER$(s)  TRIM$(s)  CHR$(n)  STRING$(c,n)  ASC(s)");
+    Console.WriteLine("  STR$(n)  VAL(s)  INT(n)  CINT(n)  ABS(n)  SQR(n)  RND()  TYPENAME(v)");
+    Console.WriteLine("  MAX(a,b)  MIN(a,b)  CLAMP(n,min,max)");
+    Console.WriteLine("Statement built-ins:");
+    Console.WriteLine("  SLEEP(ms)");
     Console.WriteLine();
 }
 

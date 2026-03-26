@@ -82,14 +82,20 @@ of code. When documents conflict, the hierarchy below determines which one wins.
 - `REM` requires a space after it to be recognised as a comment
 - `INPUT` always stores a STRING — use `VAL()` to convert to a number
 - `MID$` is 1-based, not 0-based
-- `INT()` applied to a Float returns a Float, not an Integer — use `VAL(STR$(INT(n)))` to get Integer
+- `INT()` applied to a Float returns a Float, not an Integer — use `CINT(n)` to get an Integer
+- `CINT(n)` truncates toward zero: `CINT(3.9)` → `3`, `CINT(-3.9)` → `-3`
+- `STRING$(char, count)` repeats a single character `count` times: `STRING$("=", 5)` → `"====="`
+- `ASC(s)` returns the Unicode code point of the first character: `ASC("A")` → `65`
+- `MAX(a, b)` and `MIN(a, b)` return the larger/smaller of two numeric values
+- `CLAMP(n, min, max)` constrains `n` between `min` and `max` inclusive
+- `SLEEP(ms)` pauses for `ms` milliseconds — use as a statement, NOT with `CALL`
 - `+` does not concatenate strings — use `&` only
 - `CHR$(34)` is the only way to embed a double-quote in a string — no escape sequences exist
 - `CHR$(10)` produces a newline character
 - String comparison supports `=` and `<>` only — not `<`, `>`, `<=`, `>=`
 - Boolean operands for `AND` and `OR` must both be Boolean — no implicit coercion
 - `RND()` requires parentheses
-- `MID$`, `LEFT$`, `RIGHT$` have no bounds checking — validate string lengths before calling
+- `MID$`, `LEFT$`, `RIGHT$` perform bounds checking — out-of-range arguments produce a runtime error
 
 ### Paging — Non-Negotiable
 

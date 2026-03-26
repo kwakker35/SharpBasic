@@ -85,7 +85,7 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 | Global scope | `SET GLOBAL name = value`; writes a value to a variable in an enclosing scope by name |
 | Subroutines | `SUB`/`END SUB`; typed parameters; invoked with `CALL`; hoisted — call before declaration is valid |
 | Functions | `FUNCTION`/`END FUNCTION`; typed return value; called in expression position; recursive; hoisted |
-| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `ABS`, `SQR`, `RND`, `CHR$`, `TYPENAME` |
+| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `CINT`, `ABS`, `SQR`, `RND`, `CHR$`, `STRING$`, `ASC`, `MAX`, `MIN`, `CLAMP`, `TYPENAME` |
 | I/O | `PRINT expression` (always appends newline); `INPUT varname` and `INPUT "prompt"; varname` |
 | Comments | `REM` — full-line or inline |
 
