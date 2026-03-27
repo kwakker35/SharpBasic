@@ -142,7 +142,7 @@ REM =================================================================
 SUB OpeningSequence()
     PRINT ""
     PRINT "  You have sold everything. Your home, your tools, what little remained"
-    PRINT "  after the debts. Malachar's men took it all — converted to coin, dropped"
+    PRINT "  after the debts. Malachar's men took it all -- converted to coin, dropped"
     PRINT "  down a chute into the dark beneath the keep. You watched it go."
     PRINT ""
     PRINT "  If you don't walk out of that dungeon, there is nothing to walk back to."

@@ -342,10 +342,10 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
             END IF
         END IF
 
+        REM  Monster regen fires before attack rolls (Troll).
+        REM  Capped at starting STAMINA -- cannot heal above where it started.
         IF hasRegen = 1 THEN
-            IF monsterStamina < startMonsterStamina THEN
-                LET monsterStamina = monsterStamina + 1
-            END IF
+            LET monsterStamina = MIN(monsterStamina + 1, startMonsterStamina)
         END IF
 
         IF firstRound = 1 THEN
@@ -367,6 +367,8 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
         PRINT ""
         PRINT "  Round " & round & ":   Your attack " & playerAttack & "   --   Monster attack " & monsterAttack
         PRINT ""
+
+        SLEEP(COMBAT_DELAY)
 
         IF playerAttack > monsterAttack THEN
             IF hasArmour = 1 THEN
@@ -398,9 +400,7 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
                     END IF
                 END IF
                 SET GLOBAL stamina = stamina - baseDamage
-                IF stamina < minStamina THEN
-                    SET GLOBAL minStamina = stamina
-                END IF
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
                 PRINT "  It hits.  Your STAMINA: " & stamina
                 IF hasPoison = 1 THEN
                     LET poisonRoll = RollDice(1)
@@ -427,6 +427,9 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
             END IF
         END IF
 
+        SLEEP(COMBAT_DELAY)
+
+        REM  Restore round-1 SKILL penalty at the end of round 1.
         IF penaltyApplied = 1 THEN
             SET GLOBAL skill = skill + lesserSearchPenalty
             LET penaltyApplied = 0
