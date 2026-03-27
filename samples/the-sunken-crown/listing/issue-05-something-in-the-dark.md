@@ -106,6 +106,7 @@ REM            4=gate, 5=stamina
 REM ----------------------------------------------------------------
 LET gameOver = 0
 LET endState = 0
+LET keepPlaying = 1
 
 REM ----------------------------------------------------------------
 REM  Combat and status state
