@@ -45,3 +45,26 @@ CALL BumpCounter()
 PRINT ""
 PRINT "=== SET GLOBAL ==="
 PRINT "Counter after 3 calls: " & STR$(globalCount)
+
+REM SET GLOBAL also works on global arrays -- both 1D and 2D.
+REM LET arr[i] inside a SUB would create a local shadow instead.
+DIM flags[3] AS BOOLEAN
+DIM coords[2][2] AS INTEGER
+
+SUB InitFlags()
+    FOR i = 0 TO 2
+        SET GLOBAL flags[i] = TRUE
+    NEXT i
+END SUB
+
+SUB PlaceCoord(r AS INTEGER, c AS INTEGER, val AS INTEGER)
+    SET GLOBAL coords[r][c] = val
+END SUB
+
+CALL InitFlags()
+CALL PlaceCoord(0, 1, 99)
+CALL PlaceCoord(1, 0, 42)
+
+PRINT "flags[1]: " & flags[1]
+PRINT "coords[0][1]: " & STR$(coords[0][1])
+PRINT "coords[1][0]: " & STR$(coords[1][0])
