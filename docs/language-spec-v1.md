@@ -202,30 +202,38 @@ PRINT GREETING   REM → Hello
 
 ### 4.4 SET GLOBAL
 
-`SET GLOBAL` writes a value to a variable that already exists in the **global** (topmost) scope. It is the only way to mutate global state from inside a SUB or FUNCTION.
+`SET GLOBAL` writes a value to a variable (or array element) that already exists in the **global** (topmost) scope. It is the only way to mutate global state from inside a SUB or FUNCTION.
 
 ```
-SET GLOBAL name = expression
+SET GLOBAL name = expression               REM scalar
+SET GLOBAL name[index] = expression        REM 1D array element
+SET GLOBAL name[rowIndex][colIndex] = expression   REM 2D array element
 ```
 
 - `SET GLOBAL` is only valid **inside a SUB or FUNCTION**. Using it at the top level is a runtime error: *"SET GLOBAL can only be used inside a SUB or FUNCTION."*
-- The named variable must already exist in the global scope. If it does not exist, the statement fails: *"SET GLOBAL: variable {name} not found in global scope."*
-- The expression is evaluated in the local scope of the current sub/function, then the result is stored directly in the global scope.
+- The named variable or array must already exist in the global scope. If it does not exist, the statement fails: *"SET GLOBAL: variable {name} not found in global scope."*
+- The expression (and any index expressions) are evaluated in the local scope of the current sub/function, then the result is stored directly in the global scope.
 - `SET GLOBAL` cannot target a `CONST`-declared name — attempting to do so is a runtime error.
+- Index expressions must evaluate to an `INTEGER`. Out-of-bounds indices are a runtime error.
 
 ```
 LET counter = 0
+DIM scores[5] AS INTEGER
+DIM grid[3][3] AS INTEGER
 
-SUB Increment()
-    SET GLOBAL counter = counter + 1
+SUB Update()
+    SET GLOBAL counter = counter + 1   REM scalar write
+    SET GLOBAL scores[2] = 99          REM 1D array element write
+    SET GLOBAL grid[1][2] = 42         REM 2D array element write
 END SUB
 
-CALL Increment()
-CALL Increment()
-PRINT counter   REM → 2
+CALL Update()
+PRINT counter      REM → 1
+PRINT scores[2]    REM → 99
+PRINT grid[1][2]   REM → 42
 ```
 
-> **Gotcha:** `counter + 1` inside the SUB reads `counter` from the global scope (via the parent chain), then writes the result back to the global scope via `SET GLOBAL`. If you used `LET counter = counter + 1` instead, `LET` would create a local variable — the global `counter` would remain unchanged.
+> **Gotcha:** `LET arr[i] = value` inside a SUB always creates or updates a *local* array — it never writes to the global. If you need to update an element of a globally declared array from inside a SUB, you **must** use `SET GLOBAL arr[i] = value`.
 
 ---
 

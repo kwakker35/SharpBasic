@@ -45,6 +45,25 @@ CONST MONSTER_TROLL = 10
 CONST MONSTER_KING = 11
 
 REM ----------------------------------------------------------------
+REM  Item codes -- locked (Decision 5)
+REM  0=empty, 1=Healing Potion, 2=Lucky Charm, 3=Armour Shard,
+REM  4=Dark Bread, 5=Medal of Valour, 6=Antidote Vial,
+REM  7=Bangle of Courage, 8=Sword of Sharpness, 9=Mouldy Bread,
+REM  10=Guardroom Key
+REM ----------------------------------------------------------------
+CONST ITEM_EMPTY    = 0
+CONST ITEM_POTION   = 1
+CONST ITEM_CHARM    = 2
+CONST ITEM_SHARD    = 3
+CONST ITEM_BREAD    = 4
+CONST ITEM_MEDAL    = 5
+CONST ITEM_ANTIDOTE = 6
+CONST ITEM_BANGLE   = 7
+CONST ITEM_SWORD    = 8
+CONST ITEM_MOULDY   = 9
+CONST ITEM_KEY      = 10
+
+REM ----------------------------------------------------------------
 REM  Player stats
 REM  Declared here at zero. RollStartingStats (Issue 3) sets the
 REM  real values when the opening sequence runs. PrintHeader reads
@@ -105,6 +124,49 @@ LET minStamina = 0
 LET turns = 0
 LET poisoned = 0
 LET luckTestCount = 0
+
+REM ----------------------------------------------------------------
+REM  Inventory state
+REM  inventory[1..4]: item code per slot (0 = empty). Slot 0 unused.
+REM  invCount: items currently carried (0-4).
+REM  overburdened: 1 when invCount = 4 -- movement costs STAMINA.
+REM  medalTaken: 1 after Medal of Valour first pickup (SKILL -1).
+REM ----------------------------------------------------------------
+DIM inventory[5] AS INTEGER
+LET invCount = 0
+LET overburdened = 0
+LET medalTaken = 0
+
+REM ----------------------------------------------------------------
+REM  Loot slots (shuffled at each run start)
+REM  slotContents[1..6]: item code assigned to each slot (0 = empty).
+REM  slotTaken[1..6]: 0 = available, 1 = collected. Slot 0 unused.
+REM  Slot-to-room mapping handled by FUNCTION RoomLootSlot.
+REM ----------------------------------------------------------------
+DIM slotContents[7] AS INTEGER
+DIM slotTaken[7] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Armoury state
+REM  armouryLocked: 1 = chest locked, 0 = opened with Guardroom Key.
+REM ----------------------------------------------------------------
+LET armouryLocked = 1
+
+REM ----------------------------------------------------------------
+REM  Room floor items
+REM  droppedItem[r][s]: item code at floor slot s in room r (0-based r).
+REM  droppedCount[r]: items currently on room r's floor. Max 12/room.
+REM  r = roomId - 1. Supports stockpiling: drops, monster loot, etc.
+REM ----------------------------------------------------------------
+DIM droppedItem[12][12] AS INTEGER
+DIM droppedCount[12] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  SEARCH interrupt flag
+REM  Set to 1 by HandleSearch when SEARCH interrupts a live-monster
+REM  room. Read and consumed inside HandleFight; reset to 0 after use.
+REM ----------------------------------------------------------------
+LET searchInterruptActive = 0
 
 REM =================================================================
 REM  SUB PrintHeader
@@ -175,6 +237,95 @@ FUNCTION DirName(dir AS INTEGER) AS STRING
             RETURN "NE"
         CASE ELSE
             RETURN "?"
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION ItemCode -- item$ AS STRING -> INTEGER
+REM  Maps a player-typed item keyword to its integer item code.
+REM  Returns -1 if the keyword is not recognised. Used by HandleTake,
+REM  HandleDrop, and HandleUse for input validation.
+REM =================================================================
+FUNCTION ItemCode(item$ AS STRING) AS INTEGER
+    SELECT CASE item$
+        CASE "POTION"
+            RETURN ITEM_POTION
+        CASE "CHARM"
+            RETURN ITEM_CHARM
+        CASE "SHARD"
+            RETURN ITEM_SHARD
+        CASE "BREAD"
+            RETURN ITEM_BREAD
+        CASE "MEDAL"
+            RETURN ITEM_MEDAL
+        CASE "ANTIDOTE"
+            RETURN ITEM_ANTIDOTE
+        CASE "BANGLE"
+            RETURN ITEM_BANGLE
+        CASE "SWORD"
+            RETURN ITEM_SWORD
+        CASE "MOULDY"
+            RETURN ITEM_MOULDY
+        CASE "KEY"
+            RETURN ITEM_KEY
+        CASE ELSE
+            RETURN -1
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION RoomLootSlot -- roomId AS INTEGER -> INTEGER
+REM  Returns the loot slot number (1-6) for a room, or 0 if the room
+REM  has no shuffled loot slot. Used by HandleSearch and HandleTake.
+REM =================================================================
+FUNCTION RoomLootSlot(roomId AS INTEGER) AS INTEGER
+    SELECT CASE roomId
+        CASE 1
+            RETURN 1
+        CASE 2
+            RETURN 2
+        CASE 4
+            RETURN 3
+        CASE 6
+            RETURN 4
+        CASE 8
+            RETURN 5
+        CASE 10
+            RETURN 6
+        CASE ELSE
+            RETURN 0
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION ItemName -- code AS INTEGER -> STRING
+REM  Returns the display name for an item code. Used throughout
+REM  inventory display, SEARCH results, and TAKE/DROP/USE feedback.
+REM =================================================================
+FUNCTION ItemName(code AS INTEGER) AS STRING
+    SELECT CASE code
+        CASE ITEM_POTION
+            RETURN "Healing Potion"
+        CASE ITEM_CHARM
+            RETURN "Lucky Charm"
+        CASE ITEM_SHARD
+            RETURN "Armour Shard"
+        CASE ITEM_BREAD
+            RETURN "Dark Bread"
+        CASE ITEM_MEDAL
+            RETURN "Medal of Valour"
+        CASE ITEM_ANTIDOTE
+            RETURN "Antidote Vial"
+        CASE ITEM_BANGLE
+            RETURN "Bangle of Courage"
+        CASE ITEM_SWORD
+            RETURN "Sword of Sharpness"
+        CASE ITEM_MOULDY
+            RETURN "Mouldy Bread"
+        CASE ITEM_KEY
+            RETURN "Guardroom Key"
+        CASE ELSE
+            RETURN "Unknown Item"
     END SELECT
 END FUNCTION
 
@@ -369,6 +520,504 @@ SUB InitMonsters()
     LET monsterAlive[9] = 1   REM  Room 10 -- Troll
     LET monsterAlive[10] = 1  REM  Room 11 -- Bound King
 END SUB
+
+REM =================================================================
+REM  SUB ShuffleLoot
+REM  Fisher-Yates shuffle of the six-item loot pool (five named items
+REM  plus one empty slot). Assigns shuffled results to slotContents[1..6].
+REM  Entry Hall medal check: if Medal lands in slot 1, runs a free luck
+REM  roll (no LUCK cost); swaps with first helpful item in slots 2-6 on
+REM  success. Places fixed items: Antidote Vial in Room 9 (index 8).
+REM  Called once per run after OpeningSequence sets luck.
+REM =================================================================
+SUB ShuffleLoot()
+    DIM lootPool[6] AS INTEGER
+    LET lootPool[0] = ITEM_POTION
+    LET lootPool[1] = ITEM_CHARM
+    LET lootPool[2] = ITEM_SHARD
+    LET lootPool[3] = ITEM_BREAD
+    LET lootPool[4] = ITEM_MEDAL
+    LET lootPool[5] = ITEM_EMPTY
+
+    REM  Fisher-Yates shuffle -- 0-based, indices 0-5
+    FOR i = 5 TO 1 STEP -1
+        LET j = CINT(RND() * (i + 1))
+        LET temp = lootPool[i]
+        LET lootPool[i] = lootPool[j]
+        LET lootPool[j] = temp
+    NEXT i
+
+    FOR i = 0 TO 5
+        SET GLOBAL slotContents[i + 1] = lootPool[i]
+        SET GLOBAL slotTaken[i + 1] = 0
+    NEXT i
+
+    REM  Entry Hall medal check: Medal in slot 1 hurts a new player.
+    REM  Try a free luck roll (no LUCK decrement); swap on success.
+    IF slotContents[1] = ITEM_MEDAL THEN
+        LET swapRoll = RollDice(2)
+        IF swapRoll <= luck THEN
+            LET swapTarget = 0
+            FOR k = 2 TO 6
+                IF slotContents[k] >= ITEM_POTION AND slotContents[k] <= ITEM_BREAD AND swapTarget = 0 THEN
+                    LET swapTarget = k
+                END IF
+            NEXT k
+            IF swapTarget > 0 THEN
+                LET tempCode = slotContents[1]
+                SET GLOBAL slotContents[1] = slotContents[swapTarget]
+                SET GLOBAL slotContents[swapTarget] = tempCode
+            END IF
+        END IF
+    END IF
+
+    REM  Fixed item: Antidote Vial in Room 9 cistern cache (index 8)
+    SET GLOBAL droppedItem[8][0] = ITEM_ANTIDOTE
+    SET GLOBAL droppedCount[8] = 1
+END SUB
+
+REM =================================================================
+REM  SUB AddToInventory -- itemCode AS INTEGER
+REM  Adds an item to the first empty inventory slot, updates invCount
+REM  and overburdened. Fires the Medal of Valour SKILL penalty (once
+REM  only) on first pickup. Called by HandleTake for single and ALL.
+REM =================================================================
+SUB AddToInventory(itemCode AS INTEGER)
+    LET slot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = ITEM_EMPTY AND slot = 0 THEN LET slot = i END IF
+    NEXT i
+    SET GLOBAL inventory[slot] = itemCode
+    SET GLOBAL invCount = invCount + 1
+    IF invCount = 4 THEN SET GLOBAL overburdened = 1 END IF
+    IF itemCode = ITEM_MEDAL AND medalTaken = 0 THEN
+        PRINT "  It is heavier than it looks. Old -- older than anything else down here."
+        PRINT "  Decorated. Whatever it once meant, it meant something."
+        PRINT ""
+        SET GLOBAL skill = skill - 1
+        SET GLOBAL medalTaken = 1
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB HandleSearch
+REM  Processes the SEARCH command. Costs 2 turns regardless of outcome.
+REM  Live monster present: fires SEARCH interrupt combat (SKILL -1
+REM  round 1 via CombatLoop's searchInterrupt parameter).
+REM  Room 11 with King alive: refuses search entirely, no combat.
+REM  On success: shows loot slot contents, floor items, and any
+REM  room-specific reveals (Room 6 hidden exit, Room 3 chest state).
+REM  Sets searched[roomId-1] = 1 on completion.
+REM =================================================================
+SUB HandleSearch()
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        IF currentRoom = 11 THEN
+            PRINT "  Not here. Not with him watching."
+            PRINT ""
+            SET GLOBAL turns = turns + 2
+            RETURN
+        END IF
+        SELECT CASE currentRoom
+            CASE 2
+                PRINT "  The Brute hears the scrape of your boot before you've taken a step"
+                PRINT "  toward the wall. It turns with the speed of something that has been"
+                PRINT "  waiting for an excuse. You are out of time."
+            CASE 6
+                PRINT "  The moment your hand touches the rubble the Horror is already moving."
+                PRINT "  Not toward the sound -- toward you. It has been still this whole time."
+                PRINT "  It was never unaware."
+            CASE 7
+                PRINT "  The Guardian does not hurry. It simply turns, raises its weapon, and"
+                PRINT "  begins walking toward you with the unhurried certainty of something"
+                PRINT "  that has done this before. You had your back to it."
+            CASE 9
+                PRINT "  The cold in the room doubles before you have touched anything. The"
+                PRINT "  luminescence fixes on you -- steady, no longer drifting. It knew the"
+                PRINT "  moment your attention shifted."
+            CASE 10
+                PRINT "  The small dark eyes find you the instant you crouch. It doesn't roar."
+                PRINT "  It doesn't rush. It simply stands and keeps coming with the patient"
+                PRINT "  certainty of something that has never needed to hurry."
+        END SELECT
+        PRINT ""
+        SET GLOBAL turns = turns + 2
+        SET GLOBAL searchInterruptActive = 1
+        CALL HandleFight(currentRoom)
+        RETURN
+    END IF
+
+    SET GLOBAL turns = turns + 2
+
+    IF searched[currentRoom - 1] = 1 THEN
+        PRINT "  You go through the room again. You find nothing you missed the first time."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET mySlot = RoomLootSlot(currentRoom)
+    LET foundSomething = 0
+
+    IF mySlot > 0 THEN
+        IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+            PRINT "  You find: " & ItemName(slotContents[mySlot])
+            LET foundSomething = 1
+        END IF
+    END IF
+
+    IF currentRoom = 3 THEN
+        IF armouryLocked = 1 THEN
+            PRINT "  The chest is here. Iron-banded, locked."
+            LET foundSomething = 1
+        END IF
+    END IF
+
+    IF currentRoom = 6 THEN
+        SET GLOBAL exitHidden[11] = 0
+        PRINT "  You work through the rubble methodically. Most of it is solid --"
+        PRINT "  ceiling stone, heavy, immovable. But toward the base of the fall,"
+        PRINT "  where the collapse met the floor, there is a gap. Low, tight, passable"
+        PRINT "  if you commit to it."
+        PRINT ""
+        PRINT "  Beyond it: a passage, heading south."
+        PRINT ""
+        PRINT "  It was always there. The dungeon didn't hide it. You just had to look."
+        LET foundSomething = 1
+    END IF
+
+    FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+        LET floorCode = droppedItem[currentRoom - 1][s]
+        IF floorCode > ITEM_EMPTY THEN
+            PRINT "  " & ItemName(floorCode) & " is here."
+            LET foundSomething = 1
+        END IF
+    NEXT s
+
+    IF foundSomething = 0 THEN
+        PRINT "  There is nothing here of use."
+    END IF
+
+    PRINT ""
+    SET GLOBAL searched[currentRoom - 1] = 1
+END SUB
+
+REM =================================================================
+REM  SUB PrintInventoryScreen
+REM  Redraws the full screen as a dedicated inventory frame.
+REM  Lists all four carry slots (occupied or empty) with passive item
+REM  tags. Waits for ENTER to continue. Costs 0 turns.
+REM =================================================================
+SUB PrintInventoryScreen()
+    CALL PrintHeader()
+    LET invCount$ = invCount & " / 4 items"
+    LET padLen = FRAME_WIDTH - 11 - LEN(invCount$)
+    PRINT "  INVENTORY" & STRING$(" ", padLen) & invCount$
+    PRINT ""
+    FOR i = 1 TO 4
+        IF inventory[i] > ITEM_EMPTY THEN
+            LET tag$ = ""
+            IF inventory[i] = ITEM_SHARD THEN LET tag$ = "  (passive -- damage -1)" END IF
+            IF inventory[i] = ITEM_BANGLE THEN LET tag$ = "  (passive -- negates Terror)" END IF
+            IF inventory[i] = ITEM_SWORD THEN LET tag$ = "  (passive -- +1 damage vs armour)" END IF
+            PRINT "  [" & i & "] " & ItemName(inventory[i]) & tag$
+        ELSE
+            PRINT "  [" & i & "] -- empty"
+        END IF
+    NEXT i
+    PRINT ""
+    INPUT "  [ Press ENTER to continue ]"; p$
+    PRINT ""
+    CALL PrintSeparator()
+END SUB
+
+REM =================================================================
+REM  SUB HandleTake -- item$ AS STRING
+REM  Processes TAKE [item] and TAKE ALL commands.
+REM  TAKE ALL: greedily picks up items in array order until invCount
+REM  reaches 4. If items remain, prints partial-fill flavour and leftovers.
+REM  TAKE [item]: checks item present, checks hard limit (4), adds it.
+REM  When full: shows current inventory inline + "DROP an item".
+REM  When at 3: prints overburdened warning before taking.
+REM  Costs 0 turns.
+REM =================================================================
+SUB HandleTake(item$ AS STRING)
+    IF item$ = "ALL" THEN
+        LET taken = 0
+        LET leftover = 0
+        LET leftoverNames$ = ""
+        LET mySlot = RoomLootSlot(currentRoom)
+        IF mySlot > 0 THEN
+            IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+                IF invCount < 4 THEN
+                    CALL AddToInventory(slotContents[mySlot])
+                    SET GLOBAL slotTaken[mySlot] = 1
+                    LET taken = taken + 1
+                ELSE
+                    IF leftoverNames$ = "" THEN
+                        LET leftoverNames$ = ItemName(slotContents[mySlot])
+                    ELSE
+                        LET leftoverNames$ = leftoverNames$ & ", " & ItemName(slotContents[mySlot])
+                    END IF
+                    LET leftover = leftover + 1
+                END IF
+            END IF
+        END IF
+
+        LET s = 0
+        WHILE s < droppedCount[currentRoom - 1]
+            LET floorCode = droppedItem[currentRoom - 1][s]
+            IF floorCode > ITEM_EMPTY THEN
+                IF invCount < 4 THEN
+                    CALL AddToInventory(floorCode)
+                    FOR k = s TO droppedCount[currentRoom - 1] - 2
+                        SET GLOBAL droppedItem[currentRoom - 1][k] = droppedItem[currentRoom - 1][k + 1]
+                    NEXT k
+                    SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1] - 1] = ITEM_EMPTY
+                    SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] - 1
+                    LET taken = taken + 1
+                ELSE
+                    IF leftoverNames$ = "" THEN
+                        LET leftoverNames$ = ItemName(floorCode)
+                    ELSE
+                        LET leftoverNames$ = leftoverNames$ & ", " & ItemName(floorCode)
+                    END IF
+                    LET leftover = leftover + 1
+                    LET s = s + 1
+                END IF
+            ELSE
+                LET s = s + 1
+            END IF
+        WEND
+
+        IF taken = 0 AND leftover = 0 THEN
+            PRINT "  There is nothing here to take."
+        ELSE
+            IF leftover > 0 THEN
+                PRINT "  You take what you can carry. The dungeon is patient."
+                PRINT ""
+                PRINT "  Left behind: " & leftoverNames$
+                PRINT ""
+                PRINT "  Use TAKE [item] to choose what matters most."
+            END IF
+        END IF
+        PRINT ""
+        RETURN
+    END IF
+
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET available = 0
+    LET fromSlot = 0
+    LET fromFloor = 0
+    LET floorSlot = 0
+    LET mySlot = RoomLootSlot(currentRoom)
+    IF mySlot > 0 THEN
+        IF slotTaken[mySlot] = 0 AND slotContents[mySlot] = itemCode THEN
+            LET available = 1
+            LET fromSlot = mySlot
+        END IF
+    END IF
+
+    IF available = 0 THEN
+        FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+            IF droppedItem[currentRoom - 1][s] = itemCode AND available = 0 THEN
+                LET available = 1
+                LET fromFloor = 1
+                LET floorSlot = s
+            END IF
+        NEXT s
+    END IF
+
+    IF available = 0 THEN
+        PRINT "  There is nothing like that here."
+        PRINT ""
+        RETURN
+    END IF
+
+    IF invCount = 4 THEN
+        PRINT "  You cannot carry any more."
+        PRINT ""
+        PRINT "  Carrying:"
+        FOR i = 1 TO 4
+            PRINT "  [" & i & "] " & ItemName(inventory[i])
+        NEXT i
+        PRINT ""
+        PRINT "  DROP an item to make room."
+        PRINT ""
+        RETURN
+    END IF
+
+    IF invCount = 3 THEN
+        PRINT "  You are already carrying more than you should. You can take one more"
+        PRINT "  item, but you will feel it."
+        PRINT ""
+    END IF
+
+    CALL AddToInventory(itemCode)
+    IF fromSlot > 0 THEN
+        SET GLOBAL slotTaken[fromSlot] = 1
+    END IF
+    IF fromFloor = 1 THEN
+        FOR k = floorSlot TO droppedCount[currentRoom - 1] - 2
+            SET GLOBAL droppedItem[currentRoom - 1][k] = droppedItem[currentRoom - 1][k + 1]
+        NEXT k
+        SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1] - 1] = ITEM_EMPTY
+        SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] - 1
+    END IF
+
+    IF itemCode <> ITEM_MEDAL THEN
+        PRINT "  Taken."
+    END IF
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB HandleDrop -- item$ AS STRING
+REM  Removes an item from inventory, places it on the current room's
+REM  floor array, and updates invCount and overburdened.
+REM  Costs 0 turns.
+REM =================================================================
+SUB HandleDrop(item$ AS STRING)
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET found = 0
+    LET invSlot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = itemCode AND found = 0 THEN
+            LET found = 1
+            LET invSlot = i
+        END IF
+    NEXT i
+
+    IF found = 0 THEN
+        PRINT "  You are not carrying that."
+        PRINT ""
+        RETURN
+    END IF
+
+    SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+    SET GLOBAL invCount = invCount - 1
+    IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+    SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1]] = itemCode
+    SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] + 1
+    PRINT "  Dropped."
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB HandleUse -- item$ AS STRING
+REM  Activates an item from inventory. Consumables are removed from
+REM  the slot on use; passives print a reminder and stay.
+REM  Guardroom Key: unlocks Armoury chest if in Room 3, places Sword
+REM  of Sharpness on Room 3's floor, consumes the key.
+REM  Costs 1 turn.
+REM =================================================================
+SUB HandleUse(item$ AS STRING)
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET found = 0
+    LET invSlot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = itemCode AND found = 0 THEN
+            LET found = 1
+            LET invSlot = i
+        END IF
+    NEXT i
+
+    IF found = 0 THEN
+        PRINT "  You are not carrying that."
+        PRINT ""
+        RETURN
+    END IF
+
+    SET GLOBAL turns = turns + 1
+    SELECT CASE itemCode
+        CASE ITEM_POTION
+            SET GLOBAL stamina = startStamina
+            PRINT "  You drink it in one pull. The wounds close faster than they have any right to."
+            PRINT ""
+            PRINT "  STAMINA restored to " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_CHARM
+            SET GLOBAL luck = luck + 2
+            PRINT "  You close your fist around it and make your wish. Whatever it is, it takes it."
+            PRINT ""
+            PRINT "  LUCK: " & luck
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_SHARD
+            PRINT "  You are already wearing it. It reduces the damage you take while you carry it."
+            PRINT "  Nothing more to do."
+        CASE ITEM_BREAD
+            SET GLOBAL stamina = MIN(stamina + 4, startStamina)
+            PRINT "  Dry, dense, hard. You eat it without tasting it."
+            PRINT ""
+            PRINT "  STAMINA: " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_MEDAL
+            PRINT "  It sits in your palm. Cold. It does not respond to you."
+        CASE ITEM_ANTIDOTE
+            SET GLOBAL poisoned = 0
+            PRINT "  Bitter. You drain it and throw the vial aside. The cold in your blood recedes."
+            PRINT ""
+            PRINT "  Poison cleared."
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_BANGLE
+            PRINT "  You are already wearing it. It does what it does while you carry it."
+        CASE ITEM_SWORD
+            PRINT "  It is in your hand. Keep it there. It does its work in combat."
+        CASE ITEM_MOULDY
+            SET GLOBAL stamina = MIN(stamina + 3, startStamina)
+            PRINT "  You eat it. You try not to think about how long it has been down here."
+            PRINT ""
+            PRINT "  STAMINA: " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_KEY
+            IF currentRoom = 3 THEN
+                IF armouryLocked = 1 THEN
+                    PRINT "  You try the key in the lock. It turns."
+                    PRINT ""
+                    PRINT "  The chest opens. The air that comes out smells of oil and old metal."
+                    PRINT "  Inside: a sword. Old, but maintained. The edge catches the light."
+                    SET GLOBAL armouryLocked = 0
+                    SET GLOBAL droppedItem[2][droppedCount[2]] = ITEM_SWORD
+                    SET GLOBAL droppedCount[2] = droppedCount[2] + 1
+                    SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+                    SET GLOBAL invCount = invCount - 1
+                    IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+                ELSE
+                    PRINT "  The chest is already open."
+                END IF
+            ELSE
+                PRINT "  There is nothing here to use it on."
+            END IF
+    END SELECT
+    PRINT ""
+END SUB
+
 REM  Prints the visible exits for the given room. Hidden exits
 REM  (exitHidden = 1) are not shown. Called from PrintRoom.
 REM  Builds the exits line by concatenating direction names.
@@ -402,6 +1051,17 @@ SUB HandleGo(dir AS INTEGER)
     FOR i = start TO start + count - 1
         IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
             SET GLOBAL currentRoom = exitDest[i]
+            IF overburdened = 1 THEN
+                PRINT "  You move, but the weight tells on you. Everything costs more"
+                PRINT "  when you are carrying this much."
+                PRINT ""
+                SET GLOBAL stamina = stamina - 1
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
+                IF stamina <= 0 THEN
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 5
+                END IF
+            END IF
             RETURN
         END IF
     NEXT i
@@ -924,10 +1584,18 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
         IF playerAttack > monsterAttack THEN
             REM  Player wins the round.
             IF hasArmour = 1 THEN
-                REM  Armoured monster: minimum 1 damage per winning hit.
-                REM  Sword of Sharpness negates armour (added in Issue 6).
-                LET monsterStamina = monsterStamina - 1
-                PRINT "  You strike but the armour absorbs most of it.  Monster STAMINA: " & monsterStamina
+                REM  Sword of Sharpness cuts clean through armour.
+                LET hasSword = 0
+                FOR sw = 1 TO 4
+                    IF inventory[sw] = ITEM_SWORD THEN LET hasSword = 1 END IF
+                NEXT sw
+                IF hasSword = 1 THEN
+                    LET monsterStamina = monsterStamina - 2
+                    PRINT "  Your blade cuts clean through the armour.  Monster STAMINA: " & monsterStamina
+                ELSE
+                    LET monsterStamina = monsterStamina - 1
+                    PRINT "  You strike but the armour absorbs most of it.  Monster STAMINA: " & monsterStamina
+                END IF
             ELSE
                 LET monsterStamina = monsterStamina - 2
                 PRINT "  You hit.  Monster STAMINA: " & monsterStamina
@@ -946,7 +1614,12 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
             IF monsterAttack > playerAttack THEN
                 REM  Monster wins the round.
                 LET baseDamage = 2
-                REM  Overburdened damage bonus (baseDamage = 3) added in Issue 6.
+                IF overburdened = 1 THEN LET baseDamage = 3 END IF
+                LET hasShard = 0
+                FOR sh = 1 TO 4
+                    IF inventory[sh] = ITEM_SHARD THEN LET hasShard = 1 END IF
+                NEXT sh
+                IF hasShard = 1 THEN LET baseDamage = MAX(baseDamage - 1, 1) END IF
                 IF isBoss = 1 THEN
                     IF monsterAttack - playerAttack >= 3 THEN
                         LET baseDamage = 4
@@ -1016,6 +1689,8 @@ REM  Issue 5: Guardroom Brute (room 2) only. Horror/Guardian/Mage/
 REM  Troll wired in Issue 7. Bound King wired in Issue 9.
 REM =================================================================
 SUB HandleFight(roomId AS INTEGER)
+    LET activeInterrupt = searchInterruptActive
+    SET GLOBAL searchInterruptActive = 0
     IF monsterAlive[roomId - 1] = 0 THEN
         PRINT "  There is nothing here that requires that."
         PRINT ""
@@ -1035,9 +1710,11 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 10
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, 0)
+        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_KEY
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""
             PRINT "  It goes down slowly, the way large things do -- first to one knee,"
             PRINT "  then forward, the weapon dropping before the rest of it follows."
@@ -1067,7 +1744,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 5
         LET mStamina = RollDice(1) + 4
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 1, 1, 0, 0)
+        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1096,7 +1773,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 8
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, 0)
+        CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1127,7 +1804,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 6
         LET mStamina = RollDice(1) + 6
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 1, 0, 0, 0, 0)
+        CALL CombatLoop(mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1156,7 +1833,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 12
-        CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, 0)
+        CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1225,9 +1902,22 @@ WHILE keepPlaying = 1
     FOR i = 0 TO 11
         LET visited[i] = 0
         LET searched[i] = 0
+        LET droppedCount[i] = 0
+        FOR j = 0 TO 11
+            LET droppedItem[i][j] = ITEM_EMPTY
+        NEXT j
+    NEXT i
+    LET invCount = 0
+    LET overburdened = 0
+    LET armouryLocked = 1
+    LET medalTaken = 0
+    LET searchInterruptActive = 0
+    FOR i = 1 TO 4
+        LET inventory[i] = ITEM_EMPTY
     NEXT i
     CALL InitMonsters()
     CALL OpeningSequence()
+    CALL ShuffleLoot()
     CALL EnterRoom(currentRoom, 0)
 
     WHILE gameOver = 0
@@ -1264,6 +1954,19 @@ WHILE keepPlaying = 1
                 IF gameOver = 0 THEN
                     CALL EnterRoom(currentRoom, 1)
                 END IF
+            CASE "SEARCH"
+                CALL HandleSearch()
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "INVENTORY"
+                CALL PrintInventoryScreen()
+            CASE "TAKE ALL", "TAKE KEY", "TAKE POTION", "TAKE CHARM", "TAKE SHARD", "TAKE BREAD", "TAKE MEDAL", "TAKE ANTIDOTE", "TAKE BANGLE", "TAKE SWORD", "TAKE MOULDY"
+                CALL HandleTake(RIGHT$(cmd$, LEN(cmd$) - 5))
+            CASE "DROP KEY", "DROP POTION", "DROP CHARM", "DROP SHARD", "DROP BREAD", "DROP MEDAL", "DROP ANTIDOTE", "DROP BANGLE", "DROP SWORD", "DROP MOULDY"
+                CALL HandleDrop(RIGHT$(cmd$, LEN(cmd$) - 5))
+            CASE "USE KEY", "USE POTION", "USE CHARM", "USE SHARD", "USE BREAD", "USE MEDAL", "USE ANTIDOTE", "USE BANGLE", "USE SWORD", "USE MOULDY"
+                CALL HandleUse(RIGHT$(cmd$, LEN(cmd$) - 4))
             CASE ELSE
                 PRINT "  The dungeon does not respond to that."
                 PRINT ""

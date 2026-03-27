@@ -294,11 +294,152 @@ public class Evaluator(
                 )]
             );
 
-        var valueResult = EvaluateExpression(stmt.Value);
-        if (valueResult is EvalFailure) return valueResult;
+        // ----------------------------------------------------------
+        // Scalar form: SET GLOBAL name = value
+        // ----------------------------------------------------------
+        if (stmt.Index is null)
+        {
+            var valueResult = EvaluateExpression(stmt.Value);
+            if (valueResult is EvalFailure) return valueResult;
+            root.Set(stmt.Identifier, ((EvalSuccess)valueResult).Value!);
+            return new EvalSuccess(new VoidValue());
+        }
 
-        root.Set(stmt.Identifier, ((EvalSuccess)valueResult).Value!);
+        // ----------------------------------------------------------
+        // Array form — fetch the global ArrayValue
+        // ----------------------------------------------------------
+        var getVal = root.Get(stmt.Identifier);
+        if (getVal is not ArrayValue arrVal)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"'{stmt.Identifier}' is not an array.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var idxResult = EvaluateExpression(stmt.Index);
+        if (idxResult is not EvalSuccess idxSuccess || idxSuccess.Value is not IntValue idxIv)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    "Array index must be an integer.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var valueRes = EvaluateExpression(stmt.Value);
+        if (valueRes is not EvalSuccess valueSuccess)
+            return valueRes;
+        var value = valueSuccess.Value;
+        var targetType = arrVal.ElementTypeName.ToUpperInvariant();
+
+        // ----------------------------------------------------------
+        // 2D form: SET GLOBAL name[r][c] = value
+        // ----------------------------------------------------------
+        if (stmt.ColIndex is not null)
+        {
+            if (arrVal.Cols == 0)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"'{stmt.Identifier}' is not a 2D array.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var colResult = EvaluateExpression(stmt.ColIndex);
+            if (colResult is not EvalSuccess colSuccess || colSuccess.Value is not IntValue colIv)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        "Column index must be an integer.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var row = idxIv.V;
+            var col = colIv.V;
+            var rows = arrVal.Items.Length / arrVal.Cols;
+
+            if (row < 0 || row >= rows)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Row index {row} is outside the range 0-{rows - 1} for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            if (col < 0 || col >= arrVal.Cols)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Column index {col} is outside the range 0-{arrVal.Cols - 1} for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var flatIdx = row * arrVal.Cols + col;
+            if (!AssignArrayElement(arrVal, flatIdx, targetType, value))
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            root.Set(stmt.Identifier, arrVal);
+            return new EvalSuccess(new VoidValue());
+        }
+
+        // ----------------------------------------------------------
+        // 1D form: SET GLOBAL name[i] = value
+        // ----------------------------------------------------------
+        var idx = idxIv.V;
+        if (idx < 0 || idx >= arrVal.Items.Length)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"Index {idx} is outside the range 0-{arrVal.Items.Length - 1} for array '{stmt.Identifier}'.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        if (!AssignArrayElement(arrVal, idx, targetType, value))
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        root.Set(stmt.Identifier, arrVal);
         return new EvalSuccess(new VoidValue());
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> into <c>arrVal.Items[flatIdx]</c> if the
+    /// runtime type matches <paramref name="targetType"/>. Returns false on mismatch.
+    /// </summary>
+    private static bool AssignArrayElement(ArrayValue arrVal, int flatIdx, string targetType, Value value)
+    {
+        if (targetType == "INTEGER" && value is IntValue iv) { arrVal.Items[flatIdx] = iv; return true; }
+        if (targetType == "FLOAT" && value is FloatValue fv) { arrVal.Items[flatIdx] = fv; return true; }
+        if (targetType == "STRING" && value is StringValue sv) { arrVal.Items[flatIdx] = sv; return true; }
+        if (targetType == "BOOLEAN" && value is BoolValue bv) { arrVal.Items[flatIdx] = bv; return true; }
+        return false;
     }
 
     private EvalResult EvaluateSelectCaseStatement(SelectCaseStatement stmt)

@@ -226,6 +226,32 @@ public class Parser(IReadOnlyList<Token> tokens)
         var ident = Current.Value;
         Advance(); // consume identifier
 
+        // Optional index: SET GLOBAL arr[i] = value  or  SET GLOBAL arr[r][c] = value
+        Expression? index = null;
+        Expression? colIndex = null;
+        if (Current.Type == TokenType.LBracket)
+        {
+            Advance(); // consume [
+            index = ParseExpression();
+            err = ExpectExpression(index, "index expression inside SET GLOBAL arr[...]");
+            if (err is not null) return err;
+            err = ExpectToken(TokenType.RBracket, "] after SET GLOBAL index");
+            if (err is not null) return err;
+            Advance(); // consume ]
+
+            // Second dimension?
+            if (Current.Type == TokenType.LBracket)
+            {
+                Advance(); // consume [
+                colIndex = ParseExpression();
+                err = ExpectExpression(colIndex, "column index expression inside SET GLOBAL arr[r][c]");
+                if (err is not null) return err;
+                err = ExpectToken(TokenType.RBracket, "] after SET GLOBAL column index");
+                if (err is not null) return err;
+                Advance(); // consume ]
+            }
+        }
+
         err = ExpectToken(TokenType.Eq, "= after SET GLOBAL <identifier>");
         if (err is not null) return err;
         Advance(); // consume =
@@ -234,7 +260,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         err = ExpectExpression(value, "expression after SET GLOBAL <identifier> =");
         if (err is not null) return err;
 
-        return new ParseStatementSuccess(new SetGlobalStatement(ident, value!, loc));
+        return new ParseStatementSuccess(new SetGlobalStatement(ident, index, colIndex, value!, loc));
     }
 
     private ParseStatementResult ParseSelectCaseStatement()
