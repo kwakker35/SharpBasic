@@ -107,6 +107,22 @@ That was always the point.
 
 ## The Listing
 
+> **Before finalising Issue 10:** remove the CHEAT command added in Issue 5 for testing.
+> In the file header, remove the two CHEAT lines under Issue 5.
+> In the game loop SELECT CASE, remove the `CASE "CHEAT"` block (three lines).
+
 ```
-REM Issue 10 listing — to be added once built and tested
+REM === REMOVE: file header -- two CHEAT lines under Issue 5 ===
+REM  CHEAT command added for testing: resets SKILL to 12, STAMINA to 100.
+REM  Strip before release (see Issue 10 notes).
+
+REM === REMOVE: game loop SELECT CASE -- CHEAT block ===
+            CASE "CHEAT"
+                REM  DEV TOOL -- strip before release (Issue 10)
+                LET skill = 12
+                LET stamina = 100
+                PRINT "  [CHEAT] SKILL: " & skill & "  STAMINA: " & stamina
+                PRINT ""
+
+REM Issue 10 listing — to be completed once built and tested
 ```

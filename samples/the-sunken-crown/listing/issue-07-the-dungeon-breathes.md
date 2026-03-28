@@ -18,14 +18,20 @@ This issue changes that. The dungeon gets its own rhythms. Things happen whether
 ## What's New This Issue
 
 - `SUB AdvanceTurns(n AS INTEGER)` — central time management, fires per-turn events
-- `SUB AtmosphericEvent()` — selects and prints one of 12 atmospheric events at random
-- Wandering zombie — `zombieSpawned`, `zombieAlive`, `zombieRoom` state variables
-- `SUB WanderZombie()` — moves the zombie one step via the exit arrays each turn
-- Zombie encounter check added to `EnterRoom`
-- Poison damage on room entry — fires before room description
-- LOOK and SNEAK commands added to the command loop
-- All remaining monsters wired to their rooms in the combat dispatcher
-- All time-costing commands updated to call `AdvanceTurns` instead of incrementing directly
+- `SUB AtmosphericEvent()` — selects and prints one of 12 atmospheric events at random; cases 1–7 and 12 suppressed during combat; cases 8–10 (STAMINA drain) always fire; case 10 text varies by `inCombat`
+- `inCombat` global flag — set to 1 at start of `CombatLoop`, cleared to 0 on exit
+- Wandering zombie — `zombieSpawned`, `zombieAlive`, `zombieRoom` state variables; reset on new game
+- `SUB WanderZombie()` — moves the zombie one step via the exit arrays each turn, excludes rooms 5, 8, 11 and any room with a live fixed monster
+- Zombie combat branch added to `HandleFight` — fires when zombie is alive and in the current room
+- Zombie SEARCH interrupt text added to `HandleSearch` — random line from Deliverable 8
+- Poison check added to top of `EnterRoom` — fires before room description, STAMINA -1
+- Zombie encounter prompt added to bottom of `EnterRoom` — fires after room description
+- `SUB HandleLook()` — repeats room description, costs 1 turn
+- `SUB HandleSneak(dir AS INTEGER)` — `SNEAK NORTH` etc; no monster: move costs 2 turns; monster present: 1-turn SKILL roll; success moves player, failure triggers combat; monster stays alive
+- GO blocked by live monster — refusal message, no combat, no turn cost
+- `CASE "LOOK"` and `CASE "SNEAK"` added to game loop
+- All bare `SET GLOBAL turns = turns + N` replaced with `CALL AdvanceTurns(N)` throughout
+- `CALL AdvanceTurns(1)` added to `HandleGo` on successful move
 
 ---
 
@@ -91,5 +97,428 @@ The threshold is a design decision as much as a code decision. 8.5 is right for 
 ## The Listing
 
 ```
-REM Issue 7 listing — to be added once built and tested
+REM === ADD TO: file header comment block, after Issue 5 line ===
+REM  Issue 6: What You Carry
+REM  All monsters wired. Items: antidote, bangle, magic sword.
+REM  Inventory, SEARCH, TAKE, DROP, USE, overburdened, loot shuffle, luck tests.
+REM  Issue 7: The Dungeon Breathes
+REM  Atmospheric events, wandering zombie, SNEAK, LOOK, AdvanceTurns, poison drain.
+
+
+REM === ADD TO: globals block, after LET poisoned = 0 ===
+
+REM ----------------------------------------------------------------
+REM  Zombie state
+REM  zombieSpawned: 0 = not yet in dungeon, 1 = spawned at Crossroads
+REM  zombieAlive:   0 = dead or unspawned, 1 = roaming
+REM  zombieRoom:    current room (1-12); 0 when unspawned
+REM ----------------------------------------------------------------
+LET zombieSpawned = 0
+LET zombieAlive = 0
+LET zombieRoom = 0
+
+REM ----------------------------------------------------------------
+REM  Combat state
+REM  inCombat: 1 while CombatLoop is running; suppresses flavour
+REM  atmospheric events (cases 1-7, 12) during fights.
+REM ----------------------------------------------------------------
+LET inCombat = 0
+
+
+REM === ADD TO: reset block inside WHILE keepPlaying, after LET searchInterruptActive = 0 ===
+
+LET zombieSpawned = 0
+LET zombieAlive = 0
+LET zombieRoom = 0
+LET inCombat = 0
+
+
+REM === ADD BEFORE: SUB HandleSearch ===
+
+REM =================================================================
+REM  SUB WanderZombie
+REM  Moves the zombie one step through the dungeon each turn.
+REM  Uses the same exit arrays as the player. Excludes rooms
+REM  5 (Boss Antechamber), 8 (Locked Armoury), 11 (The Throne).
+REM =================================================================
+SUB WanderZombie()
+    LET zStart = roomExitStart[zombieRoom - 1]
+    LET zCount = roomExitCount[zombieRoom - 1]
+    LET validCount = 0
+    FOR i = zStart TO zStart + zCount - 1
+        LET dest = exitDest[i]
+        IF dest <> 5 AND dest <> 8 AND dest <> 11 THEN
+            LET validCount = validCount + 1
+        END IF
+    NEXT i
+    IF validCount = 0 THEN RETURN END IF
+    LET pick = CINT(RND() * validCount) + 1
+    LET seen = 0
+    FOR i = zStart TO zStart + zCount - 1
+        LET dest = exitDest[i]
+        IF dest <> 5 AND dest <> 8 AND dest <> 11 THEN
+            LET seen = seen + 1
+            IF seen = pick THEN
+                SET GLOBAL zombieRoom = dest
+                RETURN
+            END IF
+        END IF
+    NEXT i
+END SUB
+
+REM =================================================================
+REM  SUB AtmosphericEvent
+REM  Fires one of 12 atmospheric events chosen at random.
+REM  Events 1-7 and case 12 are suppressed during combat (inCombat = 1).
+REM  Events 8-9 (STAMINA drain) always fire. Event 10 fires damage if
+REM  overburdened; text varies by inCombat. Event 11 runs silently.
+REM  Text sourced from Deliverable 3 of the content asset file.
+REM =================================================================
+SUB AtmosphericEvent()
+    LET evt = CINT(RND() * 12) + 1
+    SELECT CASE evt
+        CASE 1
+            PRINT ""
+            PRINT "  Your torch gutters. For a moment the darkness is absolute -- a living,"
+            PRINT "  pressing thing. Then the flame catches again. You breathe out. You"
+            PRINT "  hadn't noticed you'd stopped."
+            PRINT ""
+        CASE 2
+            PRINT ""
+            PRINT "  Something scrapes in the dark below. Once. Then silence. You wait."
+            PRINT "  Nothing follows. The dungeon does not explain itself."
+            PRINT ""
+        CASE 3
+            PRINT ""
+            PRINT "  The wall is warm here. Not the residual warmth of stone that has held"
+            PRINT "  heat. Something warmer than that, and more deliberate. You move on."
+            PRINT ""
+        CASE 4
+            PRINT ""
+            PRINT "  A current of cold air from somewhere below. Steady, purposeful. As if"
+            PRINT "  something down there is still breathing."
+            PRINT ""
+        CASE 5
+            PRINT ""
+            PRINT "  Old bones in the corner. Not arranged -- just accumulated. The dungeon"
+            PRINT "  is not interested in ceremony."
+            PRINT ""
+        CASE 6
+            PRINT ""
+            PRINT "  The silence in here is a different quality than before. Thicker."
+            PRINT "  You have the distinct feeling that something nearby has gone very still."
+            PRINT ""
+        CASE 7
+            PRINT ""
+            PRINT "  Scratched into the wall at eye level: three marks, then a fourth"
+            PRINT "  crossing them. Then more sets. Someone was counting."
+            PRINT "  The tally runs to the corner and does not stop."
+            PRINT ""
+        CASE 8
+            PRINT ""
+            PRINT "  A cold settles in your chest. Not the cold of stone -- something older."
+            PRINT "  You feel it costing you."
+            PRINT ""
+            SET GLOBAL stamina = stamina - 1
+            SET GLOBAL minStamina = MIN(minStamina, stamina)
+            IF stamina <= 0 THEN
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 5
+            END IF
+        CASE 9
+            PRINT ""
+            PRINT "  Hunger. Not gradual. A sudden sharp reminder that you have been down"
+            PRINT "  here a long time. It takes something out of you."
+            PRINT ""
+            SET GLOBAL stamina = stamina - 1
+            SET GLOBAL minStamina = MIN(minStamina, stamina)
+            IF stamina <= 0 THEN
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 5
+            END IF
+        CASE 10
+            IF overburdened = 1 THEN
+                PRINT ""
+                PRINT "  The weight of what you are carrying is becoming a problem you cannot"
+                PRINT "  ignore. Every step costs more than it should."
+                PRINT ""
+                SET GLOBAL stamina = stamina - 1
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
+                IF stamina <= 0 THEN
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 5
+                END IF
+            ELSE
+                PRINT ""
+                PRINT "  The passage narrows briefly -- low ceiling, close walls. Then opens"
+                PRINT "  again. The dungeon is not consistent. It was not built to be."
+                PRINT ""
+            END IF
+        CASE 11
+            IF zombieSpawned = 0 AND turns > 3 THEN
+                IF RND() * 10 > 7 THEN
+                    SET GLOBAL zombieSpawned = 1
+                    SET GLOBAL zombieAlive = 1
+                    SET GLOBAL zombieRoom = 4
+                END IF
+            END IF
+        CASE 12
+            IF zombieAlive = 1 THEN
+                LET isNear = 0
+                LET pStart = roomExitStart[currentRoom - 1]
+                LET pCount = roomExitCount[currentRoom - 1]
+                FOR i = pStart TO pStart + pCount - 1
+                    IF exitDest[i] = zombieRoom THEN
+                        LET isNear = 1
+                    END IF
+                NEXT i
+                IF isNear = 1 THEN
+                    PRINT ""
+                    PRINT "  Something is moving in the passage nearby. You can hear it."
+                    PRINT "  Irregular. Getting closer."
+                    PRINT ""
+                ELSE
+                    PRINT ""
+                    PRINT "  A distinct feeling -- not sound, not smell. Something else is"
+                    PRINT "  moving through these passages. You are not alone down here."
+                    PRINT ""
+                END IF
+            END IF
+    END SELECT
+END SUB
+
+REM =================================================================
+REM  SUB AdvanceTurns -- n AS INTEGER
+REM  Central time manager. Increments the turn counter n times.
+REM  Each increment runs a 15% RND check for an atmospheric event
+REM  and moves the zombie one step if it is alive and spawned.
+REM  Stops early if gameOver is set during event processing.
+REM =================================================================
+SUB AdvanceTurns(n AS INTEGER)
+    FOR t = 1 TO n
+        IF gameOver = 1 THEN RETURN END IF
+        SET GLOBAL turns = turns + 1
+        IF RND() * 10 > 8.5 THEN
+            CALL AtmosphericEvent()
+        END IF
+        IF zombieSpawned = 1 AND zombieAlive = 1 THEN
+            CALL WanderZombie()
+        END IF
+    NEXT t
+END SUB
+
+
+REM === ADD BEFORE: SUB HandleGo ===
+
+REM =================================================================
+REM  SUB HandleLook
+REM  Advances one turn (triggers atmospheric and zombie events)
+REM  then returns. The game loop re-renders the room via EnterRoom.
+REM =================================================================
+SUB HandleLook()
+    CALL AdvanceTurns(1)
+END SUB
+
+REM =================================================================
+REM  SUB HandleSneak
+REM  Attempts to pass a monster or the wandering zombie unseen in
+REM  the given direction. Finds the exit first -- invalid direction
+REM  costs nothing. No hostile present: move, costs 2 turns.
+REM  Room 11 always refuses. Roll: RollDice(2) <= skill = success
+REM  (move to dest, 1 turn). Failure: fight in current room, no move.
+REM =================================================================
+SUB HandleSneak(dir AS INTEGER)
+    LET dest = 0
+    LET sStart = roomExitStart[currentRoom - 1]
+    LET sCount = roomExitCount[currentRoom - 1]
+    FOR i = sStart TO sStart + sCount - 1
+        IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
+            LET dest = exitDest[i]
+        END IF
+    NEXT i
+    IF dest = 0 THEN
+        PRINT "  There is no way through in that direction."
+        PRINT ""
+        RETURN
+    END IF
+    LET target = 0
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        LET target = 1
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET target = 1
+    END IF
+    IF target = 0 THEN
+        SET GLOBAL currentRoom = dest
+        CALL AdvanceTurns(2)
+        RETURN
+    END IF
+    IF currentRoom = 11 THEN
+        PRINT "  He is already looking at you. There is no passing unseen."
+        PRINT ""
+        RETURN
+    END IF
+    CALL AdvanceTurns(1)
+    LET roll = RollDice(2)
+    IF roll <= skill THEN
+        PRINT "  You hold your breath and move with extreme care. It does not notice."
+        PRINT "  You are through."
+        PRINT ""
+        SET GLOBAL currentRoom = dest
+    ELSE
+        PRINT "  It clocks you before you are halfway across."
+        PRINT ""
+        CALL HandleFight(currentRoom)
+    END IF
+END SUB
+
+
+REM === MODIFY: SUB CombatLoop -- set/clear inCombat flag ===
+
+REM  Add immediately after SUB CombatLoop(...) declaration:
+    SET GLOBAL inCombat = 1
+
+REM  Add immediately before END SUB (after terror restore block):
+    SET GLOBAL inCombat = 0
+
+REM  Add at top of SUB HandleGo, before LET start = ...:
+
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        PRINT "  It moves to block your path. FIGHT or SNEAK."
+        PRINT ""
+        RETURN
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        PRINT "  It moves to block your path. FIGHT or SNEAK."
+        PRINT ""
+        RETURN
+    END IF
+
+REM  Replace bare RETURN inside the exit-found branch with:
+
+            CALL AdvanceTurns(1)
+            RETURN
+
+
+REM === MODIFY: SUB HandleSearch -- add zombie interrupt before monsterAlive check ===
+
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET zLine = CINT(RND() * 3) + 1
+        SELECT CASE zLine
+            CASE 1
+                PRINT "  You hear it before you see it -- a wet, irregular shuffling."
+                PRINT "  It has found you."
+            CASE 2
+                PRINT "  Something cold brushes your arm. You spin."
+                PRINT "  It is closer than it should be."
+            CASE 3
+                PRINT "  The smell reaches you first. Then the shape in the dark shifts."
+                PRINT "  It is already here."
+        END SELECT
+        PRINT ""
+        CALL AdvanceTurns(2)
+        SET GLOBAL searchInterruptActive = 1
+        CALL HandleFight(currentRoom)
+        RETURN
+    END IF
+
+
+REM === MODIFY: SUB EnterRoom -- add poison check at top (before CALL PrintHeader) ===
+
+    IF poisoned = 1 THEN
+        SET GLOBAL stamina = stamina - 1
+        SET GLOBAL minStamina = MIN(minStamina, stamina)
+        IF stamina <= 0 THEN
+            SET GLOBAL gameOver = 1
+            SET GLOBAL endState = 5
+            RETURN
+        END IF
+        PRINT "  The poison spreads further through your blood. You feel it costing you."
+        PRINT ""
+    END IF
+
+REM  Add at bottom of SUB EnterRoom, after existing monsterAlive prompt block:
+
+    IF zombieAlive = 1 AND zombieRoom = roomId AND monsterAlive[roomId - 1] = 0 THEN
+        PRINT ""
+        PRINT "  FIGHT to engage, or SNEAK to try to pass."
+        PRINT ""
+    END IF
+
+
+REM === MODIFY: SUB HandleFight -- fix header comment ===
+
+REM  Issue 5: Guardroom Brute. Issue 6: Horror, Guardian, Mage, Troll.
+REM  Issue 7: Zombie. Bound King wired in Issue 9.
+
+REM === MODIFY: SUB HandleFight -- add zombieHere guard, replace monsterAlive check ===
+
+REM  At top of SUB HandleFight, after SET GLOBAL searchInterruptActive = 0:
+
+    LET zombieHere = 0
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET zombieHere = 1
+    END IF
+    IF monsterAlive[roomId - 1] = 0 AND zombieHere = 0 THEN
+        PRINT "  There is nothing here that requires that."
+        PRINT ""
+        RETURN
+    END IF
+
+REM === ADD TO: SUB HandleFight -- zombie combat branch, before END SUB ===
+
+    IF zombieHere = 1 THEN
+        PRINT ""
+        PRINT "  You almost walk into it. The smell hits you first -- something cold"
+        PRINT "  and wrong, like earth and old blood. It turns toward you with the"
+        PRINT "  slow, indifferent purpose of something that does not need to hurry."
+        PRINT ""
+        LET mSkill = RollDice(1) + 2
+        LET mStamina = RollDice(2) + 8
+        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL zombieAlive = 0
+            PRINT ""
+            PRINT "  It goes down without drama -- no last surge, no last sound. It just"
+            PRINT "  stops. Whatever drove it is gone. You stand over it until you are"
+            PRINT "  certain. The dungeon is quiet."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  It does not stop. You fall back, then fall. The dungeon does not care."
+            PRINT ""
+        END IF
+    END IF
+
+
+REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
+
+            CASE "LOOK"
+                CALL HandleLook()
+                CALL EnterRoom(currentRoom, 0)
+            CASE "SNEAK NORTH"
+                CALL HandleSneak(DIR_N)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK SOUTH"
+                CALL HandleSneak(DIR_S)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK EAST"
+                CALL HandleSneak(DIR_E)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK WEST"
+                CALL HandleSneak(DIR_W)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK NE"
+                CALL HandleSneak(DIR_NE)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
 ```

@@ -1146,9 +1146,6 @@ WHILE keepPlaying = 1
                 END IF
             CASE "SEARCH"
                 CALL HandleSearch()
-                IF gameOver = 0 THEN
-                    CALL EnterRoom(currentRoom, 0)
-                END IF
             CASE "INVENTORY"
                 CALL PrintInventoryScreen()
             CASE "TAKE ALL", "TAKE KEY", "TAKE POTION", "TAKE CHARM", "TAKE SHARD", "TAKE BREAD", "TAKE MEDAL", "TAKE ANTIDOTE", "TAKE BANGLE", "TAKE SWORD", "TAKE MOULDY"
