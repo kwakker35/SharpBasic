@@ -16,6 +16,7 @@
 > - Deliverable 6 — Throne Room special text (post-combat beat, gold mechanic, crown sequence)
 > - Deliverable 7 — Gate resolution text (win text, death text, end screen)
 > - Deliverable 8 — Pre-build mechanic text (SEARCH interrupt, zombie disturbance, poison, Hollow Mage luck drain, Bound King refusals)
+> - Deliverable 9 — Quit command text (monster-specific, zombie, room-specific, ambient pool, end screen)
 >
 > **Key conventions used throughout:**
 > - State variants are labelled explicitly — (first visit), (revisit), (monster alive), (monster dead) etc.
@@ -1564,4 +1565,149 @@ Play again? (YES / NO)
 
 ---
 
-*End of asset file — Deliverables 1, 2, 3, 4, 5, 6, 7, and 8. All content locked.*
+---
+
+## DELIVERABLE 9 — QUIT COMMAND TEXT
+
+---
+
+> QUIT is available at any prompt. No confirmation. It sets `gameOver = 1`
+> and `endState = 6`. The death text is context-sensitive — monster/zombie
+> checks first, then room-specific, then the ambient pool for everything else.
+>
+> Priority order in `HandleQuit()`:
+> 1. Monster alive in current room → monster-specific finish
+> 2. Zombie alive and in current room → zombie finish
+> 3. Room-specific special case (Pit, Cistern, Riddle Room, Gate)
+> 4. Random ambient pool (6 variants)
+
+---
+
+### Monster-Specific Quit Lines
+
+**Guardroom Brute (Room 2):**
+
+You lower your weapon. The Brute watches you do it. Then it does what it was always going to do — efficiently, without interest, the way it has ended everything else that came through that door.
+
+---
+
+**Skittering Horror (Room 6):**
+
+You stop moving. For a moment so does it. Then the chitinous legs find their grip and it crosses the room in the time it takes you to exhale. The last thing you feel is the cold of it, and then nothing.
+
+---
+
+**Pit Guardian (Room 7):**
+
+You drop your guard and the Guardian notes it with the same unhurried certainty it brings to everything. It raises its weapon. It does not hurry. It has never needed to.
+
+---
+
+**Hollow Mage (Room 9):**
+
+The luminescence fixes on you. The cold doubles, then redoubles. You don't fight it. That is the last decision you make.
+
+---
+
+**Troll (Room 10):**
+
+The small dark eyes watch you put your hands down. The Troll stands. It has been waiting for this. It comes forward with a patience that has outlasted everything else down here, and it outlasts you too.
+
+---
+
+**Bound King (Room 11 — King alive):**
+
+You sink to your knees before him. He looks through you as though you are not there — as though you have never been there, as though the effort of acknowledgement is beneath him. His sword finds your neck without him appearing to move. The last thing you see is his face, and it holds nothing. Not contempt. Not satisfaction. Nothing at all.
+
+---
+
+### Zombie Quit Line
+
+*(Fires when the zombie is alive and in the current room, but no fixed monster is present.)*
+
+It doesn't rush. It has never needed to rush. You stand still long enough for it to find you, and then it takes its time. Whatever is left of you when it is done is not much.
+
+---
+
+### Room-Specific Quit Lines
+
+**Pit (Room 7, no monster):**
+
+You stand at the edge and look down. Then something you never saw — never heard — places a hand flat against your back and pushes. Not hard. It barely needs to. The darkness below takes you, and you fall for longer than you thought possible. The bottom, when it comes, does not come gently.
+
+---
+
+**Cistern (Room 9, no monster):**
+
+You are looking at the water when it happens. A single dark shape beneath the surface, and then a cold pressure around your ankle, and then you are moving and the room is moving away from you and the water closes over your head. The channel beneath is deep. Deeper than the dungeon has any right to go.
+
+---
+
+**Riddle Room (Room 8):**
+
+You face the doors. It doesn't matter anymore which one. You pick one — the wrong one, of course; it was always going to be the wrong one — and as it swings open you understand for a single clear instant what the riddle was actually about. Then the understanding is gone, and so are you.
+
+---
+
+**The Gate (Room 12):**
+
+You hear it before you turn: a low, resonant creak from the Gate itself, the sound of something that has not moved in a very long time deciding to move. You turn. The Gate is open. Whatever is on the other side has been there since before the dungeon was built, and it has been patient, and you have come close enough. It steps through. The last thing you see is the dark beyond the threshold closing behind it like a curtain.
+
+---
+
+### Ambient Quit Pool
+
+*(All other rooms — no monster, no zombie, no room-specific case. Random 1–6.)*
+
+**1:**
+
+You hear something behind you. Not footsteps — the absence of footsteps. A silence that follows you and gets closer. You turn too slowly. The cold enters you between the shoulder blades, precise and final, and the torchlight dims in a straight line down to nothing.
+
+---
+
+**2:**
+
+The torch goes out. In the dark, something is already there. You hear it breathing — or something like breathing, something close enough. You do not have time to relight the flame.
+
+---
+
+**3:**
+
+The floor shifts under your foot. Just once, just slightly. By the time you understand what it means, the stone has already decided, and you with it. The chamber below is silent. You are not.
+
+---
+
+**4:**
+
+There is a gap in the wall at arm height that you never looked at closely. There is a hand in it, pale and entirely still, and it has been there the whole time. Now it moves. It is faster than it has any right to be.
+
+---
+
+**5:**
+
+The cold intensifies. That is all. Just cold, deepening, past the point where cold feels like cold and becomes something else instead — a pressure, a weight, a slow erasure. You are less warm than you were. Then less present. Then gone.
+
+---
+
+**6:**
+
+Something in the room has been waiting. Not the monster — not anything you saw. Something older than the room itself, something that was here when the stones were cut and has been here every moment since. You only know it is there the moment before it decides you have stayed long enough.
+
+---
+
+### End Screen — endState = 6
+
+```
+The dungeon has been here longer than anyone you have ever met has been alive.
+It will be here after everyone you know is dust.
+It did not notice you arrive.
+It did not notice you leave.
+
+Your SKILL was X. Your STAMINA reached as low as Y. You tested your LUCK Z times.
+
+Play again? (YES / NO)
+```
+
+---
+
+*End of asset file — Deliverables 1, 2, 3, 4, 5, 6, 7, 8, and 9. All content locked.*

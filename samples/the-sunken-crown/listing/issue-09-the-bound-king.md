@@ -26,6 +26,8 @@ This issue wires the final boss, the gold mechanic, and the crown. It is the mos
 - `SUB CrownSequence()` — fires immediately on TAKE CROWN, bypasses inventory entirely
 - `endState` variable — tracks how the run ended, read by the end screen in Issue 10
 - `EnterRoom` updated to detect room 11 and route to `BoundKingSequence` while the King is alive
+- `SUB HandleQuit()` — QUIT command: instant, no confirmation, context-sensitive death flavour, `endState = 6`
+- `CASE "QUIT"` added to game loop — calls `HandleQuit()`, no `EnterRoom` after
 
 ---
 
