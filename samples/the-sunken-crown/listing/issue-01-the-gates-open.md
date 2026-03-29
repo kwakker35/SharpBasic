@@ -144,13 +144,9 @@ REM  and current stats on one line, then another = separator.
 REM  Reads skill, stamina, luck from global scope -- read-only.
 REM =================================================================
 SUB PrintHeader()
-    LET line = ""
-    FOR i = 1 TO FRAME_WIDTH
-        LET line = line & "="
-    NEXT i
-    PRINT line
+    CALL PrintSeparator()
     PRINT "  THE SUNKEN CROWN                                 SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
-    PRINT line
+    CALL PrintSeparator()
 END SUB
 
 REM =================================================================
