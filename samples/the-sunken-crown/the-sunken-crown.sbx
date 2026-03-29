@@ -2758,7 +2758,7 @@ WHILE keepPlaying = 1
     INPUT "  Play again? (YES / NO): "; playAgain$
     LET playAgain$ = UPPER$(playAgain$)
     PRINT ""
-    IF playAgain$ = "YES" THEN
+    IF playAgain$ = "YES" OR playAgain$ = "Y" THEN
         LET keepPlaying = 1
     ELSE
         LET keepPlaying = 0
