@@ -9,7 +9,7 @@
 
 Issues 1 through 9 built everything. The frame, the map, the attributes, the combat, the inventory, the atmosphere, the zombie, the trap rooms, and the final boss. Every system is in place. Every room has its logic.
 
-One room is not yet wired. Room 12. The Gate. You can navigate there, but nothing happens. Two doors sit in the far wall and the program does not know what to do with them.
+One room is not yet wired. ROOM_GATE (Room 12). The Gate. You can navigate there, but nothing happens. Two doors sit in the far wall and the program does not know what to do with them.
 
 This issue finishes the game.
 
@@ -23,7 +23,7 @@ This issue finishes the game.
 - Death path — wrong door, the corridor that goes nowhere, darkness
 - `SUB PrintEndScreen()` — displays run statistics and the play again prompt
 - Play again loop — all state resets and the full game restarts on YES
-- `EnterRoom` updated to detect room 12 and route to `GateSequence`
+- `EnterRoom` updated to detect ROOM_GATE and route to `GateSequence`
 - STATS and HELP commands added to the command loop
 - Complete MAIN block — the play again loop wraps the entire game
 
@@ -79,7 +79,7 @@ The end screen reads `endState` to select its message. The state was set whereve
 
 ## What You'll See
 
-Navigate to room 12. The Gate description renders. The prompt accepts only LEFT or RIGHT. Choose the less worn door. If correct, the win sequence runs — Malachar in the courtyard, his single word, freedom. If wrong, the dungeon keeps you quietly.
+Navigate to ROOM_GATE (The Gate). The Gate description renders. The prompt accepts only LEFT or RIGHT. Choose the less worn door. If correct, the win sequence runs — Malachar in the courtyard, his single word, freedom. If wrong, the dungeon keeps you quietly.
 
 The end screen shows your stats. Play again and everything resets. Different attributes, different loot, different riddle, different gate. The dungeon is learned across runs, not within them.
 

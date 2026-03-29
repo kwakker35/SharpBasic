@@ -198,8 +198,8 @@ REM  droppedItem[r][s]: item code at floor slot s in room r (0-based r).
 REM  droppedCount[r]: items currently on room r's floor. Max 12/room.
 REM  r = roomId - 1. Supports stockpiling: drops, monster loot, etc.
 REM ----------------------------------------------------------------
-DIM droppedItem[12][12] AS INTEGER
-DIM droppedCount[12] AS INTEGER
+DIM droppedItem[MAX_ROOMS][MAX_ROOMS] AS INTEGER
+DIM droppedCount[MAX_ROOMS] AS INTEGER
 
 REM ----------------------------------------------------------------
 REM  SEARCH interrupt flag
@@ -253,17 +253,17 @@ REM  has no shuffled loot slot. Used by HandleSearch and HandleTake.
 REM =================================================================
 FUNCTION RoomLootSlot(roomId AS INTEGER) AS INTEGER
     SELECT CASE roomId
-        CASE 1
+        CASE ROOM_ENTRY
             RETURN 1
-        CASE 2
+        CASE ROOM_GUARDROOM
             RETURN 2
-        CASE 4
+        CASE ROOM_CROSSROADS
             RETURN 3
-        CASE 6
+        CASE ROOM_COLLAPSED
             RETURN 4
-        CASE 8
+        CASE ROOM_RIDDLE
             RETURN 5
-        CASE 10
+        CASE ROOM_UNDERHALL
             RETURN 6
         CASE ELSE
             RETURN 0
@@ -401,30 +401,30 @@ REM  Sets searched[roomId-1] = 1 on completion.
 REM =================================================================
 SUB HandleSearch()
     IF monsterAlive[currentRoom - 1] = 1 THEN
-        IF currentRoom = 11 THEN
+        IF currentRoom = ROOM_THRONE THEN
             PRINT "  Not here. Not with him watching."
             PRINT ""
             SET GLOBAL turns = turns + 2
             RETURN
         END IF
         SELECT CASE currentRoom
-            CASE 2
+            CASE ROOM_GUARDROOM
                 PRINT "  The Brute hears the scrape of your boot before you've taken a step"
                 PRINT "  toward the wall. It turns with the speed of something that has been"
                 PRINT "  waiting for an excuse. You are out of time."
-            CASE 6
+            CASE ROOM_COLLAPSED
                 PRINT "  The moment your hand touches the rubble the Horror is already moving."
                 PRINT "  Not toward the sound -- toward you. It has been still this whole time."
                 PRINT "  It was never unaware."
-            CASE 7
+            CASE ROOM_PIT
                 PRINT "  The Guardian does not hurry. It simply turns, raises its weapon, and"
                 PRINT "  begins walking toward you with the unhurried certainty of something"
                 PRINT "  that has done this before. You had your back to it."
-            CASE 9
+            CASE ROOM_CISTERN
                 PRINT "  The cold in the room doubles before you have touched anything. The"
                 PRINT "  luminescence fixes on you -- steady, no longer drifting. It knew the"
                 PRINT "  moment your attention shifted."
-            CASE 10
+            CASE ROOM_UNDERHALL
                 PRINT "  The small dark eyes find you the instant you crouch. It doesn't roar."
                 PRINT "  It doesn't rush. It simply stands and keeps coming with the patient"
                 PRINT "  certainty of something that has never needed to hurry."
@@ -454,14 +454,14 @@ SUB HandleSearch()
         END IF
     END IF
 
-    IF currentRoom = 3 THEN
+    IF currentRoom = ROOM_ARMOURY THEN
         IF armouryLocked = 1 THEN
             PRINT "  The chest is here. Iron-banded, locked."
             LET foundSomething = 1
         END IF
     END IF
 
-    IF currentRoom = 6 THEN
+    IF currentRoom = ROOM_COLLAPSED THEN
         SET GLOBAL exitHidden[11] = 0
         PRINT "  You work through the rubble methodically. Most of it is solid --"
         PRINT "  ceiling stone, heavy, immovable. But toward the base of the fall,"
@@ -794,7 +794,7 @@ SUB HandleUse(item$ AS STRING)
             SET GLOBAL invCount = invCount - 1
             IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
         CASE ITEM_KEY
-            IF currentRoom = 3 THEN
+            IF currentRoom = ROOM_ARMOURY THEN
                 IF armouryLocked = 1 THEN
                     PRINT "  You try the key in the lock. It turns."
                     PRINT ""
@@ -909,7 +909,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         RETURN
     END IF
-    IF roomId = 2 THEN
+    IF roomId = ROOM_GUARDROOM THEN
         PRINT ""
         PRINT "  It hears you before you reach it. The broad shoulders shift, the head"
         PRINT "  turns, and then it is facing you -- fully, deliberately, with the"
@@ -942,7 +942,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 6 THEN
+    IF roomId = ROOM_COLLAPSED THEN
         PRINT ""
         PRINT "  You hear it first -- a dry, rapid skittering from somewhere in the dark"
         PRINT "  beyond the rubble. Then silence. Then it is in the room with you and you"
@@ -974,7 +974,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 7 THEN
+    IF roomId = ROOM_PIT THEN
         PRINT ""
         PRINT "  It turns to face you without urgency. The armour it wears has been"
         PRINT "  repaired so many times the original shape is barely discernible --"
@@ -1004,7 +1004,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 9 THEN
+    IF roomId = ROOM_CISTERN THEN
         PRINT ""
         PRINT "  You see the light before you see the source -- a faint, cold luminescence"
         PRINT "  at the edge of vision that keeps refusing to be where you look for it."
@@ -1034,7 +1034,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 10 THEN
+    IF roomId = ROOM_UNDERHALL THEN
         PRINT ""
         PRINT "  It does not move when you enter. It watches you from the centre of the"
         PRINT "  room with small, dark, patient eyes, and it waits to see what you do."
@@ -1060,7 +1060,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 11 THEN
+    IF roomId = ROOM_THRONE THEN
         PRINT ""
         PRINT "  He raises his head."
         PRINT ""
@@ -1084,16 +1084,16 @@ CALL InitExits()
 WHILE keepPlaying = 1
     LET gameOver = 0
     LET endState = 0
-    LET currentRoom = 1
+    LET currentRoom = ROOM_ENTRY
     LET minStamina = 0
     LET turns = 0
     LET poisoned = 0
     LET luckTestCount = 0
-    FOR i = 0 TO 11
+    FOR i = 0 TO MAX_ROOMS - 1
         LET visited[i] = 0
         LET searched[i] = 0
         LET droppedCount[i] = 0
-        FOR j = 0 TO 11
+        FOR j = 0 TO MAX_ROOMS - 1
             LET droppedItem[i][j] = ITEM_EMPTY
         NEXT j
     NEXT i

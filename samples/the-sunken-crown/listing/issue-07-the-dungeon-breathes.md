@@ -21,7 +21,7 @@ This issue changes that. The dungeon gets its own rhythms. Things happen whether
 - `SUB AtmosphericEvent()` — selects and prints one of 12 atmospheric events at random; cases 1–7 and 12 suppressed during combat; cases 8–10 (STAMINA drain) always fire; case 10 text varies by `inCombat`
 - `inCombat` global flag — set to 1 at start of `CombatLoop`, cleared to 0 on exit
 - Wandering zombie — `zombieSpawned`, `zombieAlive`, `zombieRoom` state variables; reset on new game
-- `SUB WanderZombie()` — moves the zombie one step via the exit arrays each turn, excludes rooms 5, 8, 11 and any room with a live fixed monster
+- `SUB WanderZombie()` — moves the zombie one step via the exit arrays each turn, excludes ROOM_STILL, ROOM_RIDDLE, ROOM_THRONE and any room with a live fixed monster
 - Zombie combat branch added to `HandleFight` — fires when zombie is alive and in the current room
 - Zombie SEARCH interrupt text added to `HandleSearch` — random line from Deliverable 8
 - Poison check added to top of `EnterRoom` — fires before room description, STAMINA -1
@@ -138,8 +138,8 @@ REM === ADD BEFORE: SUB HandleSearch ===
 REM =================================================================
 REM  SUB WanderZombie
 REM  Moves the zombie one step through the dungeon each turn.
-REM  Uses the same exit arrays as the player. Excludes rooms
-REM  5 (Boss Antechamber), 8 (Locked Armoury), 11 (The Throne).
+REM  Uses the same exit arrays as the player. Excludes
+REM  ROOM_STILL (5), ROOM_RIDDLE (8), ROOM_THRONE (11).
 REM =================================================================
 SUB WanderZombie()
     LET zStart = roomExitStart[zombieRoom - 1]
@@ -147,7 +147,7 @@ SUB WanderZombie()
     LET validCount = 0
     FOR i = zStart TO zStart + zCount - 1
         LET dest = exitDest[i]
-        IF dest <> 5 AND dest <> 8 AND dest <> 11 THEN
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE THEN
             LET validCount = validCount + 1
         END IF
     NEXT i
@@ -156,7 +156,7 @@ SUB WanderZombie()
     LET seen = 0
     FOR i = zStart TO zStart + zCount - 1
         LET dest = exitDest[i]
-        IF dest <> 5 AND dest <> 8 AND dest <> 11 THEN
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE THEN
             LET seen = seen + 1
             IF seen = pick THEN
                 SET GLOBAL zombieRoom = dest
@@ -259,7 +259,7 @@ SUB AtmosphericEvent()
                 IF RND() * 10 > 7 THEN
                     SET GLOBAL zombieSpawned = 1
                     SET GLOBAL zombieAlive = 1
-                    SET GLOBAL zombieRoom = 4
+                    SET GLOBAL zombieRoom = ROOM_CROSSROADS
                 END IF
             END IF
         CASE 12
@@ -353,7 +353,7 @@ SUB HandleSneak(dir AS INTEGER)
         CALL AdvanceTurns(2)
         RETURN
     END IF
-    IF currentRoom = 11 THEN
+    IF currentRoom = ROOM_THRONE THEN
         PRINT "  He is already looking at you. There is no passing unseen."
         PRINT ""
         RETURN

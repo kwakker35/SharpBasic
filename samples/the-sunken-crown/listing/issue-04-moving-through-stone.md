@@ -35,8 +35,8 @@ This issue changes that. The full map goes in — all 12 rooms, all exits, the c
 The dungeon's rooms and exits live in arrays — fixed-size collections of values, each slot numbered from zero.
 
 ```
-DIM roomExitCount[12] AS INTEGER   REM  how many exits each room has
-DIM roomExitStart[12] AS INTEGER   REM  index of first exit slot for each room
+DIM roomExitCount[MAX_ROOMS] AS INTEGER   REM  how many exits each room has
+DIM roomExitStart[MAX_ROOMS] AS INTEGER   REM  index of first exit slot for each room
 DIM exitDir[30] AS INTEGER         REM  direction code for each exit slot
 DIM exitDest[30] AS INTEGER        REM  destination room for each exit slot
 DIM exitHidden[30] AS INTEGER      REM  1 = hidden until SEARCH finds it
@@ -56,7 +56,7 @@ FOR i = start TO start + count - 1
 NEXT i
 ```
 
-`roomExitStart[4]` holds the index of room 4's first exit in the exit arrays. `roomExitCount[4]` holds how many exits room 4 has. Together they define a slice of the exit arrays that belongs to room 4.
+`roomExitStart[ROOM_STILL - 1]` holds the index of room 5's first exit in the exit arrays. `roomExitCount[ROOM_STILL - 1]` holds how many exits room 5 has. Together they define a slice of the exit arrays that belongs to room 5.
 
 Why not a simpler approach — a 2D array of room × direction? Because the dungeon has asymmetric connections. Going NE from room 4 reaches room 5, but room 5 has no navigable exits. The Still Chamber teleports you — it does not let you walk back. A flat 2D grid cannot represent this without special-casing every asymmetric connection. The parallel array approach handles asymmetry naturally — every connection is simply stated, with no assumption about return paths.
 
@@ -99,7 +99,7 @@ REM === ADD TO: file header comment block, replacing the Issue 3 line ===
 REM  Issue 4: Moving Through Stone
 REM  Exit arrays, full map, navigation, all 12 room descriptions.
 
-REM === ADD TO: Constants block, after CONST CONTENT_ROWS = 20 ===
+REM === ADD TO: Constants block, after CONST COMBAT_DELAY ===
 CONST DIR_N = 1
 CONST DIR_S = 2
 CONST DIR_E = 3
@@ -108,10 +108,28 @@ CONST DIR_NE = 5
 CONST MAX_EXITS = 30
 CONST MAX_ROOMS = 12
 
-REM === ADD TO: Navigation state block, after DIM visited[12] AS INTEGER ===
-DIM searched[12] AS INTEGER
+REM ----------------------------------------------------------------
+REM  Room identity constants
+REM  Symbolic names for every room. Used everywhere a room is
+REM  referenced -- navigation, combat, descriptions, loot.
+REM ----------------------------------------------------------------
+CONST ROOM_ENTRY      = 1
+CONST ROOM_GUARDROOM  = 2
+CONST ROOM_ARMOURY    = 3
+CONST ROOM_CROSSROADS = 4
+CONST ROOM_STILL      = 5
+CONST ROOM_COLLAPSED  = 6
+CONST ROOM_PIT        = 7
+CONST ROOM_RIDDLE     = 8
+CONST ROOM_CISTERN    = 9
+CONST ROOM_UNDERHALL  = 10
+CONST ROOM_THRONE     = 11
+CONST ROOM_GATE       = 12
 
-REM === ADD TO: Navigation state block, after DIM searched[12] AS INTEGER ===
+REM === ADD TO: Navigation state block, after DIM visited[MAX_ROOMS] AS INTEGER ===
+DIM searched[MAX_ROOMS] AS INTEGER
+
+REM === ADD TO: Navigation state block, after DIM searched[MAX_ROOMS] AS INTEGER ===
 REM  Exit map -- parallel arrays indexed by exit slot number (1-based)
 REM  Slot 0 is unused; valid slots are 1 to 22 for this 12-room map.
 REM  roomExitStart[r-1]: index of first exit slot for room r
@@ -119,8 +137,8 @@ REM  roomExitCount[r-1]: number of exits for room r
 REM  exitDir[i]:    direction code for exit slot i
 REM  exitDest[i]:   destination room for exit slot i
 REM  exitHidden[i]: 0 = visible to player, 1 = hidden until SEARCHed
-DIM roomExitStart[12] AS INTEGER
-DIM roomExitCount[12] AS INTEGER
+DIM roomExitStart[MAX_ROOMS] AS INTEGER
+DIM roomExitCount[MAX_ROOMS] AS INTEGER
 DIM exitDir[30] AS INTEGER
 DIM exitDest[30] AS INTEGER
 DIM exitHidden[30] AS INTEGER
@@ -156,29 +174,29 @@ REM  Used by EnterRoom to print the LOCATION line.
 REM =================================================================
 FUNCTION RoomName(roomId AS INTEGER) AS STRING
     SELECT CASE roomId
-        CASE 1
+        CASE ROOM_ENTRY
             RETURN "Entry Hall"
-        CASE 2
+        CASE ROOM_GUARDROOM
             RETURN "Guardroom"
-        CASE 3
+        CASE ROOM_ARMOURY
             RETURN "Armoury"
-        CASE 4
+        CASE ROOM_CROSSROADS
             RETURN "The Crossroads"
-        CASE 5
+        CASE ROOM_STILL
             RETURN "The Still Chamber"
-        CASE 6
+        CASE ROOM_COLLAPSED
             RETURN "Collapsed Passage"
-        CASE 7
+        CASE ROOM_PIT
             RETURN "The Pit"
-        CASE 8
+        CASE ROOM_RIDDLE
             RETURN "The Riddle Room"
-        CASE 9
+        CASE ROOM_CISTERN
             RETURN "The Cistern"
-        CASE 10
+        CASE ROOM_UNDERHALL
             RETURN "The Underhall"
-        CASE 11
+        CASE ROOM_THRONE
             RETURN "Throne Room"
-        CASE 12
+        CASE ROOM_GATE
             RETURN "The Gate"
         CASE ELSE
             RETURN "Unknown"
@@ -195,118 +213,118 @@ REM  (slot 0 is unused; first slot is 1). exitHidden = 1 marks exits
 REM  that do not display until the room is SEARCHed (Issue 6).
 REM =================================================================
 SUB InitExits()
-    REM --- Room 1: Entry Hall -- S->2 (slot 1) ---
-    LET roomExitStart[0] = 1
-    LET roomExitCount[0] = 1
+    REM --- Room 1: Entry Hall -- S->Guardroom (slot 1) ---
+    LET roomExitStart[ROOM_ENTRY - 1] = 1
+    LET roomExitCount[ROOM_ENTRY - 1] = 1
     LET exitDir[1] = DIR_S
-    LET exitDest[1] = 2
+    LET exitDest[1] = ROOM_GUARDROOM
     LET exitHidden[1] = 0
 
-    REM --- Room 2: Guardroom -- N->1, E->3, S->4 (slots 2-4) ---
-    LET roomExitStart[1] = 2
-    LET roomExitCount[1] = 3
+    REM --- Room 2: Guardroom -- N->Entry, E->Armoury, S->Crossroads (slots 2-4) ---
+    LET roomExitStart[ROOM_GUARDROOM - 1] = 2
+    LET roomExitCount[ROOM_GUARDROOM - 1] = 3
     LET exitDir[2] = DIR_N
-    LET exitDest[2] = 1
+    LET exitDest[2] = ROOM_ENTRY
     LET exitHidden[2] = 0
     LET exitDir[3] = DIR_E
-    LET exitDest[3] = 3
+    LET exitDest[3] = ROOM_ARMOURY
     LET exitHidden[3] = 0
     LET exitDir[4] = DIR_S
-    LET exitDest[4] = 4
+    LET exitDest[4] = ROOM_CROSSROADS
     LET exitHidden[4] = 0
 
-    REM --- Room 3: Armoury -- W->2 (slot 5) ---
-    LET roomExitStart[2] = 5
-    LET roomExitCount[2] = 1
+    REM --- Room 3: Armoury -- W->Guardroom (slot 5) ---
+    LET roomExitStart[ROOM_ARMOURY - 1] = 5
+    LET roomExitCount[ROOM_ARMOURY - 1] = 1
     LET exitDir[5] = DIR_W
-    LET exitDest[5] = 2
+    LET exitDest[5] = ROOM_GUARDROOM
     LET exitHidden[5] = 0
 
-    REM --- Room 4: The Crossroads -- N->2, W->6, E->7, NE->5 (slots 6-9) ---
-    LET roomExitStart[3] = 6
-    LET roomExitCount[3] = 4
+    REM --- Room 4: Crossroads -- N->Guardroom, W->Collapsed, E->Pit, NE->Still (slots 6-9) ---
+    LET roomExitStart[ROOM_CROSSROADS - 1] = 6
+    LET roomExitCount[ROOM_CROSSROADS - 1] = 4
     LET exitDir[6] = DIR_N
-    LET exitDest[6] = 2
+    LET exitDest[6] = ROOM_GUARDROOM
     LET exitHidden[6] = 0
     LET exitDir[7] = DIR_W
-    LET exitDest[7] = 6
+    LET exitDest[7] = ROOM_COLLAPSED
     LET exitHidden[7] = 0
     LET exitDir[8] = DIR_E
-    LET exitDest[8] = 7
+    LET exitDest[8] = ROOM_PIT
     LET exitHidden[8] = 0
     LET exitDir[9] = DIR_NE
-    LET exitDest[9] = 5
+    LET exitDest[9] = ROOM_STILL
     LET exitHidden[9] = 0
 
     REM --- Room 5: The Still Chamber -- no exits (teleport handled in Issue 8) ---
-    LET roomExitStart[4] = 10
-    LET roomExitCount[4] = 0
+    LET roomExitStart[ROOM_STILL - 1] = 10
+    LET roomExitCount[ROOM_STILL - 1] = 0
 
-    REM --- Room 6: Collapsed Passage -- E->4, S->9 (hidden) (slots 10-11) ---
-    LET roomExitStart[5] = 10
-    LET roomExitCount[5] = 2
+    REM --- Room 6: Collapsed Passage -- E->Crossroads, S->Cistern (hidden) (slots 10-11) ---
+    LET roomExitStart[ROOM_COLLAPSED - 1] = 10
+    LET roomExitCount[ROOM_COLLAPSED - 1] = 2
     LET exitDir[10] = DIR_E
-    LET exitDest[10] = 4
+    LET exitDest[10] = ROOM_CROSSROADS
     LET exitHidden[10] = 0
     LET exitDir[11] = DIR_S
-    LET exitDest[11] = 9
+    LET exitDest[11] = ROOM_CISTERN
     LET exitHidden[11] = 1
 
-    REM --- Room 7: The Pit -- W->4, S->8 (slots 12-13) ---
-    LET roomExitStart[6] = 12
-    LET roomExitCount[6] = 2
+    REM --- Room 7: The Pit -- W->Crossroads, S->Riddle (slots 12-13) ---
+    LET roomExitStart[ROOM_PIT - 1] = 12
+    LET roomExitCount[ROOM_PIT - 1] = 2
     LET exitDir[12] = DIR_W
-    LET exitDest[12] = 4
+    LET exitDest[12] = ROOM_CROSSROADS
     LET exitHidden[12] = 0
     LET exitDir[13] = DIR_S
-    LET exitDest[13] = 8
+    LET exitDest[13] = ROOM_RIDDLE
     LET exitHidden[13] = 0
 
-    REM --- Room 8: The Riddle Room -- N->7, S->10 (hidden until solved) (slots 14-15) ---
-    LET roomExitStart[7] = 14
-    LET roomExitCount[7] = 2
+    REM --- Room 8: The Riddle Room -- N->Pit, S->Underhall (hidden until solved) (slots 14-15) ---
+    LET roomExitStart[ROOM_RIDDLE - 1] = 14
+    LET roomExitCount[ROOM_RIDDLE - 1] = 2
     LET exitDir[14] = DIR_N
-    LET exitDest[14] = 7
+    LET exitDest[14] = ROOM_PIT
     LET exitHidden[14] = 0
     LET exitDir[15] = DIR_S
-    LET exitDest[15] = 10
+    LET exitDest[15] = ROOM_UNDERHALL
     LET exitHidden[15] = 1
 
-    REM --- Room 9: The Cistern -- N->6, S->10 (slots 16-17) ---
-    LET roomExitStart[8] = 16
-    LET roomExitCount[8] = 2
+    REM --- Room 9: The Cistern -- N->Collapsed, S->Underhall (slots 16-17) ---
+    LET roomExitStart[ROOM_CISTERN - 1] = 16
+    LET roomExitCount[ROOM_CISTERN - 1] = 2
     LET exitDir[16] = DIR_N
-    LET exitDest[16] = 6
+    LET exitDest[16] = ROOM_COLLAPSED
     LET exitHidden[16] = 0
     LET exitDir[17] = DIR_S
-    LET exitDest[17] = 10
+    LET exitDest[17] = ROOM_UNDERHALL
     LET exitHidden[17] = 0
 
-    REM --- Room 10: The Underhall -- N->4, S->11 (slots 18-19) ---
-    LET roomExitStart[9] = 18
-    LET roomExitCount[9] = 2
+    REM --- Room 10: The Underhall -- N->Crossroads, S->Throne (slots 18-19) ---
+    LET roomExitStart[ROOM_UNDERHALL - 1] = 18
+    LET roomExitCount[ROOM_UNDERHALL - 1] = 2
     LET exitDir[18] = DIR_N
-    LET exitDest[18] = 4
+    LET exitDest[18] = ROOM_CROSSROADS
     LET exitHidden[18] = 0
     LET exitDir[19] = DIR_S
-    LET exitDest[19] = 11
+    LET exitDest[19] = ROOM_THRONE
     LET exitHidden[19] = 0
 
-    REM --- Room 11: Throne Room -- N->10, S->12 (slots 20-21) ---
-    LET roomExitStart[10] = 20
-    LET roomExitCount[10] = 2
+    REM --- Room 11: Throne Room -- N->Underhall, S->Gate (slots 20-21) ---
+    LET roomExitStart[ROOM_THRONE - 1] = 20
+    LET roomExitCount[ROOM_THRONE - 1] = 2
     LET exitDir[20] = DIR_N
-    LET exitDest[20] = 10
+    LET exitDest[20] = ROOM_UNDERHALL
     LET exitHidden[20] = 0
     LET exitDir[21] = DIR_S
-    LET exitDest[21] = 12
+    LET exitDest[21] = ROOM_GATE
     LET exitHidden[21] = 0
 
-    REM --- Room 12: The Gate -- N->11 (slot 22) ---
-    LET roomExitStart[11] = 22
-    LET roomExitCount[11] = 1
+    REM --- Room 12: The Gate -- N->Throne (slot 22) ---
+    LET roomExitStart[ROOM_GATE - 1] = 22
+    LET roomExitCount[ROOM_GATE - 1] = 1
     LET exitDir[22] = DIR_N
-    LET exitDest[22] = 11
+    LET exitDest[22] = ROOM_THRONE
     LET exitHidden[22] = 0
 END SUB
 
@@ -366,7 +384,7 @@ REM  Calls PrintExits at the end of each room branch.
 REM  Note: visited flag is read here, set by EnterRoom after this call.
 REM =================================================================
 SUB PrintRoom(roomId AS INTEGER)
-    IF roomId = 1 THEN
+    IF roomId = ROOM_ENTRY THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  You have been here before. The torches are still burning."
             PRINT "  Whatever tends them has been and gone since you passed through."
@@ -387,7 +405,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 2 THEN
+    IF roomId = ROOM_GUARDROOM THEN
         IF visited[roomId - 1] = 1 THEN
             REM  Dead-variant text added in Issue 5 when monsterAlive[] is available.
             PRINT "  It is still here. It has turned to face the door this time."
@@ -407,7 +425,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 3 THEN
+    IF roomId = ROOM_ARMOURY THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  The chest is as you left it -- locked, or open, depending on what you"
             PRINT "  did here."
@@ -427,7 +445,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 4 THEN
+    IF roomId = ROOM_CROSSROADS THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  You are back at the crossroads. The passages sit where they were. The"
             PRINT "  dungeon has not rearranged itself. Not here."
@@ -445,7 +463,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 5 THEN
+    IF roomId = ROOM_STILL THEN
         REM  The Still Chamber has no exits in Issue 4. The player is trapped here.
         REM  The teleport mechanic (luck roll, lucky/unlucky pool) is implemented in Issue 8.
         IF visited[roomId - 1] = 1 THEN
@@ -474,7 +492,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 6 THEN
+    IF roomId = ROOM_COLLAPSED THEN
         REM  Dead-variant and passage-found-variant text added in Issue 5/6
         REM  when monsterAlive[] and searched[] are used to branch here.
         IF visited[roomId - 1] = 1 THEN
@@ -497,7 +515,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 7 THEN
+    IF roomId = ROOM_PIT THEN
         REM  Dead-variant text added in Issue 5 when monsterAlive[] is available.
         IF visited[roomId - 1] = 1 THEN
             PRINT "  It is still there. Still waiting. It turns to face you again with the"
@@ -519,7 +537,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 8 THEN
+    IF roomId = ROOM_RIDDLE THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  The door you chose stands open. The passage beyond is exactly as you"
             PRINT "  left it. The riddle is still carved into the wall between them. The"
@@ -545,7 +563,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 9 THEN
+    IF roomId = ROOM_CISTERN THEN
         REM  Dead-variant text added in Issue 5 when monsterAlive[] is available.
         IF visited[roomId - 1] = 1 THEN
             PRINT "  The cold finds you again the moment you step through the doorway. The"
@@ -568,7 +586,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 10 THEN
+    IF roomId = ROOM_UNDERHALL THEN
         REM  Dead-variant text added in Issue 5 when monsterAlive[] is available.
         IF visited[roomId - 1] = 1 THEN
             PRINT "  It remembers you. The small dark eyes find you immediately."
@@ -594,7 +612,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 11 THEN
+    IF roomId = ROOM_THRONE THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  He is already looking at the door when you enter."
             PRINT ""
@@ -626,7 +644,7 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT ""
         CALL PrintExits(roomId)
     END IF
-    IF roomId = 12 THEN
+    IF roomId = ROOM_GATE THEN
         PRINT "  A plain room. Stone floor, stone walls, low ceiling. Two doors in the far"
         PRINT "  wall, side by side. No decoration, no inscription, no indication of what"
         PRINT "  lies beyond either of them."

@@ -64,7 +64,7 @@ This is the same INPUT-UPPER$-IF pattern used since Issue 2. The code is simple.
 
 ## How It Fits
 
-`EnterRoom` gains two new detection branches at the top of the SUB. If `roomId = 5`, `StillChamberSequence` runs immediately instead of the standard room entry. If `roomId = 8`, the code checks `riddleSolved` — if already solved the room is entered normally, if not `RiddleRoomSequence` runs.
+`EnterRoom` gains two new detection branches at the top of the SUB. If `roomId = ROOM_STILL`, `StillChamberSequence` runs immediately instead of the standard room entry. If `roomId = ROOM_RIDDLE`, the code checks `riddleSolved` — if already solved the room is entered normally, if not `RiddleRoomSequence` runs.
 
 `TestLuck` is introduced here because the Still Chamber needs it. It is also available from the LUCK command added this issue — the player can invoke it deliberately in situations where the outcome is uncertain.
 

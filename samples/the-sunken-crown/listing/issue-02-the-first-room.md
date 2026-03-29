@@ -33,7 +33,7 @@ The room description is printed by a SUB — a named block of code you can call 
 
 ```
 SUB PrintRoom(roomId AS INTEGER)
-    IF roomId = 1 THEN
+    IF roomId = ROOM_ENTRY THEN
         PRINT "  The hall is wide and low..."
     END IF
 END SUB
@@ -42,12 +42,12 @@ END SUB
 Break this down:
 
 - `SUB PrintRoom(roomId AS INTEGER)` — declares a subroutine named `PrintRoom` that takes one parameter, `roomId`, which must be an integer
-- `IF roomId = 1 THEN` — checks which room we want
+- `IF roomId = ROOM_ENTRY THEN` — checks which room we want
 - `PRINT "  The hall is wide and low..."` — prints the description for that room
 - `END IF` — closes the conditional
 - `END SUB` — closes the subroutine
 
-Call it with `CALL PrintRoom(1)` and the Entry Hall appears. Call it with `CALL PrintRoom(2)` and the Guardroom will appear — once we add that room in Issue 4.
+Call it with `CALL PrintRoom(ROOM_ENTRY)` and the Entry Hall appears. Call it with `CALL PrintRoom(ROOM_GUARDROOM)` and the Guardroom will appear — once we add that room in Issue 4.
 
 The parameter `roomId` is typed as `INTEGER`. SharpBASIC requires typed parameters in every SUB and FUNCTION declaration. This is not optional. If you try to pass a string where an integer is expected, the interpreter will tell you.
 
@@ -71,15 +71,15 @@ The command loop introduced here is the seed of the main game loop that will run
 
 When you run the program after adding this issue's code, the Entry Hall renders inside the frame. The room description appears, the exits are listed, and the prompt waits. Type `GO SOUTH` and the program responds — it doesn't take you anywhere yet, but it recognises the command. Type anything else and the unknown command response appears.
 
-If the room description does not appear, check that `CALL PrintRoom(1)` is being called and that `PrintRoom` has a branch for `roomId = 1`. If the visited text appears on first entry instead of the first-visit text, check the `visited[1]` flag — it should be 0 before `EnterRoom` sets it to 1.
+If the room description does not appear, check that `CALL PrintRoom(ROOM_ENTRY)` is being called and that `PrintRoom` has a branch for `roomId = ROOM_ENTRY`. If the visited text appears on first entry instead of the first-visit text, check the `visited[ROOM_ENTRY - 1]` flag — it should be 0 before `EnterRoom` sets it to 1.
 
 ---
 
 ## What to Try
 
-Add a second room description — write the Guardroom text and add it as `IF roomId = 2 THEN` inside `PrintRoom`. To test it, temporarily change `CALL EnterRoom(1)` to `CALL EnterRoom(2)` in the top-level code. Run the program. The Guardroom renders instead of the Entry Hall.
+Add a second room description — write the Guardroom text and add it as `IF roomId = ROOM_GUARDROOM THEN` inside `PrintRoom`. To test it, temporarily change `CALL EnterRoom(ROOM_ENTRY)` to `CALL EnterRoom(ROOM_GUARDROOM)` in the top-level code. Run the program. The Guardroom renders instead of the Entry Hall.
 
-Change it back to `CALL EnterRoom(1)` when you are done.
+Change it back to `CALL EnterRoom(ROOM_ENTRY)` when you are done.
 
 This is exactly how every room in the game gets added. The pattern is always the same: a new `IF` branch, a new room number, the text from the content file. Twelve rooms means twelve branches. Understanding the pattern now means Issue 4 holds no surprises.
 
@@ -93,15 +93,20 @@ This is exactly how every room in the game gets added. The pattern is always the
 > lines into your program.
 
 ```
+' === ADD TO: constants block, after CONST COMBAT_DELAY ===
+
+CONST MAX_ROOMS = 12
+CONST ROOM_ENTRY = 1
+
 ' === ADD TO: global declarations, after LET luck = 0 ===
 
 REM ----------------------------------------------------------------
 REM  Navigation state
 REM  currentRoom: the room the player is currently in (1-12)
-REM  visited[12]: 0 = first visit, 1 = revisited. Index = roomId - 1.
+REM  visited[MAX_ROOMS]: 0 = first visit, 1 = revisited. Index = roomId - 1.
 REM ----------------------------------------------------------------
-LET currentRoom = 1
-DIM visited[12] AS INTEGER
+LET currentRoom = ROOM_ENTRY
+DIM visited[MAX_ROOMS] AS INTEGER
 
 REM ----------------------------------------------------------------
 REM  Game loop control
@@ -132,7 +137,7 @@ REM  Room 1: Entry Hall. Additional rooms added in Issue 4.
 REM  Note: visited flag is read here, set by EnterRoom after this call.
 REM =================================================================
 SUB PrintRoom(roomId AS INTEGER)
-    IF roomId = 1 THEN
+    IF roomId = ROOM_ENTRY THEN
         IF visited[roomId - 1] = 1 THEN
             PRINT "  You have been here before. The torches are still burning."
             PRINT "  Whatever tends them has been and gone since you passed through."
@@ -165,7 +170,7 @@ REM  Room name lookup: Room 1 = Entry Hall. Extended in Issue 4.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER)
     CALL PrintHeader()
-    IF roomId = 1 THEN
+    IF roomId = ROOM_ENTRY THEN
         PRINT "  LOCATION: Entry Hall"
     END IF
     PRINT ""
@@ -190,7 +195,7 @@ REM  The loop reads and normalises input, then dispatches commands.
 REM  GO SOUTH: prints the no-exit response (navigation not yet wired).
 REM  All other input: prints the unknown command response.
 REM =================================================================
-CALL EnterRoom(1)
+CALL EnterRoom(ROOM_ENTRY)
 
 WHILE gameOver = 0
     INPUT " > "; cmd$

@@ -117,7 +117,7 @@ REM  turns: total turns elapsed
 REM  poisoned: 0 = clean, 1 = poisoned
 REM  luckTestCount: number of LUCK tests taken (for end screen)
 REM ----------------------------------------------------------------
-DIM monsterAlive[12] AS INTEGER
+DIM monsterAlive[MAX_ROOMS] AS INTEGER
 LET minStamina = 0
 LET turns = 0
 LET poisoned = 0
@@ -132,17 +132,17 @@ REM === REPLACE: SUB RollStartingStats() -- add last line before END SUB ===
 REM === NEW SUB: add after SUB InitExits() ===
 
 SUB InitMonsters()
-    LET monsterAlive[1] = 1   REM  Room 2  -- Guardroom Brute
-    LET monsterAlive[5] = 1   REM  Room 6  -- Skittering Horror
-    LET monsterAlive[6] = 1   REM  Room 7  -- Pit Guardian
-    LET monsterAlive[8] = 1   REM  Room 9  -- Hollow Mage
-    LET monsterAlive[9] = 1   REM  Room 10 -- Troll
-    LET monsterAlive[10] = 1  REM  Room 11 -- Bound King
+    LET monsterAlive[ROOM_GUARDROOM - 1] = 1   REM  Guardroom Brute
+    LET monsterAlive[ROOM_COLLAPSED - 1] = 1   REM  Skittering Horror
+    LET monsterAlive[ROOM_PIT - 1] = 1         REM  Pit Guardian
+    LET monsterAlive[ROOM_CISTERN - 1] = 1     REM  Hollow Mage
+    LET monsterAlive[ROOM_UNDERHALL - 1] = 1   REM  Troll
+    LET monsterAlive[ROOM_THRONE - 1] = 1      REM  Bound King
 END SUB
 
 
 REM === REPLACE: SUB PrintRoom(), room 2 revisit branch ===
-REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = 2)
+REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = ROOM_GUARDROOM)
 REM  Replace the entire IF/ELSE visited block with the version below.
 
         IF visited[roomId - 1] = 1 THEN
@@ -161,7 +161,7 @@ REM  Replace the entire IF/ELSE visited block with the version below.
 
 
 REM === REPLACE: SUB PrintRoom(), room 6 revisit branch ===
-REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = 6)
+REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = ROOM_COLLAPSED)
 REM  Replace -- includes both dead variants (searched / unsearched).
 
         IF visited[roomId - 1] = 1 THEN
@@ -247,14 +247,14 @@ SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
     PRINT "  LOCATION: " & RoomName(roomId)
     PRINT ""
     IF postFight = 1 THEN
-        IF roomId = 2 THEN
+        IF roomId = ROOM_GUARDROOM THEN
             PRINT "  The Brute is down. It fell the way big things fall -- all at once,"
             PRINT "  without grace. The impact is still ringing in the floor."
             PRINT ""
             PRINT "  Your breathing is the loudest thing in the room now. The gouges in"
             PRINT "  the stone are at your feet. The dark stain has company."
         END IF
-        IF roomId = 6 THEN
+        IF roomId = ROOM_COLLAPSED THEN
             PRINT "  The skittering has stopped."
             PRINT ""
             PRINT "  The creature lies where it fell, legs folded at angles they were not"
@@ -262,21 +262,21 @@ SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
             PRINT "  is exactly as it was -- whatever the thing was guarding, it is no"
             PRINT "  longer guarding it."
         END IF
-        IF roomId = 7 THEN
+        IF roomId = ROOM_PIT THEN
             PRINT "  The armoured figure is down at last. The old armour settles with a"
             PRINT "  sound like a door closing for good."
             PRINT ""
             PRINT "  The pit is behind you, dropping into the same darkness it always did."
             PRINT "  South is open."
         END IF
-        IF roomId = 9 THEN
+        IF roomId = ROOM_CISTERN THEN
             PRINT "  The cold leaves all at once -- not gradually, just gone, the moment"
             PRINT "  it stopped moving."
             PRINT ""
             PRINT "  The water sounds come back. Channels, stone, the dungeon's old"
             PRINT "  plumbing tending to itself. The recess in the north wall is still there."
         END IF
-        IF roomId = 10 THEN
+        IF roomId = ROOM_UNDERHALL THEN
             PRINT "  The Troll is down. Something that size takes a moment to accept. The"
             PRINT "  floor still feels the weight of it."
             PRINT ""
@@ -458,7 +458,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         RETURN
     END IF
-    IF roomId = 2 THEN
+    IF roomId = ROOM_GUARDROOM THEN
         PRINT ""
         PRINT "  It hears you before you reach it. The broad shoulders shift, the head"
         PRINT "  turns, and then it is facing you -- fully, deliberately, with the"
@@ -489,7 +489,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 6 THEN
+    IF roomId = ROOM_COLLAPSED THEN
         PRINT ""
         PRINT "  You hear it first -- a dry, rapid skittering from somewhere in the dark"
         PRINT "  beyond the rubble. Then silence. Then it is in the room with you and you"
@@ -521,7 +521,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 7 THEN
+    IF roomId = ROOM_PIT THEN
         PRINT ""
         PRINT "  It turns to face you without urgency. The armour it wears has been"
         PRINT "  repaired so many times the original shape is barely discernible --"
@@ -551,7 +551,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 9 THEN
+    IF roomId = ROOM_CISTERN THEN
         PRINT ""
         PRINT "  You see the light before you see the source -- a faint, cold luminescence"
         PRINT "  at the edge of vision that keeps refusing to be where you look for it."
@@ -581,7 +581,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 10 THEN
+    IF roomId = ROOM_UNDERHALL THEN
         PRINT ""
         PRINT "  It does not move when you enter. It watches you from the centre of the"
         PRINT "  room with small, dark, patient eyes, and it waits to see what you do."
@@ -607,7 +607,7 @@ SUB HandleFight(roomId AS INTEGER)
             PRINT ""
         END IF
     END IF
-    IF roomId = 11 THEN
+    IF roomId = ROOM_THRONE THEN
         PRINT ""
         PRINT "  He raises his head."
         PRINT ""
@@ -644,12 +644,12 @@ CALL InitExits()
 WHILE keepPlaying = 1
     LET gameOver = 0
     LET endState = 0
-    LET currentRoom = 1
+    LET currentRoom = ROOM_ENTRY
     LET minStamina = 0
     LET turns = 0
     LET poisoned = 0
     LET luckTestCount = 0
-    FOR i = 0 TO 11
+    FOR i = 0 TO MAX_ROOMS - 1
         LET visited[i] = 0
         LET searched[i] = 0
     NEXT i
