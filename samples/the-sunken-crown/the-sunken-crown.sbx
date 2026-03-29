@@ -602,9 +602,13 @@ END SUB
 
 REM =================================================================
 REM  SUB PrintRiddle
-REM  Prints the active riddle text based on riddleIndex.
+REM  Prints the active riddle text based on riddleIndex, then labels
+REM  each door with a candidate answer. The correct answer is placed
+REM  on the door matching riddleCorrectDoor (1=LEFT, 2=RIGHT).
 REM =================================================================
 SUB PrintRiddle()
+    LET answer$ = ""
+    LET decoy$ = ""
     SELECT CASE riddleIndex
         CASE 1
             PRINT "  I have cities, but no houses."
@@ -613,47 +617,63 @@ SUB PrintRiddle()
             PRINT "  I have roads, but no carriages."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "A Map"
+            LET decoy$ = "A Globe"
         CASE 2
             PRINT "  The more you take, the more you leave behind."
             PRINT ""
             PRINT "  What are they?"
+            LET answer$ = "Footsteps"
+            LET decoy$ = "Memories"
         CASE 3
             PRINT "  I speak without a mouth and hear without ears."
             PRINT "  I have no body, but I come alive with the wind."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "An Echo"
+            LET decoy$ = "A Ghost"
         CASE 4
             PRINT "  I am not alive, but I grow."
             PRINT "  I do not have lungs, but I need air."
             PRINT "  I do not have a mouth, but water kills me."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "Fire"
+            LET decoy$ = "Rust"
         CASE 5
             PRINT "  I fly without wings."
             PRINT "  I cry without eyes."
             PRINT "  Wherever I go, darkness follows me."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "A Cloud"
+            LET decoy$ = "A Shadow"
         CASE 6
             PRINT "  The man who made me does not want me."
             PRINT "  The man who bought me does not use me."
             PRINT "  The man who uses me does not know it."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "A Coffin"
+            LET decoy$ = "A Grave"
         CASE 7
             PRINT "  I can be cracked, made, told, and played."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "A Joke"
+            LET decoy$ = "A Rule"
         CASE 8
             PRINT "  Forward I am heavy. Backward I am not."
             PRINT ""
             PRINT "  What am I?"
+            LET answer$ = "Ton"
+            LET decoy$ = "Burden"
     END SELECT
     PRINT ""
     IF riddleCorrectDoor = 1 THEN
-        PRINT "  The answer walks LEFT."
+        PRINT "  LEFT: " & answer$ & "          RIGHT: " & decoy$
     ELSE
-        PRINT "  The answer walks RIGHT."
+        PRINT "  LEFT: " & decoy$ & "          RIGHT: " & answer$
     END IF
 END SUB
 
@@ -1613,8 +1633,8 @@ SUB HandleGo(dir AS INTEGER)
         PRINT ""
         RETURN
     END IF
-    REM --- Issue 8: Crossroads east door locked until riddle solved ---
-    IF currentRoom = ROOM_CROSSROADS AND dir = DIR_E AND riddleSolved = 0 THEN
+    REM --- Issue 8: Underhall east door locked until riddle solved ---
+    IF currentRoom = ROOM_UNDERHALL AND dir = DIR_E AND riddleSolved = 0 THEN
         PRINT "  The eastern passage ends at a door. It is sealed -- not locked,"
         PRINT "  sealed, as though the stone grew shut around it. Whatever opens"
         PRINT "  this, it is not a key."
