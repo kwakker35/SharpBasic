@@ -133,7 +133,7 @@ REM =================================================================
 REM  SUB PrintRoom -- roomId AS INTEGER
 REM  Selects and prints the room description for the given room.
 REM  Chooses first-visit or revisit text based on the visited flag.
-REM  Room 1: Entry Hall. Additional rooms added in Issue 4.
+REM  ROOM_ENTRY: Entry Hall. Additional rooms added in Issue 4.
 REM  Note: visited flag is read here, set by EnterRoom after this call.
 REM =================================================================
 SUB PrintRoom(roomId AS INTEGER)
@@ -166,7 +166,7 @@ REM =================================================================
 REM  SUB EnterRoom -- roomId AS INTEGER
 REM  Renders a full room screen: header, location line, description,
 REM  separator. Sets the visited flag for the room after rendering.
-REM  Room name lookup: Room 1 = Entry Hall. Extended in Issue 4.
+REM  Room name lookup: ROOM_ENTRY = Entry Hall. Extended in Issue 4.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER)
     CALL PrintHeader()

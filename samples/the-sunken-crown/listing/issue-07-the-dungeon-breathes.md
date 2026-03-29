@@ -324,7 +324,7 @@ REM  SUB HandleSneak
 REM  Attempts to pass a monster or the wandering zombie unseen in
 REM  the given direction. Finds the exit first -- invalid direction
 REM  costs nothing. No hostile present: move, costs 2 turns.
-REM  Room 11 always refuses. Roll: RollDice(2) <= skill = success
+REM  ROOM_THRONE always refuses. Roll: RollDice(2) <= skill = success
 REM  (move to dest, 1 turn). Failure: fight in current room, no move.
 REM =================================================================
 SUB HandleSneak(dir AS INTEGER)

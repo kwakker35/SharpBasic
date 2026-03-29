@@ -313,7 +313,7 @@ REM  Fisher-Yates shuffle of the six-item loot pool (five named items
 REM  plus one empty slot). Assigns shuffled results to slotContents[1..6].
 REM  Entry Hall medal check: if Medal lands in slot 1, runs a free luck
 REM  roll (no LUCK cost); swaps with first helpful item in slots 2-6 on
-REM  success. Places fixed items: Antidote Vial in Room 9 (index 8).
+REM  success. Places fixed items: Antidote Vial in ROOM_CISTERN (index 8).
 REM  Called once per run after OpeningSequence sets luck.
 REM =================================================================
 SUB ShuffleLoot()
@@ -394,9 +394,9 @@ REM  SUB HandleSearch
 REM  Processes the SEARCH command. Costs 2 turns regardless of outcome.
 REM  Live monster present: fires SEARCH interrupt combat (SKILL -1
 REM  round 1 via CombatLoop's searchInterrupt parameter).
-REM  Room 11 with King alive: refuses search entirely, no combat.
+REM  ROOM_THRONE with King alive: refuses search entirely, no combat.
 REM  On success: shows loot slot contents, floor items, and any
-REM  room-specific reveals (Room 6 hidden exit, Room 3 chest state).
+REM  room-specific reveals (ROOM_COLLAPSED hidden exit, ROOM_ARMOURY chest state).
 REM  Sets searched[roomId-1] = 1 on completion.
 REM =================================================================
 SUB HandleSearch()
@@ -715,8 +715,8 @@ REM =================================================================
 REM  SUB HandleUse -- item$ AS STRING
 REM  Activates an item from inventory. Consumables are removed from
 REM  the slot on use; passives print a reminder and stay.
-REM  Guardroom Key: unlocks Armoury chest if in Room 3, places Sword
-REM  of Sharpness on Room 3's floor, consumes the key.
+REM  Guardroom Key: unlocks Armoury chest if in ROOM_ARMOURY, places Sword
+REM  of Sharpness on ROOM_ARMOURY's floor, consumes the key.
 REM  Costs 1 turn.
 REM =================================================================
 SUB HandleUse(item$ AS STRING)

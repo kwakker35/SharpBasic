@@ -141,7 +141,7 @@ SUB InitMonsters()
 END SUB
 
 
-REM === REPLACE: SUB PrintRoom(), room 2 revisit branch ===
+REM === REPLACE: SUB PrintRoom(), ROOM_GUARDROOM revisit branch ===
 REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = ROOM_GUARDROOM)
 REM  Replace the entire IF/ELSE visited block with the version below.
 
@@ -160,7 +160,7 @@ REM  Replace the entire IF/ELSE visited block with the version below.
         END IF
 
 
-REM === REPLACE: SUB PrintRoom(), room 6 revisit branch ===
+REM === REPLACE: SUB PrintRoom(), ROOM_COLLAPSED revisit branch ===
 REM  Find: IF visited[roomId - 1] = 1 THEN (inside roomId = ROOM_COLLAPSED)
 REM  Replace -- includes both dead variants (searched / unsearched).
 
@@ -189,7 +189,7 @@ REM  Replace -- includes both dead variants (searched / unsearched).
         END IF
 
 
-REM === REPLACE: SUB PrintRoom(), room 7 revisit branch ===
+REM === REPLACE: SUB PrintRoom(), ROOM_PIT revisit branch ===
 
         IF visited[roomId - 1] = 1 THEN
             IF monsterAlive[roomId - 1] = 1 THEN
@@ -206,7 +206,7 @@ REM === REPLACE: SUB PrintRoom(), room 7 revisit branch ===
         END IF
 
 
-REM === REPLACE: SUB PrintRoom(), room 9 revisit branch ===
+REM === REPLACE: SUB PrintRoom(), ROOM_CISTERN revisit branch ===
 
         IF visited[roomId - 1] = 1 THEN
             IF monsterAlive[roomId - 1] = 1 THEN
@@ -224,7 +224,7 @@ REM === REPLACE: SUB PrintRoom(), room 9 revisit branch ===
         END IF
 
 
-REM === REPLACE: SUB PrintRoom(), room 10 revisit branch ===
+REM === REPLACE: SUB PrintRoom(), ROOM_UNDERHALL revisit branch ===
 
         IF visited[roomId - 1] = 1 THEN
             IF monsterAlive[roomId - 1] = 1 THEN
