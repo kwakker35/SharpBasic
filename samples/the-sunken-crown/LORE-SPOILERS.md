@@ -13,6 +13,22 @@ Come back when you are ready.
 
 ---
 
+## The Dungeon
+
+![Dungeon Map](Dungeon_Map.png)
+
+Twelve rooms. One way in, one way out, and between them a layout designed by a man who understood exactly what he was protecting.
+
+The Entry Hall sits at the top — the chute drops you there, the gates close behind you. South leads to the Guardroom and the Armoury, then further south to the Crossroads, where the dungeon opens up. Northeast of the Crossroads is the Still Chamber — the room that should not be there, the room that moves you. East is the Pit, and south of the Pit sits the Riddle Room, sealed until you answer what is carved into the wall.
+
+West from the Crossroads runs to the Cistern, lined with old water channels and something cold. The Collapsed Passage lies north of the Cistern — rubble, darkness, skittering. South of Crossroads the Underhall opens wide, bones along the walls, the ceiling higher than it has any right to be. The Throne Room waits beyond it.
+
+At the bottom of the map, past the Throne Room, the Gate. Two doors. One leads out.
+
+The dungeon is not large. It was never meant to be. It was meant to be sufficient.
+
+---
+
 ## The First King
 
 The dungeon was built by a king whose name has been deliberately erased from every record that survived him. He is referred to here as the First King because that is what he was — the first ruler of this place, before the keep above it, before the town, before any of what stands now.
