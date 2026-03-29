@@ -131,7 +131,7 @@ DIM searched[MAX_ROOMS] AS INTEGER
 
 REM === ADD TO: Navigation state block, after DIM searched[MAX_ROOMS] AS INTEGER ===
 REM  Exit map -- parallel arrays indexed by exit slot number (1-based)
-REM  Slot 0 is unused; valid slots are 1 to 22 for this 12-room map.
+REM  Slot 0 is unused; valid slots are 1 to 23 for this 12-room map.
 REM  roomExitStart[r-1]: index of first exit slot for room r
 REM  roomExitCount[r-1]: number of exits for room r
 REM  exitDir[i]:    direction code for exit slot i
@@ -300,32 +300,35 @@ SUB InitExits()
     LET exitDest[17] = ROOM_UNDERHALL
     LET exitHidden[17] = 0
 
-    REM --- Room 10: The Underhall -- N->Crossroads, S->Throne (slots 18-19) ---
+    REM --- Room 10: The Underhall -- W->Cistern, E->Riddle, S->Throne (slots 18-20) ---
     LET roomExitStart[ROOM_UNDERHALL - 1] = 18
-    LET roomExitCount[ROOM_UNDERHALL - 1] = 2
-    LET exitDir[18] = DIR_N
-    LET exitDest[18] = ROOM_CROSSROADS
+    LET roomExitCount[ROOM_UNDERHALL - 1] = 3
+    LET exitDir[18] = DIR_W
+    LET exitDest[18] = ROOM_CISTERN
     LET exitHidden[18] = 0
-    LET exitDir[19] = DIR_S
-    LET exitDest[19] = ROOM_THRONE
+    LET exitDir[19] = DIR_E
+    LET exitDest[19] = ROOM_RIDDLE
     LET exitHidden[19] = 0
-
-    REM --- Room 11: Throne Room -- N->Underhall, S->Gate (slots 20-21) ---
-    LET roomExitStart[ROOM_THRONE - 1] = 20
-    LET roomExitCount[ROOM_THRONE - 1] = 2
-    LET exitDir[20] = DIR_N
-    LET exitDest[20] = ROOM_UNDERHALL
+    LET exitDir[20] = DIR_S
+    LET exitDest[20] = ROOM_THRONE
     LET exitHidden[20] = 0
-    LET exitDir[21] = DIR_S
-    LET exitDest[21] = ROOM_GATE
-    LET exitHidden[21] = 0
 
-    REM --- Room 12: The Gate -- N->Throne (slot 22) ---
-    LET roomExitStart[ROOM_GATE - 1] = 22
-    LET roomExitCount[ROOM_GATE - 1] = 1
-    LET exitDir[22] = DIR_N
-    LET exitDest[22] = ROOM_THRONE
+    REM --- Room 11: Throne Room -- N->Underhall, S->Gate (slots 21-22) ---
+    LET roomExitStart[ROOM_THRONE - 1] = 21
+    LET roomExitCount[ROOM_THRONE - 1] = 2
+    LET exitDir[21] = DIR_N
+    LET exitDest[21] = ROOM_UNDERHALL
+    LET exitHidden[21] = 0
+    LET exitDir[22] = DIR_S
+    LET exitDest[22] = ROOM_GATE
     LET exitHidden[22] = 0
+
+    REM --- Room 12: The Gate -- N->Throne (slot 23) ---
+    LET roomExitStart[ROOM_GATE - 1] = 23
+    LET roomExitCount[ROOM_GATE - 1] = 1
+    LET exitDir[23] = DIR_N
+    LET exitDest[23] = ROOM_THRONE
+    LET exitHidden[23] = 0
 END SUB
 
 REM === NEW SUB: add after SUB InitExits ===
@@ -591,7 +594,7 @@ SUB PrintRoom(roomId AS INTEGER)
         IF visited[roomId - 1] = 1 THEN
             PRINT "  It remembers you. The small dark eyes find you immediately."
         ELSE
-            PRINT "  Both passages meet here. This is where the dungeon funnels everything."
+            PRINT "  The passages converge here. This is where the dungeon funnels everything."
             PRINT ""
             PRINT "  The ceiling is high and the room is wide and it smells of age and"
             PRINT "  something organic and wrong. The walls are lined with what you first"
