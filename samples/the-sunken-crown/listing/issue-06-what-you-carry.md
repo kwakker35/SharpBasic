@@ -829,11 +829,13 @@ SUB HandleGo(dir AS INTEGER)
         IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
             SET GLOBAL currentRoom = exitDest[i]
             IF overburdened = 1 THEN
-                PRINT "  You move, but the weight tells on you. Everything costs more"
-                PRINT "  when you are carrying this much."
-                PRINT ""
+                CALL QueueFlavour("  You move, but the weight tells on you. Everything costs more")
+                CALL QueueFlavour("  when you are carrying this much.")
+                CALL QueueFlavour("")
                 SET GLOBAL stamina = stamina - 1
                 SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
                 IF stamina <= 0 THEN
                     SET GLOBAL gameOver = 1
                     SET GLOBAL endState = 5

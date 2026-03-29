@@ -25,6 +25,9 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 - `CONST CONTENT_ROWS = 20` — rows available for content after chrome
 - `SUB PrintHeader()` — draws the title bar and stats line
 - `SUB PrintSeparator()` — draws the dividing line
+- `SUB QueueFlavour(line$)` — buffers a line of narrative text for display after the next header
+- `SUB FlushFlavour()` — prints and clears the buffer
+- `pendingFlavour[30]` array and `pendingFlavourCount` — the buffer backing store
 - Placeholder stats so the frame has something to display
 - The `>` prompt
 
@@ -137,15 +140,29 @@ LET skill = 0
 LET stamina = 0
 LET luck = 0
 
+REM ----------------------------------------------------------------
+REM  Pending flavour buffer
+REM  Lines queued during movement and atmospheric events are
+REM  flushed by EnterRoom after PrintHeader, keeping them visible
+REM  between the header and the room description.
+REM  pendingFlavourCount: number of lines currently buffered (0-29).
+REM ----------------------------------------------------------------
+DIM pendingFlavour[30] AS STRING
+LET pendingFlavourCount = 0
+
 REM =================================================================
 REM  SUB PrintHeader
 REM  Prints the full header frame: an = separator, then the title
 REM  and current stats on one line, then another = separator.
 REM  Reads skill, stamina, luck from global scope -- read-only.
+REM  Padding is computed dynamically so the stats right-align
+REM  regardless of how many digits each value has.
 REM =================================================================
 SUB PrintHeader()
     CALL PrintSeparator()
-    PRINT "  THE SUNKEN CROWN                                 SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    LET statsLine$ = "SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    LET padLen = FRAME_WIDTH - 18 - LEN(statsLine$)
+    PRINT "  THE SUNKEN CROWN" & STRING$(" ", padLen) & statsLine$
     CALL PrintSeparator()
 END SUB
 
@@ -156,6 +173,33 @@ REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
     PRINT STRING$("=", FRAME_WIDTH)
+END SUB
+
+REM =================================================================
+REM  SUB QueueFlavour -- line$ AS STRING
+REM  Appends one line to the pending flavour buffer. Pass "" for a
+REM  blank line. Buffered lines are displayed by FlushFlavour after
+REM  the next PrintHeader call, so the player always sees them.
+REM =================================================================
+SUB QueueFlavour(line$ AS STRING)
+    IF pendingFlavourCount < 30 THEN
+        LET pendingFlavour[pendingFlavourCount] = line$
+        SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB FlushFlavour
+REM  Prints all buffered flavour lines then resets the buffer.
+REM  Called by EnterRoom immediately after PrintHeader.
+REM =================================================================
+SUB FlushFlavour()
+    IF pendingFlavourCount > 0 THEN
+        FOR i = 0 TO pendingFlavourCount - 1
+            PRINT pendingFlavour[i]
+        NEXT i
+        SET GLOBAL pendingFlavourCount = 0
+    END IF
 END SUB
 
 REM =================================================================

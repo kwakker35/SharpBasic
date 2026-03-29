@@ -125,6 +125,22 @@ REM ----------------------------------------------------------------
 LET inCombat = 0
 
 
+REM === MODIFY: SUB QueueFlavour -- add inCombat bypass ===
+REM  Replace the body of QueueFlavour. When inCombat = 1, print
+REM  immediately so combat-time atmospheric events stay inline.
+
+SUB QueueFlavour(line$ AS STRING)
+    IF inCombat = 1 THEN
+        PRINT line$
+    ELSE
+        IF pendingFlavourCount < 30 THEN
+            LET pendingFlavour[pendingFlavourCount] = line$
+            SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
+        END IF
+    END IF
+END SUB
+
+
 REM === ADD TO: reset block inside WHILE keepPlaying, after LET searchInterruptActive = 0 ===
 
 LET zombieSpawned = 0
@@ -178,81 +194,87 @@ SUB AtmosphericEvent()
     LET evt = CINT(RND() * 12) + 1
     SELECT CASE evt
         CASE 1
-            PRINT ""
-            PRINT "  Your torch gutters. For a moment the darkness is absolute -- a living,"
-            PRINT "  pressing thing. Then the flame catches again. You breathe out. You"
-            PRINT "  hadn't noticed you'd stopped."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  Your torch gutters. For a moment the darkness is absolute -- a living,")
+            CALL QueueFlavour("  pressing thing. Then the flame catches again. You breathe out. You")
+            CALL QueueFlavour("  hadn't noticed you'd stopped.")
+            CALL QueueFlavour("")
         CASE 2
-            PRINT ""
-            PRINT "  Something scrapes in the dark below. Once. Then silence. You wait."
-            PRINT "  Nothing follows. The dungeon does not explain itself."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  Something scrapes in the dark below. Once. Then silence. You wait.")
+            CALL QueueFlavour("  Nothing follows. The dungeon does not explain itself.")
+            CALL QueueFlavour("")
         CASE 3
-            PRINT ""
-            PRINT "  The wall is warm here. Not the residual warmth of stone that has held"
-            PRINT "  heat. Something warmer than that, and more deliberate. You move on."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  The wall is warm here. Not the residual warmth of stone that has held")
+            CALL QueueFlavour("  heat. Something warmer than that, and more deliberate. You move on.")
+            CALL QueueFlavour("")
         CASE 4
-            PRINT ""
-            PRINT "  A current of cold air from somewhere below. Steady, purposeful. As if"
-            PRINT "  something down there is still breathing."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  A current of cold air from somewhere below. Steady, purposeful. As if")
+            CALL QueueFlavour("  something down there is still breathing.")
+            CALL QueueFlavour("")
         CASE 5
-            PRINT ""
-            PRINT "  Old bones in the corner. Not arranged -- just accumulated. The dungeon"
-            PRINT "  is not interested in ceremony."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  Old bones in the corner. Not arranged -- just accumulated. The dungeon")
+            CALL QueueFlavour("  is not interested in ceremony.")
+            CALL QueueFlavour("")
         CASE 6
-            PRINT ""
-            PRINT "  The silence in here is a different quality than before. Thicker."
-            PRINT "  You have the distinct feeling that something nearby has gone very still."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  The silence in here is a different quality than before. Thicker.")
+            CALL QueueFlavour("  You have the distinct feeling that something nearby has gone very still.")
+            CALL QueueFlavour("")
         CASE 7
-            PRINT ""
-            PRINT "  Scratched into the wall at eye level: three marks, then a fourth"
-            PRINT "  crossing them. Then more sets. Someone was counting."
-            PRINT "  The tally runs to the corner and does not stop."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  Scratched into the wall at eye level: three marks, then a fourth")
+            CALL QueueFlavour("  crossing them. Then more sets. Someone was counting.")
+            CALL QueueFlavour("  The tally runs to the corner and does not stop.")
+            CALL QueueFlavour("")
         CASE 8
-            PRINT ""
-            PRINT "  A cold settles in your chest. Not the cold of stone -- something older."
-            PRINT "  You feel it costing you."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  A cold settles in your chest. Not the cold of stone -- something older.")
+            CALL QueueFlavour("  You feel it costing you.")
+            CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
             IF stamina <= 0 THEN
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 5
             END IF
         CASE 9
-            PRINT ""
-            PRINT "  Hunger. Not gradual. A sudden sharp reminder that you have been down"
-            PRINT "  here a long time. It takes something out of you."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  Hunger. Not gradual. A sudden sharp reminder that you have been down")
+            CALL QueueFlavour("  here a long time. It takes something out of you.")
+            CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
             IF stamina <= 0 THEN
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 5
             END IF
         CASE 10
             IF overburdened = 1 THEN
-                PRINT ""
-                PRINT "  The weight of what you are carrying is becoming a problem you cannot"
-                PRINT "  ignore. Every step costs more than it should."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The weight of what you are carrying is becoming a problem you cannot")
+                CALL QueueFlavour("  ignore. Every step costs more than it should.")
+                CALL QueueFlavour("")
                 SET GLOBAL stamina = stamina - 1
                 SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
                 IF stamina <= 0 THEN
                     SET GLOBAL gameOver = 1
                     SET GLOBAL endState = 5
                 END IF
             ELSE
-                PRINT ""
-                PRINT "  The passage narrows briefly -- low ceiling, close walls. Then opens"
-                PRINT "  again. The dungeon is not consistent. It was not built to be."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The passage narrows briefly -- low ceiling, close walls. Then opens")
+                CALL QueueFlavour("  again. The dungeon is not consistent. It was not built to be.")
+                CALL QueueFlavour("")
             END IF
         CASE 11
             IF zombieSpawned = 0 AND turns > 3 THEN
@@ -273,15 +295,15 @@ SUB AtmosphericEvent()
                     END IF
                 NEXT i
                 IF isNear = 1 THEN
-                    PRINT ""
-                    PRINT "  Something is moving in the passage nearby. You can hear it."
-                    PRINT "  Irregular. Getting closer."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Something is moving in the passage nearby. You can hear it.")
+                    CALL QueueFlavour("  Irregular. Getting closer.")
+                    CALL QueueFlavour("")
                 ELSE
-                    PRINT ""
-                    PRINT "  A distinct feeling -- not sound, not smell. Something else is"
-                    PRINT "  moving through these passages. You are not alone down here."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  A distinct feeling -- not sound, not smell. Something else is")
+                    CALL QueueFlavour("  moving through these passages. You are not alone down here.")
+                    CALL QueueFlavour("")
                 END IF
             END IF
     END SELECT
@@ -361,9 +383,9 @@ SUB HandleSneak(dir AS INTEGER)
     CALL AdvanceTurns(1)
     LET roll = RollDice(2)
     IF roll <= skill THEN
-        PRINT "  You hold your breath and move with extreme care. It does not notice."
-        PRINT "  You are through."
-        PRINT ""
+        CALL QueueFlavour("  You hold your breath and move with extreme care. It does not notice.")
+        CALL QueueFlavour("  You are through.")
+        CALL QueueFlavour("")
         SET GLOBAL currentRoom = dest
     ELSE
         PRINT "  It clocks you before you are halfway across."
@@ -384,13 +406,13 @@ REM  Add immediately before END SUB (after terror restore block):
 REM  Add at top of SUB HandleGo, before LET start = ...:
 
     IF monsterAlive[currentRoom - 1] = 1 THEN
-        PRINT "  It moves to block your path. FIGHT or SNEAK."
-        PRINT ""
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
         RETURN
     END IF
     IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
-        PRINT "  It moves to block your path. FIGHT or SNEAK."
-        PRINT ""
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
         RETURN
     END IF
 
@@ -423,7 +445,7 @@ REM === MODIFY: SUB HandleSearch -- add zombie interrupt before monsterAlive che
     END IF
 
 
-REM === MODIFY: SUB EnterRoom -- add poison check at top (before CALL PrintHeader) ===
+REM === MODIFY: SUB EnterRoom -- add poison check after CALL FlushFlavour() ===
 
     IF poisoned = 1 THEN
         SET GLOBAL stamina = stamina - 1
@@ -492,6 +514,15 @@ REM === ADD TO: SUB HandleFight -- zombie combat branch, before END SUB ===
 
 
 REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
+
+REM === MODIFY: game loop -- add FlushFlavour before INPUT prompt ===
+REM  Replace:
+ REM     WHILE gameOver = 0
+REM         INPUT " > "; cmd$
+REM  With:
+REM      WHILE gameOver = 0
+REM          CALL FlushFlavour()
+REM          INPUT " > "; cmd$
 
             CASE "LOOK"
                 CALL HandleLook()

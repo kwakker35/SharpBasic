@@ -93,5 +93,362 @@ There is no right answer. It is a design question. The published version does no
 ## The Listing
 
 ```
-REM Issue 8 listing — to be added once built and tested
+REM === ADD TO: file header comment block, after Issue 7 line ===
+
+REM  Issue 8: Traps and Riddles
+REM  TestLuck, InitRiddle, PrintRiddle, StillChamberSequence,
+REM  RiddleRoomSequence, Collapsed Passage rubble, LUCK command.
+
+
+REM === ADD TO: globals block, after LET riddleSolved = 0 ===
+
+REM  Lucky and unlucky teleport pools for the Still Chamber
+DIM luckyPool[2] AS INTEGER
+DIM unluckyPool[6] AS INTEGER
+
+
+REM === ADD TO: reset block inside WHILE keepPlaying, after LET riddleSolved = 0 ===
+
+REM  Re-hide Riddle Room exits (may have been unhidden by previous run)
+LET exitHidden[14] = 1
+LET exitHidden[15] = 1
+
+
+REM === ADD BEFORE: SUB CombatLoop (or wherever InitRiddle fits logically) ===
+
+REM =================================================================
+REM  FUNCTION TestLuck -> INTEGER
+REM  Rolls 2d6 against current LUCK. Returns 1 if lucky, 0 if not.
+REM  Decrements LUCK by 1 regardless. Increments luckTestCount.
+REM =================================================================
+FUNCTION TestLuck() AS INTEGER
+    LET roll = RollDice(2)
+    SET GLOBAL luckTestCount = luckTestCount + 1
+    IF roll <= luck THEN
+        SET GLOBAL luck = luck - 1
+        RETURN 1
+    ELSE
+        SET GLOBAL luck = luck - 1
+        RETURN 0
+    END IF
+END FUNCTION
+
+REM =================================================================
+REM  SUB InitRiddle
+REM  Selects one of eight riddles at random and assigns the correct
+REM  door (1=LEFT, 2=RIGHT) independently. Populates lucky/unlucky
+REM  teleport pools for the Still Chamber. Called once per run.
+REM =================================================================
+SUB InitRiddle()
+    LET pick = CINT(RND() * 8) + 1
+    SET GLOBAL riddleIndex = pick
+    SET GLOBAL riddleCorrectDoor = CINT(RND() * 2) + 1
+    SET GLOBAL riddleSolved = 0
+
+    LET luckyPool[0] = ROOM_ENTRY
+    LET luckyPool[1] = ROOM_ARMOURY
+
+    LET unluckyPool[0] = ROOM_GUARDROOM
+    LET unluckyPool[1] = ROOM_COLLAPSED
+    LET unluckyPool[2] = ROOM_PIT
+    LET unluckyPool[3] = ROOM_RIDDLE
+    LET unluckyPool[4] = ROOM_CISTERN
+    LET unluckyPool[5] = ROOM_UNDERHALL
+END SUB
+
+REM =================================================================
+REM  SUB PrintRiddle
+REM  Prints the active riddle text based on riddleIndex, then labels
+REM  each door with a candidate answer. The correct answer is placed
+REM  on the door matching riddleCorrectDoor (1=LEFT, 2=RIGHT).
+REM  Player must solve the riddle to know which door is safe.
+REM =================================================================
+SUB PrintRiddle()
+    LET answer$ = ""
+    LET decoy$ = ""
+    SELECT CASE riddleIndex
+        CASE 1
+            PRINT "  I have cities, but no houses."
+            PRINT "  Mountains, but no trees."
+            PRINT "  Water, but no fish."
+            PRINT "  Roads, but no carriages."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "A Map"
+            LET decoy$ = "A Dream"
+        CASE 2
+            PRINT "  The more you take, the more you leave behind."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "Footsteps"
+            LET decoy$ = "Shadows"
+        CASE 3
+            PRINT "  I speak without a mouth and hear without ears."
+            PRINT "  I have no body, but I come alive with wind."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "An Echo"
+            LET decoy$ = "The Wind"
+        CASE 4
+            PRINT "  This man's father is my father's son."
+            PRINT "  I have no brothers."
+            PRINT ""
+            PRINT "  Who is this man?"
+            LET answer$ = "My Son"
+            LET decoy$ = "Myself"
+        CASE 5
+            PRINT "  Two guards. Two doors. One guard always lies."
+            PRINT "  One always tells the truth."
+            PRINT "  You may ask one question of one guard."
+            PRINT ""
+            PRINT "  Which door is safe?"
+            LET answer$ = "The opposite"
+            LET decoy$ = "Their answer"
+        CASE 6
+            PRINT "  The more you have of it, the less you see."
+            PRINT ""
+            PRINT "  What is it?"
+            LET answer$ = "Darkness"
+            LET decoy$ = "Silence"
+        CASE 7
+            PRINT "  I am not alive, but I grow."
+            PRINT "  I have no lungs, but I need air."
+            PRINT "  I have no mouth, but water kills me."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "Fire"
+            LET decoy$ = "Time"
+        CASE 8
+            PRINT "  I can run but never walk."
+            PRINT "  I have a mouth but never talk."
+            PRINT "  I have a head but never weep."
+            PRINT "  I have a bed but never sleep."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "A River"
+            LET decoy$ = "A Road"
+    END SELECT
+    PRINT ""
+    IF riddleCorrectDoor = 1 THEN
+        PRINT "  LEFT: " & answer$ & "          RIGHT: " & decoy$
+    ELSE
+        PRINT "  LEFT: " & decoy$ & "          RIGHT: " & answer$
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB StillChamberSequence
+REM  Fires when the player enters Room 5 for the first time.
+REM  Prints narrative, advances 3 turns, tests luck, teleports
+REM  to lucky or unlucky pool. Calls EnterRoom at the destination.
+REM =================================================================
+SUB StillChamberSequence()
+    CALL PrintHeader()
+    CALL FlushFlavour()
+    PRINT "  LOCATION: " & RoomName(ROOM_STILL)
+    PRINT ""
+    PRINT "  The passage ends in a room that should not be here."
+    PRINT ""
+    PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
+    PRINT "  stone has no right to be. The air is still. Not quiet -- still."
+    PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
+    PRINT "  absence of everything else."
+    PRINT ""
+    PRINT "  The floor comes up to meet you."
+    PRINT ""
+    CALL Pause()
+    PRINT ""
+    PRINT "  You do not remember falling. You do not remember how long you were"
+    PRINT "  down. When the world reassembles itself, you are somewhere else."
+    PRINT ""
+    CALL AdvanceTurns(3)
+    LET result = TestLuck()
+    IF result = 1 THEN
+        LET pick = CINT(RND() * 2)
+        SET GLOBAL currentRoom = luckyPool[pick]
+        PRINT "  Fortune held. You wake in familiar ground."
+        PRINT ""
+    ELSE
+        LET pick = CINT(RND() * 6)
+        SET GLOBAL currentRoom = unluckyPool[pick]
+        PRINT "  The dice betray you. You wake somewhere worse."
+        PRINT ""
+    END IF
+    LET visited[ROOM_STILL - 1] = 1
+    CALL EnterRoom(currentRoom, 0)
+END SUB
+
+REM =================================================================
+REM  SUB RiddleRoomSequence
+REM  Fires when the player enters Room 8 and riddleSolved = 0.
+REM  Inner loop accepts LEFT or RIGHT only. Correct: riddleSolved=1,
+REM  unhide exits 14 and 15. Wrong: instant death (endState=3).
+REM =================================================================
+SUB RiddleRoomSequence()
+    CALL PrintHeader()
+    CALL FlushFlavour()
+    PRINT "  LOCATION: " & RoomName(ROOM_RIDDLE)
+    PRINT ""
+    PRINT "  The door behind you is gone."
+    PRINT ""
+    PRINT "  You did not hear it close. You did not feel it move. You turned and it"
+    PRINT "  was simply not there -- solid stone where the entrance was, seamless,"
+    PRINT "  cold, indifferent."
+    PRINT ""
+    PRINT "  Ahead of you are two doors, identical in every respect except one: a"
+    PRINT "  riddle is carved into the stone wall between them, deep and deliberate,"
+    PRINT "  cut by someone who knew exactly what they were doing."
+    PRINT ""
+    PRINT "  Below the riddle, two words. One above each door."
+    PRINT ""
+    PRINT "  LEFT. RIGHT."
+    PRINT ""
+    PRINT "  The room waits."
+    PRINT ""
+    CALL PrintSeparator()
+    PRINT ""
+    CALL PrintRiddle()
+    PRINT ""
+    WHILE riddleSolved = 0
+        INPUT "  Choose a door (LEFT / RIGHT): "; cmd$
+        LET cmd$ = UPPER$(cmd$)
+        IF cmd$ = "LEFT" THEN
+            IF riddleCorrectDoor = 1 THEN
+                SET GLOBAL riddleSolved = 1
+                PRINT ""
+                PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
+                PRINT "  The wall behind you is still solid. But you are through."
+                PRINT ""
+                LET exitHidden[14] = 0
+                LET exitHidden[15] = 0
+                LET visited[ROOM_RIDDLE - 1] = 1
+                CALL EnterRoom(ROOM_RIDDLE, 0)
+            ELSE
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 3
+                RETURN
+            END IF
+        ELSE
+            IF cmd$ = "RIGHT" THEN
+                IF riddleCorrectDoor = 2 THEN
+                    SET GLOBAL riddleSolved = 1
+                    PRINT ""
+                    PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
+                    PRINT "  The wall behind you is still solid. But you are through."
+                    PRINT ""
+                    LET exitHidden[14] = 0
+                    LET exitHidden[15] = 0
+                    LET visited[ROOM_RIDDLE - 1] = 1
+                    CALL EnterRoom(ROOM_RIDDLE, 0)
+                ELSE
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 3
+                    RETURN
+                END IF
+            ELSE
+                PRINT "  The doors do not move. The room waits."
+                PRINT ""
+            END IF
+        END IF
+    WEND
+END SUB
+
+
+REM === MODIFY: SUB EnterRoom -- add special-sequence intercepts at top ===
+
+REM  Add before CALL PrintHeader(), at the very top of EnterRoom:
+
+    IF roomId = ROOM_STILL AND visited[ROOM_STILL - 1] = 0 THEN
+        CALL StillChamberSequence()
+        RETURN
+    END IF
+    IF roomId = ROOM_RIDDLE AND riddleSolved = 0 THEN
+        CALL RiddleRoomSequence()
+        RETURN
+    END IF
+
+
+REM === MODIFY: SUB HandleGo -- add sealed door and rubble clearing ===
+
+REM  Add after the zombie monster-block check, before LET start = ...:
+
+    IF currentRoom = ROOM_UNDERHALL AND dir = DIR_E AND riddleSolved = 0 THEN
+        CALL QueueFlavour("  The eastern passage ends at a door. It is sealed -- not locked,")
+        CALL QueueFlavour("  sealed, as though the stone grew shut around it. Whatever opens")
+        CALL QueueFlavour("  this, it is not a key.")
+        CALL QueueFlavour("")
+        RETURN
+    END IF
+
+REM  Add inside the exit-found branch, before overburdened check:
+
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        LET exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
+    END IF
+
+
+REM === MODIFY: SUB HandleSneak -- add rubble clearing for Cistern ===
+
+REM  Add inside the no-target branch, before SET GLOBAL currentRoom = dest:
+
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        LET exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
+    END IF
+
+
+REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
+
+            CASE "LUCK"
+                LET result = TestLuck()
+                IF result = 1 THEN
+                    PRINT "  Fortune holds -- for now. Your LUCK is tested and found sufficient."
+                    PRINT ""
+                ELSE
+                    PRINT "  The dice betray you. Whatever you were hoping for, this is not it."
+                    PRINT ""
+                END IF
+                CALL AdvanceTurns(1)
+
+
+REM === MODIFY: SUB PrintDeathScreen -- add endState 3 branch ===
+
+    IF endState = 3 THEN
+        PRINT "  You pass through the door into a room straight from your worst nightmare."
+        PRINT "  The mouldy bones of previous adventurers litter the floor. Realising"
+        PRINT "  your mistake you turn to leave -- only to find the door has no handle."
+        PRINT "  On closer examination you notice bloody scratches, and is that a fingernail?"
+        PRINT ""
+        PRINT "  A deep rumble shakes your body and turns your bowels to water. You look"
+        PRINT "  up to see the ceiling, slow but inexorably, lowering."
+        PRINT ""
+        PRINT "  You frantically try to open the door, adding to the bloody legacy, as"
+        PRINT "  the room crushes the life out of you."
+    ELSE
+        PRINT "  Your STAMINA reached zero."
+    END IF
+
+
+REM === MODIFY: InitExits -- add hidden exits for Riddle Room and Collapsed Passage ===
+
+    REM --- Room 6: Collapsed Passage -- E->Crossroads, S->Cistern (hidden) ---
+    LET exitDir[11] = DIR_S
+    LET exitDest[11] = ROOM_CISTERN
+    LET exitHidden[11] = 1
+
+    REM --- Room 8: Riddle Room -- N->Pit, W->Underhall (both hidden until solved) ---
+    LET exitDir[14] = DIR_N
+    LET exitDest[14] = ROOM_PIT
+    LET exitHidden[14] = 1
+    LET exitDir[15] = DIR_W
+    LET exitDest[15] = ROOM_UNDERHALL
+    LET exitHidden[15] = 1
+
+
+REM === ADD TO: startup block, after CALL InitMonsters() ===
+
+    CALL InitRiddle()
 ```

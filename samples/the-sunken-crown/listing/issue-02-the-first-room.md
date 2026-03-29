@@ -170,6 +170,7 @@ REM  Room name lookup: ROOM_ENTRY = Entry Hall. Extended in Issue 4.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER)
     CALL PrintHeader()
+    CALL FlushFlavour()
     IF roomId = ROOM_ENTRY THEN
         PRINT "  LOCATION: Entry Hall"
     END IF
