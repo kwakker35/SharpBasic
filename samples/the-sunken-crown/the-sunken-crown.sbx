@@ -218,6 +218,16 @@ REM  Lucky and unlucky teleport pools for the Still Chamber
 DIM luckyPool[2] AS INTEGER
 DIM unluckyPool[6] AS INTEGER
 
+REM ----------------------------------------------------------------
+REM  Pending flavour buffer
+REM  Lines queued during AdvanceTurns / HandleGo / HandleSneak are
+REM  flushed by EnterRoom after PrintHeader, keeping them visible
+REM  between the header and the room description.
+REM  pendingFlavourCount: number of lines currently buffered (0-29).
+REM ----------------------------------------------------------------
+DIM pendingFlavour[30] AS STRING
+LET pendingFlavourCount = 0
+
 REM =================================================================
 REM  SUB PrintHeader
 REM  Prints the full header frame: an = separator, then the title
@@ -226,7 +236,9 @@ REM  Reads skill, stamina, luck from global scope -- read-only.
 REM =================================================================
 SUB PrintHeader()
     CALL PrintSeparator()
-    PRINT "  THE SUNKEN CROWN                                 SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    LET statsLine$ = "SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    LET padLen = FRAME_WIDTH - 18 - LEN(statsLine$)
+    PRINT "  THE SUNKEN CROWN" & STRING$(" ", padLen) & statsLine$
     CALL PrintSeparator()
 END SUB
 
@@ -247,6 +259,38 @@ REM  The terminal scrolls naturally -- no clearing is performed.
 REM =================================================================
 SUB Pause()
     INPUT "  Press ENTER to continue."; p$
+END SUB
+
+REM =================================================================
+REM  SUB QueueFlavour -- line$ AS STRING
+REM  Appends one line to the pending flavour buffer. Pass "" for a
+REM  blank line. If inCombat = 1, prints immediately instead so that
+REM  combat-time events remain visible inline.
+REM =================================================================
+SUB QueueFlavour(line$ AS STRING)
+    IF inCombat = 1 THEN
+        PRINT line$
+    ELSE
+        IF pendingFlavourCount < 30 THEN
+            LET pendingFlavour[pendingFlavourCount] = line$
+            SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
+        END IF
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB FlushFlavour
+REM  Prints all buffered flavour lines then resets the buffer.
+REM  Called by EnterRoom immediately after PrintHeader, and as a
+REM  safety net before the command prompt for SEARCH / USE / LUCK.
+REM =================================================================
+SUB FlushFlavour()
+    IF pendingFlavourCount > 0 THEN
+        FOR i = 0 TO pendingFlavourCount - 1
+            PRINT pendingFlavour[i]
+        NEXT i
+        SET GLOBAL pendingFlavourCount = 0
+    END IF
 END SUB
 
 REM =================================================================
@@ -702,6 +746,7 @@ REM  the riddle sequence fires on arrival via EnterRoom.
 REM =================================================================
 SUB StillChamberSequence()
     CALL PrintHeader()
+    CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(ROOM_STILL)
     PRINT ""
     PRINT "  The passage ends in a room that should not be here."
@@ -744,6 +789,7 @@ REM  unhide both exits. Wrong answer: instant death (endState=3).
 REM =================================================================
 SUB RiddleRoomSequence()
     CALL PrintHeader()
+    CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(ROOM_RIDDLE)
     PRINT ""
     PRINT "  The door behind you is gone."
@@ -935,78 +981,82 @@ SUB AtmosphericEvent()
     SELECT CASE evt
         CASE 1
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  Your torch gutters. For a moment the darkness is absolute -- a living,"
-                PRINT "  pressing thing. Then the flame catches again. You breathe out. You"
-                PRINT "  hadn't noticed you'd stopped."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Your torch gutters. For a moment the darkness is absolute -- a living,")
+                CALL QueueFlavour("  pressing thing. Then the flame catches again. You breathe out. You")
+                CALL QueueFlavour("  hadn't noticed you'd stopped.")
+                CALL QueueFlavour("")
             END IF
         CASE 2
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  Somewhere below you -- deeper than you've been -- something moves. A"
-                PRINT "  slow, rhythmic scraping. Stone on stone. It stops. You wait. It doesn't"
-                PRINT "  start again."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Somewhere below you -- deeper than you've been -- something moves. A")
+                CALL QueueFlavour("  slow, rhythmic scraping. Stone on stone. It stops. You wait. It doesn't")
+                CALL QueueFlavour("  start again.")
+                CALL QueueFlavour("")
             END IF
         CASE 3
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  You place your hand against the wall to steady yourself. The stone is"
-                PRINT "  warm. Not the warmth of your own body heat -- it was warm before you"
-                PRINT "  touched it. You take your hand away."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You place your hand against the wall to steady yourself. The stone is")
+                CALL QueueFlavour("  warm. Not the warmth of your own body heat -- it was warm before you")
+                CALL QueueFlavour("  touched it. You take your hand away.")
+                CALL QueueFlavour("")
             END IF
         CASE 4
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  The air changes. A cold current from nowhere, carrying the smell of"
-                PRINT "  standing water and something older. Something that hasn't seen light"
-                PRINT "  in a very long time."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The air changes. A cold current from nowhere, carrying the smell of")
+                CALL QueueFlavour("  standing water and something older. Something that hasn't seen light")
+                CALL QueueFlavour("  in a very long time.")
+                CALL QueueFlavour("")
             END IF
         CASE 5
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  You almost step on them. Small. Difficult to identify. You don't try."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You almost step on them. Small. Difficult to identify. You don't try.")
+                CALL QueueFlavour("")
             END IF
         CASE 6
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  The dungeon goes completely quiet. No drip of water, no distant groan"
-                PRINT "  of settling stone. Nothing. It lasts perhaps ten seconds. It feels much"
-                PRINT "  longer. Then the sounds return, and you realise how much you'd been"
-                PRINT "  relying on them."
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The dungeon goes completely quiet. No drip of water, no distant groan")
+                CALL QueueFlavour("  of settling stone. Nothing. It lasts perhaps ten seconds. It feels much")
+                CALL QueueFlavour("  longer. Then the sounds return, and you realise how much you'd been")
+                CALL QueueFlavour("  relying on them.")
+                CALL QueueFlavour("")
             END IF
         CASE 7
             IF inCombat = 0 THEN
-                PRINT ""
-                PRINT "  Scratches in the wall at eye height. You lean close. Letters, cut deep"
-                PRINT "  and fast by someone who knew they were running out of time. Three words."
-                PRINT "  The middle one is illegible. The first is " & CHR$(34) & "do not" & CHR$(34) & " and the last is " & CHR$(34) & "alone." & CHR$(34)
-                PRINT ""
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Scratches in the wall at eye height. You lean close. Letters, cut deep")
+                CALL QueueFlavour("  and fast by someone who knew they were running out of time. Three words.")
+                CALL QueueFlavour("  The middle one is illegible. The first is " & CHR$(34) & "do not" & CHR$(34) & " and the last is " & CHR$(34) & "alone." & CHR$(34))
+                CALL QueueFlavour("")
             END IF
         CASE 8
-            PRINT ""
-            PRINT "  The cold gets into you. Not the sharp cold of wind -- the slow cold of"
-            PRINT "  deep stone, of places that have never been warm. You feel it in your"
-            PRINT "  chest first."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  The cold gets into you. Not the sharp cold of wind -- the slow cold of")
+            CALL QueueFlavour("  deep stone, of places that have never been warm. You feel it in your")
+            CALL QueueFlavour("  chest first.")
+            CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
             IF stamina <= 0 THEN
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 5
             END IF
         CASE 9
-            PRINT ""
-            PRINT "  You haven't eaten. You'd forgotten until now. Your body reminds you"
-            PRINT "  with a clarity that's difficult to ignore."
-            PRINT ""
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  You haven't eaten. You'd forgotten until now. Your body reminds you")
+            CALL QueueFlavour("  with a clarity that's difficult to ignore.")
+            CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
             IF stamina <= 0 THEN
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 5
@@ -1014,28 +1064,30 @@ SUB AtmosphericEvent()
         CASE 10
             IF overburdened = 1 THEN
                 IF inCombat = 1 THEN
-                    PRINT ""
-                    PRINT "  The weight you are carrying pulls at your arms. You are slower"
-                    PRINT "  than you should be. It costs you."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  The weight you are carrying pulls at your arms. You are slower")
+                    CALL QueueFlavour("  than you should be. It costs you.")
+                    CALL QueueFlavour("")
                 ELSE
-                    PRINT ""
-                    PRINT "  Your foot catches on uneven stone. The weight pulls you down hard."
-                    PRINT "  You catch yourself on one knee. It costs you."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. The weight pulls you down hard.")
+                    CALL QueueFlavour("  You catch yourself on one knee. It costs you.")
+                    CALL QueueFlavour("")
                 END IF
                 SET GLOBAL stamina = stamina - 1
                 SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
                 IF stamina <= 0 THEN
                     SET GLOBAL gameOver = 1
                     SET GLOBAL endState = 5
                 END IF
             ELSE
                 IF inCombat = 0 THEN
-                    PRINT ""
-                    PRINT "  Your foot catches on uneven stone. You catch yourself easily."
-                    PRINT "  A reminder that the floor is not your friend."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. You catch yourself easily.")
+                    CALL QueueFlavour("  A reminder that the floor is not your friend.")
+                    CALL QueueFlavour("")
                 END IF
             END IF
         CASE 11
@@ -1056,15 +1108,15 @@ SUB AtmosphericEvent()
                 NEXT i
                 IF zombieRoom = currentRoom THEN LET zNear = 1 END IF
                 IF zNear = 1 THEN
-                    PRINT ""
-                    PRINT "  Something is moving in the dungeon. Not far away. The sound has"
-                    PRINT "  direction."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Something is moving in the dungeon. Not far away. The sound has")
+                    CALL QueueFlavour("  direction.")
+                    CALL QueueFlavour("")
                 ELSE
-                    PRINT ""
-                    PRINT "  You have the distinct feeling you are not alone. You stand very"
-                    PRINT "  still. Whatever it was, it passes."
-                    PRINT ""
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  You have the distinct feeling you are not alone. You stand very")
+                    CALL QueueFlavour("  still. Whatever it was, it passes.")
+                    CALL QueueFlavour("")
                 END IF
             END IF
     END SELECT
@@ -1572,8 +1624,8 @@ SUB HandleSneak(dir AS INTEGER)
     REM --- Collapsed Passage: entering from Cistern clears the rubble ---
     IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
         LET exitHidden[11] = 0
-        PRINT "  You push through from the south. The rubble shifts. The way through is clear."
-        PRINT ""
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
     END IF
     LET dest = 0
     LET sStart = roomExitStart[currentRoom - 1]
@@ -1608,9 +1660,9 @@ SUB HandleSneak(dir AS INTEGER)
     CALL AdvanceTurns(1)
     LET roll = RollDice(2)
     IF roll <= skill THEN
-        PRINT "  You hold your breath and move with extreme care. It does not notice."
-        PRINT "  You are through."
-        PRINT ""
+        CALL QueueFlavour("  You hold your breath and move with extreme care. It does not notice.")
+        CALL QueueFlavour("  You are through.")
+        CALL QueueFlavour("")
         SET GLOBAL currentRoom = dest
     ELSE
         PRINT "  It clocks you before you are halfway across."
@@ -1628,27 +1680,27 @@ REM  Writes currentRoom via SET GLOBAL -- the only global write here.
 REM =================================================================
 SUB HandleGo(dir AS INTEGER)
     IF monsterAlive[currentRoom - 1] = 1 THEN
-        PRINT "  It moves to block your path. FIGHT or SNEAK."
-        PRINT ""
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
         RETURN
     END IF
     IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
-        PRINT "  It moves to block your path. FIGHT or SNEAK."
-        PRINT ""
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
         RETURN
     END IF
     REM --- Collapsed Passage: entering from Cistern clears the rubble ---
     IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
         LET exitHidden[11] = 0
-        PRINT "  You push through from the south. The rubble shifts. The way through is clear."
-        PRINT ""
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
     END IF
     REM --- Issue 8: Underhall east door locked until riddle solved ---
     IF currentRoom = ROOM_UNDERHALL AND dir = DIR_E AND riddleSolved = 0 THEN
-        PRINT "  The eastern passage ends at a door. It is sealed -- not locked,"
-        PRINT "  sealed, as though the stone grew shut around it. Whatever opens"
-        PRINT "  this, it is not a key."
-        PRINT ""
+        CALL QueueFlavour("  The eastern passage ends at a door. It is sealed -- not locked,")
+        CALL QueueFlavour("  sealed, as though the stone grew shut around it. Whatever opens")
+        CALL QueueFlavour("  this, it is not a key.")
+        CALL QueueFlavour("")
         RETURN
     END IF
     LET start = roomExitStart[currentRoom - 1]
@@ -1657,11 +1709,13 @@ SUB HandleGo(dir AS INTEGER)
         IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
             SET GLOBAL currentRoom = exitDest[i]
             IF overburdened = 1 THEN
-                PRINT "  You move, but the weight tells on you. Everything costs more"
-                PRINT "  when you are carrying this much."
-                PRINT ""
+                CALL QueueFlavour("  You move, but the weight tells on you. Everything costs more")
+                CALL QueueFlavour("  when you are carrying this much.")
+                CALL QueueFlavour("")
                 SET GLOBAL stamina = stamina - 1
                 SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
                 IF stamina <= 0 THEN
                     SET GLOBAL gameOver = 1
                     SET GLOBAL endState = 5
@@ -2038,6 +2092,17 @@ REM  standard revisit description. If a monster is alive, prints the
 REM  encounter prompt.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
+    REM --- Issue 8: intercept rooms with special sequences ---
+    IF roomId = ROOM_STILL AND visited[ROOM_STILL - 1] = 0 THEN
+        CALL StillChamberSequence()
+        RETURN
+    END IF
+    IF roomId = ROOM_RIDDLE AND riddleSolved = 0 THEN
+        CALL RiddleRoomSequence()
+        RETURN
+    END IF
+    CALL PrintHeader()
+    CALL FlushFlavour()
     IF poisoned = 1 THEN
         SET GLOBAL stamina = stamina - 1
         SET GLOBAL minStamina = MIN(minStamina, stamina)
@@ -2049,16 +2114,6 @@ SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
         PRINT "  The poison spreads further through your blood. You feel it costing you."
         PRINT ""
     END IF
-    REM --- Issue 8: intercept rooms with special sequences ---
-    IF roomId = ROOM_STILL AND visited[ROOM_STILL - 1] = 0 THEN
-        CALL StillChamberSequence()
-        RETURN
-    END IF
-    IF roomId = ROOM_RIDDLE AND riddleSolved = 0 THEN
-        CALL RiddleRoomSequence()
-        RETURN
-    END IF
-    CALL PrintHeader()
     PRINT "  LOCATION: " & RoomName(roomId)
     PRINT ""
     IF postFight = 1 THEN
@@ -2591,6 +2646,7 @@ WHILE keepPlaying = 1
     LET riddleIndex = 0
     LET riddleCorrectDoor = 0
     LET riddleSolved = 0
+    LET pendingFlavourCount = 0
     REM  Re-hide Riddle Room exits (may have been unhidden by previous run)
     LET exitHidden[14] = 1
     LET exitHidden[15] = 1
@@ -2604,6 +2660,7 @@ WHILE keepPlaying = 1
     CALL EnterRoom(currentRoom, 0)
 
     WHILE gameOver = 0
+        CALL FlushFlavour()
         INPUT " > "; cmd$
         LET cmd$ = UPPER$(cmd$)
         SELECT CASE cmd$
