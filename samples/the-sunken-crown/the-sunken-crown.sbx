@@ -22,6 +22,8 @@ REM  Issue 8: Riddle, Still Chamber, Underhall lock
 REM  Still Chamber teleport, riddle room, Underhall east door lock.
 REM  Issue 9: The Bound King
 REM  Boss fight, gold bags, crown, Bangle terror negation, QUIT command.
+REM  Issue 10: The Gate
+REM  Gate room door choice, win/death paths, PrintEndScreen, HELP, STATS.
 REM =================================================================
 
 REM ----------------------------------------------------------------
@@ -234,6 +236,12 @@ LET crownAvailable = 0
 LET kingSkill = 0
 LET kingStamina = 0
 LET terrorActive = 0
+
+REM ----------------------------------------------------------------
+REM  Gate state (Issue 10)
+REM  gateCorrectDoor: correct door (1=LEFT, 2=RIGHT), randomised
+REM ----------------------------------------------------------------
+LET gateCorrectDoor = 0
 
 REM  Lucky and unlucky teleport pools for the Still Chamber
 DIM luckyPool[2] AS INTEGER
@@ -679,6 +687,15 @@ SUB InitRiddle()
 END SUB
 
 REM =================================================================
+REM  SUB InitGate
+REM  Randomises the correct Gate door (1=LEFT, 2=RIGHT).
+REM  Called once per run alongside InitRiddle.
+REM =================================================================
+SUB InitGate()
+    SET GLOBAL gateCorrectDoor = CINT(RND() * 2) + 1
+END SUB
+
+REM =================================================================
 REM  SUB PrintRiddle
 REM  Prints the active riddle text based on riddleIndex, then labels
 REM  each door with a candidate answer. The correct answer is placed
@@ -853,8 +870,15 @@ SUB RiddleRoomSequence()
     WHILE riddleSolved = 0
         INPUT "  Choose a door (LEFT / RIGHT): "; cmd$
         LET cmd$ = UPPER$(cmd$)
+        LET chosenDoor = 0
         IF cmd$ = "LEFT" THEN
-            IF riddleCorrectDoor = 1 THEN
+            LET chosenDoor = 1
+        END IF
+        IF cmd$ = "RIGHT" THEN
+            LET chosenDoor = 2
+        END IF
+        IF chosenDoor > 0 THEN
+            IF chosenDoor = riddleCorrectDoor THEN
                 SET GLOBAL riddleSolved = 1
                 PRINT ""
                 PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
@@ -865,31 +889,25 @@ SUB RiddleRoomSequence()
                 LET visited[ROOM_RIDDLE - 1] = 1
                 CALL EnterRoom(ROOM_RIDDLE, 0)
             ELSE
+                PRINT ""
+                PRINT "  You pass through the door into a room straight from your worst nightmare."
+                PRINT "  The mouldy bones of previous adventurers litter the floor. Realising"
+                PRINT "  your mistake you turn to leave -- only to find the door has no handle."
+                PRINT "  On closer examination you notice bloody scratches, and is that a fingernail?"
+                PRINT ""
+                PRINT "  A deep rumble shakes your body and turns your bowels to water. You look"
+                PRINT "  up to see the ceiling, slow but inexorably, lowering."
+                PRINT ""
+                PRINT "  You frantically try to open the door, adding to the bloody legacy, as"
+                PRINT "  the room crushes the life out of you."
+                PRINT ""
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 3
                 RETURN
             END IF
         ELSE
-            IF cmd$ = "RIGHT" THEN
-                IF riddleCorrectDoor = 2 THEN
-                    SET GLOBAL riddleSolved = 1
-                    PRINT ""
-                    PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
-                    PRINT "  The wall behind you is still solid. But you are through."
-                    PRINT ""
-                    LET exitHidden[14] = 0
-                    LET exitHidden[15] = 0
-                    LET visited[ROOM_RIDDLE - 1] = 1
-                    CALL EnterRoom(ROOM_RIDDLE, 0)
-                ELSE
-                    SET GLOBAL gameOver = 1
-                    SET GLOBAL endState = 3
-                    RETURN
-                END IF
-            ELSE
-                PRINT "  The doors do not move. The room waits."
-                PRINT ""
-            END IF
+            PRINT "  The doors do not move. The room waits."
+            PRINT ""
         END IF
     WEND
 END SUB
@@ -1179,6 +1197,70 @@ SUB HandleQuit()
     PRINT ""
     SET GLOBAL endState = 6
     SET GLOBAL gameOver = 1
+END SUB
+
+REM =================================================================
+REM  SUB GateSequence -- choice AS INTEGER
+REM  Resolves the Gate room door choice. choice = 1 (LEFT) or
+REM  2 (RIGHT). Correct door = win (endState 1), wrong = death
+REM  (endState 4). Gold count at win reads inventory slots holding
+REM  ITEM_GOLD (Decision 10). Win narrative includes a PAUSE break.
+REM =================================================================
+SUB GateSequence(choice AS INTEGER)
+    IF choice = gateCorrectDoor THEN
+        REM  === WIN PATH ===
+        SET GLOBAL endState = 1
+        SET GLOBAL gameOver = 1
+        PRINT ""
+        PRINT "  The door opens onto grey sky."
+        PRINT ""
+        PRINT "  You don't move at first. You stand in the doorway and breathe. Cold air."
+        PRINT "  Real air. The smell of mud and grass and distance. Things that have"
+        PRINT "  nothing to do with stone and dark and death."
+        PRINT ""
+        PRINT "  Your legs carry you forward because they have forgotten how to stop."
+        PRINT ""
+        PRINT "  There is no crowd. There never is. The competition is not a spectacle"
+        PRINT "  -- it is a disposal."
+        PRINT ""
+        PRINT "  Lord Malachar is waiting in the courtyard. Six guards flank him. You"
+        PRINT "  notice, with the detached clarity of someone who has spent the last"
+        PRINT "  hours keeping themselves alive by noticing things, that any one of them"
+        PRINT "  could kill you where you stand. You have nothing left. Your hands are"
+        PRINT "  shaking. You hadn't noticed until now."
+        PRINT ""
+        PRINT "  He looks at you for a long moment. His expression does not change."
+        CALL Pause()
+        PRINT ""
+        PRINT "  " & CHR$(34) & "You survived." & CHR$(34)
+        PRINT ""
+        PRINT "  It is not a question. It is not a compliment. It is the pronouncement"
+        PRINT "  of something that was not supposed to happen, delivered by a man who has"
+        PRINT "  made his peace with occasionally being wrong."
+        PRINT ""
+        PRINT "  His eyes drop to the gold in your hands. The gold that was never his to"
+        PRINT "  give -- it belonged to the dungeon, and the dungeon let you take it."
+        PRINT ""
+        PRINT "  He steps aside."
+        PRINT ""
+        PRINT "  " & CHR$(34) & "Go." & CHR$(34)
+        PRINT ""
+        PRINT "  You go."
+        PRINT ""
+        PRINT "  You are alive. You are free. You are one of almost none."
+        PRINT ""
+    ELSE
+        REM  === DEATH PATH ===
+        SET GLOBAL endState = 4
+        SET GLOBAL gameOver = 1
+        PRINT ""
+        PRINT "  You walk through the door into yet another damp stone-lined corridor."
+        PRINT "  You walk on, exploring the ever more twisting path. Your torch finally"
+        PRINT "  stutters and dies, leaving you to roam the pitch black halls and"
+        PRINT "  corridors until you eventually succumb to starvation, or something that"
+        PRINT "  was already down here finds you first."
+        PRINT ""
+    END IF
 END SUB
 
 REM =================================================================
@@ -2924,30 +3006,42 @@ SUB HandleFight(roomId AS INTEGER)
 END SUB
 
 REM =================================================================
-REM  SUB PrintDeathScreen
-REM  Temporary death handler for Issues 5-9. Prints a run summary
-REM  when the player's STAMINA reaches zero. Replaced by the full
-REM  PrintEndScreen in Issue 10, which branches on endState and
-REM  handles all end conditions (win, crown, riddle, gate, stamina).
+REM  SUB PrintEndScreen
+REM  Final end-of-game handler. Branches on endState to print the
+REM  appropriate narrative and stats. Win path (endState 1) counts
+REM  gold bags from inventory slots holding ITEM_GOLD (Decision 10).
+REM  Crown path (endState 2) shows no stats. All others show stats.
 REM =================================================================
-SUB PrintDeathScreen()
+SUB PrintEndScreen()
     PRINT ""
     CALL PrintSeparator()
     PRINT ""
+    IF endState = 1 THEN
+        REM  Count gold bags currently in inventory
+        LET bagCount = 0
+        FOR i = 1 TO 4
+            IF inventory[i] = ITEM_GOLD THEN
+                LET bagCount = bagCount + 1
+            END IF
+        NEXT i
+        PRINT "  You survived The Sunken Crown."
+        IF bagCount = 1 THEN
+            PRINT "  You escaped with 1 bag of gold."
+        ELSE
+            PRINT "  You escaped with " & bagCount & " bags of gold."
+        END IF
+    END IF
     IF endState = 2 THEN
         PRINT "  You are the Bound King now."
     END IF
     IF endState = 3 THEN
-        PRINT "  You pass through the door into a room straight from your worst nightmare."
-        PRINT "  The mouldy bones of previous adventurers litter the floor. Realising"
-        PRINT "  your mistake you turn to leave -- only to find the door has no handle."
-        PRINT "  On closer examination you notice bloody scratches, and is that a fingernail?"
-        PRINT ""
-        PRINT "  A deep rumble shakes your body and turns your bowels to water. You look"
-        PRINT "  up to see the ceiling, slow but inexorably, lowering."
-        PRINT ""
-        PRINT "  You frantically try to open the door, adding to the bloody legacy, as"
-        PRINT "  the room crushes the life out of you."
+        PRINT "  The ceiling lowered. The room did not care."
+    END IF
+    IF endState = 4 THEN
+        PRINT "  The torch went out. The dungeon kept you."
+    END IF
+    IF endState = 5 THEN
+        PRINT "  Your STAMINA reached zero."
     END IF
     IF endState = 6 THEN
         PRINT "  The dungeon has been here longer than anyone you have ever met has been"
@@ -2955,14 +3049,35 @@ SUB PrintDeathScreen()
         PRINT "  It did not notice you arrive."
         PRINT "  It did not notice you leave."
     END IF
-    IF endState = 5 THEN
-        PRINT "  Your STAMINA reached zero."
-    END IF
     IF endState <> 2 THEN
         PRINT ""
         PRINT "  Your SKILL was " & startSkill & ". Your STAMINA reached as low as " & minStamina & "."
         PRINT "  You tested your LUCK " & luckTestCount & " times."
     END IF
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB PrintHelp
+REM  Prints the list of available commands.
+REM =================================================================
+SUB PrintHelp()
+    PRINT ""
+    PRINT "  COMMANDS:"
+    PRINT "  GO NORTH / SOUTH / EAST / WEST / NE   Move to adjacent room"
+    PRINT "  SNEAK NORTH / SOUTH / EAST / WEST / NE Attempt to pass unseen"
+    PRINT "  FIGHT                                   Engage monster in room"
+    PRINT "  SEARCH                                  Search room for items"
+    PRINT "  TAKE <item>                             Pick up an item"
+    PRINT "  DROP <item>                             Drop an item"
+    PRINT "  USE <item>                              Use an item"
+    PRINT "  INVENTORY                               Show carried items"
+    PRINT "  LOOK                                    Redisplay room"
+    PRINT "  LUCK                                    Test your luck"
+    PRINT "  STATS                                   Show current stats"
+    PRINT "  LEFT / RIGHT                            Choose a door (Gate only)"
+    PRINT "  HELP                                    Show this list"
+    PRINT "  QUIT                                    End the game"
     PRINT ""
 END SUB
 
@@ -2974,7 +3089,7 @@ REM  attribute roll, pacing. EnterRoom renders the first room.
 REM  The WHILE loop reads and normalises input, then dispatches
 REM  all commands via SELECT CASE. Navigation goes through HandleGo;
 REM  combat goes through HandleFight. The loop exits when gameOver = 1.
-REM  PrintDeathScreen shows the run summary on STAMINA death.
+REM  PrintEndScreen shows the run summary based on endState.
 REM =================================================================
 CALL InitExits()
 
@@ -3013,6 +3128,7 @@ WHILE keepPlaying = 1
     LET kingSkill = 0
     LET kingStamina = 0
     LET terrorActive = 0
+    LET gateCorrectDoor = 0
     REM  Re-hide Riddle Room exits (may have been unhidden by previous run)
     LET exitHidden[14] = 1
     LET exitHidden[15] = 1
@@ -3023,6 +3139,7 @@ WHILE keepPlaying = 1
     CALL OpeningSequence()
     CALL ShuffleLoot()
     CALL InitRiddle()
+    CALL InitGate()
     CALL EnterRoom(currentRoom, 0)
 
     WHILE gameOver = 0
@@ -3135,13 +3252,32 @@ WHILE keepPlaying = 1
                 CALL AdvanceTurns(1)
             CASE "QUIT"
                 CALL HandleQuit()
+            CASE "LEFT"
+                IF currentRoom = ROOM_GATE THEN
+                    CALL GateSequence(1)
+                ELSE
+                    PRINT "  The dungeon does not respond to that."
+                    PRINT ""
+                END IF
+            CASE "RIGHT"
+                IF currentRoom = ROOM_GATE THEN
+                    CALL GateSequence(2)
+                ELSE
+                    PRINT "  The dungeon does not respond to that."
+                    PRINT ""
+                END IF
+            CASE "STATS"
+                PRINT "  SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+                PRINT ""
+            CASE "HELP"
+                CALL PrintHelp()
             CASE ELSE
                 PRINT "  The dungeon does not respond to that."
                 PRINT ""
         END SELECT
     WEND
 
-    CALL PrintDeathScreen()
+    CALL PrintEndScreen()
     INPUT "  Play again? (YES / NO): "; playAgain$
     LET playAgain$ = UPPER$(playAgain$)
     PRINT ""

@@ -312,8 +312,15 @@ SUB RiddleRoomSequence()
     WHILE riddleSolved = 0
         INPUT "  Choose a door (LEFT / RIGHT): "; cmd$
         LET cmd$ = UPPER$(cmd$)
+        LET chosenDoor = 0
         IF cmd$ = "LEFT" THEN
-            IF riddleCorrectDoor = 1 THEN
+            LET chosenDoor = 1
+        END IF
+        IF cmd$ = "RIGHT" THEN
+            LET chosenDoor = 2
+        END IF
+        IF chosenDoor > 0 THEN
+            IF chosenDoor = riddleCorrectDoor THEN
                 SET GLOBAL riddleSolved = 1
                 PRINT ""
                 PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
@@ -324,31 +331,25 @@ SUB RiddleRoomSequence()
                 LET visited[ROOM_RIDDLE - 1] = 1
                 CALL EnterRoom(ROOM_RIDDLE, 0)
             ELSE
+                PRINT ""
+                PRINT "  You pass through the door into a room straight from your worst nightmare."
+                PRINT "  The mouldy bones of previous adventurers litter the floor. Realising"
+                PRINT "  your mistake you turn to leave -- only to find the door has no handle."
+                PRINT "  On closer examination you notice bloody scratches, and is that a fingernail?"
+                PRINT ""
+                PRINT "  A deep rumble shakes your body and turns your bowels to water. You look"
+                PRINT "  up to see the ceiling, slow but inexorably, lowering."
+                PRINT ""
+                PRINT "  You frantically try to open the door, adding to the bloody legacy, as"
+                PRINT "  the room crushes the life out of you."
+                PRINT ""
                 SET GLOBAL gameOver = 1
                 SET GLOBAL endState = 3
                 RETURN
             END IF
         ELSE
-            IF cmd$ = "RIGHT" THEN
-                IF riddleCorrectDoor = 2 THEN
-                    SET GLOBAL riddleSolved = 1
-                    PRINT ""
-                    PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
-                    PRINT "  The wall behind you is still solid. But you are through."
-                    PRINT ""
-                    LET exitHidden[14] = 0
-                    LET exitHidden[15] = 0
-                    LET visited[ROOM_RIDDLE - 1] = 1
-                    CALL EnterRoom(ROOM_RIDDLE, 0)
-                ELSE
-                    SET GLOBAL gameOver = 1
-                    SET GLOBAL endState = 3
-                    RETURN
-                END IF
-            ELSE
-                PRINT "  The doors do not move. The room waits."
-                PRINT ""
-            END IF
+            PRINT "  The doors do not move. The room waits."
+            PRINT ""
         END IF
     WEND
 END SUB
