@@ -360,8 +360,10 @@ curse sequence fires regardless of carry state.
 ## Section 9 — The Gate
 
 **Test 9.1 — Gate renders correctly**
-Navigate to room 12. Confirm the Gate description renders. Confirm only
-LEFT and RIGHT are accepted as commands.
+Navigate to room 12. Confirm the Gate description renders. Confirm LEFT
+and RIGHT trigger the gate resolution. Confirm all standard commands
+(GO, INVENTORY, HELP, STATS, SEARCH, etc.) still work — the Gate is
+a normal room, not an inner loop.
 
 **Test 9.2 — Correct door — win sequence**
 Determine the correct door (play multiple runs or check gateCorrectDoor).
@@ -381,9 +383,10 @@ Confirm it is not the same door every run.
 Take 3 gold bags in the Throne Room. Drop 1 bag before reaching the Gate.
 Win via the correct door. Confirm end screen shows 2 bags, not 3.
 
-**Test 9.6 — Invalid input held at Gate**
-At the Gate, type something other than LEFT or RIGHT. Confirm the dungeon
-does not respond message prints. Confirm the loop continues.
+**Test 9.6 — Invalid input at Gate**
+At the Gate, type something other than LEFT, RIGHT, or a standard command.
+Confirm the standard CASE ELSE response prints. Confirm the player
+remains in the room and can still act.
 
 ---
 
@@ -404,6 +407,7 @@ Verify the end screen message for each endState:
 - 3 = wrong answer in Riddle Room
 - 4 = wrong door at Gate
 - 5 = STAMINA reached zero
+- 6 = quit
 
 **Test 10.3 — Play again full reset**
 After any run ending, type YES at the play again prompt. Confirm:
