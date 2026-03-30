@@ -2520,7 +2520,7 @@ REM  encounter prompt.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
     REM --- Issue 8: intercept rooms with special sequences ---
-    IF roomId = ROOM_STILL AND visited[ROOM_STILL - 1] = 0 THEN
+    IF roomId = ROOM_STILL THEN
         CALL StillChamberSequence()
         RETURN
     END IF

@@ -1,6 +1,6 @@
 # The Sunken Crown
 
-![The Bound King on his throne](IMG_2957.png)
+![The Bound King on his throne](The_Bound_King.PNG)
 
 *A text adventure for one. Written in SharpBASIC v1.*
 
