@@ -1621,7 +1621,24 @@ SUB HandleSearch()
     CALL AdvanceTurns(2)
 
     IF searched[currentRoom - 1] = 1 THEN
-        PRINT "  You go through the room again. You find nothing you missed the first time."
+        LET floorFound = 0
+        LET mySlot = RoomLootSlot(currentRoom)
+        IF mySlot > 0 THEN
+            IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+                PRINT "  " & ItemName(slotContents[mySlot]) & " is here."
+                LET floorFound = 1
+            END IF
+        END IF
+        FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+            LET floorCode = droppedItem[currentRoom - 1][s]
+            IF floorCode > ITEM_EMPTY THEN
+                PRINT "  " & ItemName(floorCode) & " is here."
+                LET floorFound = 1
+            END IF
+        NEXT s
+        IF floorFound = 0 THEN
+            PRINT "  You go through the room again. You find nothing you missed the first time."
+        END IF
         PRINT ""
         RETURN
     END IF
