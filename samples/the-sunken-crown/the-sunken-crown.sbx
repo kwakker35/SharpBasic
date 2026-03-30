@@ -831,7 +831,7 @@ SUB StillChamberSequence()
         PRINT "  The dice betray you. You wake somewhere worse."
         PRINT ""
     END IF
-    LET visited[ROOM_STILL - 1] = 1
+    SET GLOBAL visited[ROOM_STILL - 1] = 1
     CALL EnterRoom(currentRoom, 0)
 END SUB
 
