@@ -991,6 +991,8 @@ SUB HandleFight(roomId AS INTEGER)
         CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_BANGLE
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""
             PRINT "  The armour clatters against the stone in sections as it falls --"
             PRINT "  the sound of something that has held together through a great deal"
@@ -1051,6 +1053,8 @@ SUB HandleFight(roomId AS INTEGER)
         CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_MOULDY
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""
             PRINT "  It goes down at last. The wounds don't close this time."
             PRINT "  Whatever you took from it, you took enough."
