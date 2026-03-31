@@ -239,7 +239,7 @@ SUB BoundKingSequence()
         SET GLOBAL kingSkill = CINT(RollDice(1)) + 9
         SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
     END IF
-    CALL CombatLoop(kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+    CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
     IF stamina <= 0 THEN
         PRINT ""
         PRINT "  He watches you fall. He has seen it before. He returns to his throne,"
@@ -290,7 +290,7 @@ SUB BoundKingSequence()
             PRINT ""
         END IF
         SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
-        CALL CombatLoop(kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+        CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
         IF stamina <= 0 THEN
             PRINT ""
             PRINT "  He watches you fall. He returns to his throne. He sits."

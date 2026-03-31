@@ -937,7 +937,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 10
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_KEY
@@ -971,7 +971,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 5
         LET mStamina = RollDice(1) + 4
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
+        CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1000,7 +1000,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 8
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_BANGLE
@@ -1033,7 +1033,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 6
         LET mStamina = RollDice(1) + 6
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -1062,7 +1062,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 12
-        CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_MOULDY

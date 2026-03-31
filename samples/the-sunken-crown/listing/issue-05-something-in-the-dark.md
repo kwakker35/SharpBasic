@@ -18,7 +18,7 @@ This issue changes that. The Guardroom Brute is the teaching encounter — the f
 ## What's New This Issue
 
 - `FUNCTION AttackStrength(statSkill AS INTEGER) AS INTEGER` — calculates attack strength for one side
-- `SUB CombatLoop(...)` — the parameterised combat engine, handles all monster encounters
+- `SUB CombatLoop(...)` — the parameterised combat engine, handles all monster encounters; displays a Fighting Fantasy stat block before round 1
 - `SUB InitMonsters()` — sets all fixed monsters to alive at startup
 - Guardroom Brute wired to room 2 — FIGHT works, the Brute has stats, it can kill you
 - `monsterAlive` array — tracks which monsters are still alive across the dungeon
@@ -308,7 +308,7 @@ END FUNCTION
 
 REM === NEW SUB: add after FUNCTION AttackStrength() ===
 
-SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
+SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina AS INTEGER,
                hasArmour AS INTEGER, hasRegen AS INTEGER,
                hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER,
                hasPoison AS INTEGER, isBoss AS INTEGER,
@@ -335,6 +335,16 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER,
         SET GLOBAL luck = luck - 1
         LET terrorActive = 1
     END IF
+
+    REM  Stat block -- Fighting Fantasy style, shown once before round 1.
+    LET padLen = 18 - LEN(monsterName$)
+    IF padLen < 1 THEN LET padLen = 1 END IF
+    LET armourTag$ = ""
+    IF hasArmour = 1 THEN LET armourTag$ = "   [ARMOURED]" END IF
+    PRINT "  You" & STRING$(" ", 13) & "SKILL " & skill & "   STAMINA " & stamina
+    PRINT "  " & monsterName$ & STRING$(" ", padLen) & "SKILL " & monsterSkill & "   STAMINA " & monsterStamina & armourTag$
+    PRINT ""
+    SLEEP(COMBAT_DELAY)
 
     WHILE gameOver = 0 AND monsterStamina > 0
 
@@ -472,7 +482,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 10
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, 0)
+        CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -504,7 +514,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 5
         LET mStamina = RollDice(1) + 4
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 1, 1, 0, 0)
+        CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, 0)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -533,7 +543,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 8
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, 0)
+        CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -564,7 +574,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 6
         LET mStamina = RollDice(1) + 6
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 1, 0, 0, 0, 0)
+        CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, 0)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -593,7 +603,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 12
-        CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, 0)
+        CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""

@@ -497,7 +497,7 @@ REM === ADD TO: SUB HandleFight -- zombie combat branch, before END SUB ===
         PRINT ""
         LET mSkill = RollDice(1) + 2
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Wandering Zombie", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             SET GLOBAL zombieAlive = 0
             PRINT ""
