@@ -156,6 +156,7 @@ SharpBASIC uses a lexically-chained symbol table. Each SUB and FUNCTION call cre
 
 - **Reading**: `Get` walks up the parent chain, so a sub/function can read variables from an enclosing scope.
 - **Writing**: `Set` always writes to the **current** (local) scope. Assignments inside a sub/function do **not** mutate variables in the caller's scope.
+- **Arrays**: `LET arr[i] = value` only works when the array was `DIM`'d in the current scope. Inside a SUB or FUNCTION, writing to a global array with `LET` is a runtime error — use `SET GLOBAL arr[i] = value` instead. Reading global array elements is always allowed.
 
 ```
 LET x = 10
@@ -170,6 +171,17 @@ END SUB
 CALL ShowX()
 REM still prints 10 - outer x was not mutated
 PRINT x
+```
+
+```
+DIM scores[3] AS INTEGER
+
+SUB Update()
+    REM Reading is fine
+    PRINT scores[0]
+    REM LET scores[0] = 99  <-- runtime error: array not in local scope
+    SET GLOBAL scores[0] = 99   REM correct way to write
+END SUB
 ```
 
 ---
@@ -274,6 +286,8 @@ LET scores[3] = 42
 ```
 
 The `LET` keyword is required for array element assignment. Note the use of `LET name[index] = value` syntax, not `name[index] = value`.
+
+> **Scope restriction:** `LET arr[i] = value` only works when the array was `DIM`'d in the current scope. Inside a SUB or FUNCTION, attempting to write to a global array with `LET` produces a runtime error: *"Cannot assign to array '{name}' from inside a SUB or FUNCTION. Use SET GLOBAL."* Use `SET GLOBAL arr[i] = value` instead (see §4.4).
 
 ### 5.3 Bounds Behaviour
 
