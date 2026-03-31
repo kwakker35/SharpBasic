@@ -956,7 +956,7 @@ SUB BoundKingSequence()
         SET GLOBAL kingSkill = CINT(RollDice(1)) + 9
         SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
     END IF
-    CALL CombatLoop(kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+    CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
     IF stamina <= 0 THEN
         PRINT ""
         PRINT "  He watches you fall. He has seen it before. He returns to his throne,"
@@ -1007,7 +1007,7 @@ SUB BoundKingSequence()
             PRINT ""
         END IF
         SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
-        CALL CombatLoop(kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+        CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
         IF stamina <= 0 THEN
             PRINT ""
             PRINT "  He watches you fall. He returns to his throne. He sits."
@@ -2651,6 +2651,7 @@ REM  the loop itself is universal. Both sides roll AttackStrength
 REM  each round; higher wins and deals damage to the other.
 REM
 REM  Parameters:
+REM    monsterName$     -- display name for the stat block
 REM    monsterSkill     -- monster's SKILL value
 REM    monsterStamina   -- monster's starting STAMINA (local copy)
 REM    hasArmour        -- 1: armoured; player deals 1 damage (2 with sword, Issue 6)
@@ -2663,7 +2664,7 @@ REM    searchInterrupt  -- 1: interrupted mid-SEARCH; SKILL -1 round 1, additive
 REM
 REM  All global state writes use SET GLOBAL throughout.
 REM =================================================================
-SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS INTEGER, hasRegen AS INTEGER, hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER, hasPoison AS INTEGER, isBoss AS INTEGER, searchInterrupt AS INTEGER)
+SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS INTEGER, hasRegen AS INTEGER, hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER, hasPoison AS INTEGER, isBoss AS INTEGER, searchInterrupt AS INTEGER)
     SET GLOBAL inCombat = 1
     LET round = 1
     LET firstRound = 1
@@ -2689,6 +2690,16 @@ SUB CombatLoop(monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS 
         END IF
         LET terrorActive = 1
     END IF
+
+    REM  Stat block -- Fighting Fantasy style, shown once before round 1.
+    LET padLen = 18 - LEN(monsterName$)
+    IF padLen < 1 THEN LET padLen = 1 END IF
+    LET armourTag$ = ""
+    IF hasArmour = 1 THEN LET armourTag$ = "   [ARMOURED]" END IF
+    PRINT "  You" & STRING$(" ", 13) & "SKILL " & skill & "   STAMINA " & stamina
+    PRINT "  " & monsterName$ & STRING$(" ", padLen) & "SKILL " & monsterSkill & "   STAMINA " & monsterStamina & armourTag$
+    PRINT ""
+    SLEEP(COMBAT_DELAY)
 
     WHILE gameOver = 0 AND monsterStamina > 0
 
@@ -2875,7 +2886,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 10
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_KEY
@@ -2909,7 +2920,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 5
         LET mStamina = RollDice(1) + 4
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
+        CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -2938,7 +2949,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 8
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_BANGLE
@@ -2971,7 +2982,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 6
         LET mStamina = RollDice(1) + 6
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             PRINT ""
@@ -3000,7 +3011,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 7
         LET mStamina = RollDice(2) + 12
-        CALL CombatLoop(mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             LET monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_MOULDY
@@ -3027,7 +3038,7 @@ SUB HandleFight(roomId AS INTEGER)
         PRINT ""
         LET mSkill = RollDice(1) + 2
         LET mStamina = RollDice(2) + 8
-        CALL CombatLoop(mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        CALL CombatLoop("Wandering Zombie", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
             SET GLOBAL zombieAlive = 0
             PRINT ""
