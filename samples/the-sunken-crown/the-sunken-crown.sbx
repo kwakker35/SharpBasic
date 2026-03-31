@@ -804,14 +804,25 @@ SUB StillChamberSequence()
     CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(ROOM_STILL)
     PRINT ""
-    PRINT "  The passage ends in a room that should not be here."
-    PRINT ""
-    PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
-    PRINT "  stone has no right to be. The air is still. Not quiet -- still."
-    PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
-    PRINT "  absence of everything else."
-    PRINT ""
-    PRINT "  The floor comes up to meet you."
+    IF visited[ROOM_STILL - 1] = 1 THEN
+        PRINT "  You recognise it immediately. The circular walls. The sourceless light."
+        PRINT "  The silence with weight in it."
+        PRINT ""
+        PRINT "  You know what this room does."
+        PRINT ""
+        PRINT "  Knowing does not help."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    ELSE
+        PRINT "  The passage ends in a room that should not be here."
+        PRINT ""
+        PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
+        PRINT "  stone has no right to be. The air is still. Not quiet -- still."
+        PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
+        PRINT "  absence of everything else."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    END IF
     PRINT ""
     CALL Pause()
     PRINT ""
