@@ -2696,7 +2696,7 @@ SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina A
     IF padLen < 1 THEN LET padLen = 1 END IF
     LET armourTag$ = ""
     IF hasArmour = 1 THEN LET armourTag$ = "   [ARMOURED]" END IF
-    PRINT "  You" & STRING$(" ", 13) & "SKILL " & skill & "   STAMINA " & stamina
+    PRINT "  You" & STRING$(" ", 15) & "SKILL " & skill & "   STAMINA " & stamina
     PRINT "  " & monsterName$ & STRING$(" ", padLen) & "SKILL " & monsterSkill & "   STAMINA " & monsterStamina & armourTag$
     PRINT ""
     SLEEP(COMBAT_DELAY)
