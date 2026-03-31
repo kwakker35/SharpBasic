@@ -8,6 +8,9 @@ public class SymbolTable(SymbolTable? parent = null)
     public Value? Get(string name) =>
         _store.TryGetValue(name, out var val) ? val : parent?.Get(name);
 
+    public Value? GetLocal(string name) =>
+        _store.TryGetValue(name, out var val) ? val : null;
+
     public bool IsConst(string name) =>
         _consts.Contains(name) || (parent?.IsConst(name) ?? false);
 

@@ -618,6 +618,9 @@ public class Evaluator(
 
     private EvalResult EvaluateReturnStatement(ReturnStatement stmt)
     {
+        if (_diagnostics.Count > 0)
+            return new EvalFailure(_diagnostics);
+
         if (stmt.Value is null)
             throw new ReturnException(null);
 
@@ -1298,7 +1301,21 @@ public class Evaluator(
 
     private EvalResult EvaluateArrayAssignStatement(ArrayAssignStatement stmt)
     {
-        var getVal = _table.Get(stmt.Name);
+        var getVal = _table.GetLocal(stmt.Name);
+
+        if (getVal is null && _table.Get(stmt.Name) is ArrayValue)
+        {
+            return new EvalFailure(
+                    [
+                        new Diagnostic(
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0,
+                            $"Cannot assign to array '{stmt.Name}' from inside a SUB or FUNCTION. Use SET GLOBAL.",
+                            DiagnosticSeverity.Error
+                        )
+                    ]
+                );
+        }
 
         if (getVal is not ArrayValue)
         {
@@ -1468,7 +1485,16 @@ public class Evaluator(
 
     private EvalResult EvaluateArray2dAssignStatement(Array2dAssignStatement stmt)
     {
-        var getVal = _table.Get(stmt.Name);
+        var getVal = _table.GetLocal(stmt.Name);
+
+        if (getVal is null && _table.Get(stmt.Name) is ArrayValue)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    $"Cannot assign to array '{stmt.Name}' from inside a SUB or FUNCTION. Use SET GLOBAL.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
 
         if (getVal is not ArrayValue arrVal || arrVal.Cols == 0)
         {
