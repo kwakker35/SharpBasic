@@ -509,7 +509,7 @@ SUB PrintInventoryScreen()
             LET tag$ = ""
             IF inventory[i] = ITEM_SHARD THEN LET tag$ = "  (passive -- damage -1)" END IF
             IF inventory[i] = ITEM_BANGLE THEN LET tag$ = "  (passive -- negates Terror)" END IF
-            IF inventory[i] = ITEM_SWORD THEN LET tag$ = "  (passive -- +1 damage vs armour)" END IF
+            IF inventory[i] = ITEM_SWORD THEN LET tag$ = "  (passive -- +1 damage)" END IF
             PRINT "  [" & i & "] " & ItemName(inventory[i]) & tag$
         ELSE
             PRINT "  [" & i & "] -- empty"
@@ -875,7 +875,19 @@ REM  Replace with:
                     PRINT "  You strike but the armour absorbs most of it.  Monster STAMINA: " & monsterStamina
                 END IF
             ELSE
-                REM  ... rest of player-wins branch unchanged ...
+                REM  Sword of Sharpness adds +1 damage to all attacks.
+                LET hasSword = 0
+                FOR sw = 1 TO 4
+                    IF inventory[sw] = ITEM_SWORD THEN LET hasSword = 1 END IF
+                NEXT sw
+                IF hasSword = 1 THEN
+                    LET monsterStamina = monsterStamina - 3
+                    PRINT "  Your blade bites deep.  Monster STAMINA: " & monsterStamina
+                ELSE
+                    LET monsterStamina = monsterStamina - 2
+                    PRINT "  You hit.  Monster STAMINA: " & monsterStamina
+                END IF
+            END IF
 
 
 REM === REPLACE: in SUB CombatLoop, monster-wins damage block ===

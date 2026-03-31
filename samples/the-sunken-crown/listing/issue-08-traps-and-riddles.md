@@ -21,7 +21,7 @@ This issue wires them up.
 - `SUB InitRiddle()` — selects riddle and correct door at startup, fixed for the run
 - `SUB PrintRiddle()` — prints the active riddle text with door labels
 - `SUB RiddleRoomSequence()` — inner loop for room 8, accepts LEFT or RIGHT only
-- `SUB StillChamberSequence()` — teleport mechanic for room 5, advances 3 turns, tests luck, lands player in lucky or unlucky pool room
+- `SUB StillChamberSequence()` — teleport mechanic for room 5, shows shorter revisit text on return visits, advances 3 turns, tests luck, lands player in lucky or unlucky pool room
 - `riddleSolved` flag — allows pass-through on revisit and when Still Chamber lands the player in room 8
 - LUCK command added to the command loop
 - `EnterRoom` updated to detect rooms 5 and 8 and route to their sequences
@@ -64,7 +64,7 @@ This is the same INPUT-UPPER$-IF pattern used since Issue 2. The code is simple.
 
 ## How It Fits
 
-`EnterRoom` gains two new detection branches at the top of the SUB. If `roomId = ROOM_STILL`, `StillChamberSequence` runs immediately instead of the standard room entry. If `roomId = ROOM_RIDDLE`, the code checks `riddleSolved` — if already solved the room is entered normally, if not `RiddleRoomSequence` runs.
+`EnterRoom` gains two new detection branches at the top of the SUB. If `roomId = ROOM_STILL`, `StillChamberSequence` runs immediately instead of the standard room entry — every visit triggers the teleport, but revisits show shorter recognition text instead of the full narrative. If `roomId = ROOM_RIDDLE`, the code checks `riddleSolved` — if already solved the room is entered normally, if not `RiddleRoomSequence` runs.
 
 `TestLuck` is introduced here because the Still Chamber needs it. It is also available from the LUCK command added this issue — the player can invoke it deliberately in situations where the outcome is uncertain.
 
@@ -238,8 +238,9 @@ END SUB
 
 REM =================================================================
 REM  SUB StillChamberSequence
-REM  Fires when the player enters Room 5 for the first time.
-REM  Prints narrative, advances 3 turns, tests luck, teleports
+REM  Fires when the player enters Room 5 (The Still Chamber).
+REM  On revisit, prints shorter recognition text. First visit prints
+REM  full narrative. Both paths advance 3 turns, test luck, teleport
 REM  to lucky or unlucky pool. Calls EnterRoom at the destination.
 REM =================================================================
 SUB StillChamberSequence()
@@ -247,14 +248,25 @@ SUB StillChamberSequence()
     CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(ROOM_STILL)
     PRINT ""
-    PRINT "  The passage ends in a room that should not be here."
-    PRINT ""
-    PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
-    PRINT "  stone has no right to be. The air is still. Not quiet -- still."
-    PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
-    PRINT "  absence of everything else."
-    PRINT ""
-    PRINT "  The floor comes up to meet you."
+    IF visited[ROOM_STILL - 1] = 1 THEN
+        PRINT "  You recognise it immediately. The circular walls. The sourceless light."
+        PRINT "  The silence with weight in it."
+        PRINT ""
+        PRINT "  You know what this room does."
+        PRINT ""
+        PRINT "  Knowing does not help."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    ELSE
+        PRINT "  The passage ends in a room that should not be here."
+        PRINT ""
+        PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
+        PRINT "  stone has no right to be. The air is still. Not quiet -- still."
+        PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
+        PRINT "  absence of everything else."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    END IF
     PRINT ""
     CALL Pause()
     PRINT ""
@@ -359,7 +371,7 @@ REM === MODIFY: SUB EnterRoom -- add special-sequence intercepts at top ===
 
 REM  Add before CALL PrintHeader(), at the very top of EnterRoom:
 
-    IF roomId = ROOM_STILL AND visited[ROOM_STILL - 1] = 0 THEN
+    IF roomId = ROOM_STILL THEN
         CALL StillChamberSequence()
         RETURN
     END IF
