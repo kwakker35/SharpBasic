@@ -2532,7 +2532,19 @@ SUB PrintRoom(roomId AS INTEGER)
         PRINT "  Eventually you realise the dungeon has already made its last move. It just"
         PRINT "  looks like a room."
         PRINT ""
+        IF gateCorrectDoor = 1 THEN
+            PRINT "  The right door is worn smooth around the handle. Thousands of hands have"
+            PRINT "  reached for it. The left door is stiffer -- the wood darker, the hinges"
+            PRINT "  tighter. It has not been opened nearly as often."
+        ELSE
+            PRINT "  The left door is worn smooth around the handle. Thousands of hands have"
+            PRINT "  reached for it. The right door is stiffer -- the wood darker, the hinges"
+            PRINT "  tighter. It has not been opened nearly as often."
+        END IF
+        PRINT ""
         PRINT "  You step forward and make your choice."
+        PRINT ""
+        PRINT "  Type LEFT or RIGHT to choose a door."
         PRINT ""
         CALL PrintExits(roomId)
     END IF
