@@ -11,8 +11,6 @@ REM  Issue 4: Moving Through Stone
 REM  Exit arrays, full map, navigation, all 12 room descriptions.
 REM  Issue 5: Something in the Dark
 REM  Combat system, Guardroom Brute, monster state, dead-variant room text.
-REM  CHEAT command added for testing: resets SKILL to 12, STAMINA to 100.
-REM  Strip before release (see Issue 10 notes).
 REM  Issue 6: What You Carry
 REM  All monsters wired. Items: antidote, bangle, magic sword.
 REM  Inventory, SEARCH, TAKE, DROP, USE, overburdened, loot shuffle, luck tests.
@@ -29,13 +27,10 @@ REM =================================================================
 REM ----------------------------------------------------------------
 REM  Constants
 REM  FRAME_WIDTH governs every separator and alignment calculation.
-REM  SCREEN_HEIGHT and CONTENT_ROWS govern the paging model.
 REM  Direction codes: 1=N, 2=S, 3=E, 4=W, 5=NE.
 REM  MAX_EXITS and MAX_ROOMS bound the exit and room arrays.
 REM ----------------------------------------------------------------
 CONST FRAME_WIDTH = 80
-CONST SCREEN_HEIGHT = 30
-CONST CONTENT_ROWS = 20
 CONST COMBAT_DELAY = 1500   REM milliseconds between attack roll and outcome
 CONST DIR_N = 1
 CONST DIR_S = 2
@@ -62,18 +57,6 @@ CONST ROOM_CISTERN    = 9
 CONST ROOM_UNDERHALL  = 10
 CONST ROOM_THRONE     = 11
 CONST ROOM_GATE       = 12
-
-REM ----------------------------------------------------------------
-REM  Monster identity constants
-REM  Room numbers for each fixed monster. Declared as CONST so the
-REM  code always refers to monsters by name, not by raw room number.
-REM ----------------------------------------------------------------
-CONST MONSTER_BRUTE = 2
-CONST MONSTER_HORROR = 6
-CONST MONSTER_GUARDIAN = 7
-CONST MONSTER_MAGE = 9
-CONST MONSTER_TROLL = 10
-CONST MONSTER_KING = 11
 
 REM ----------------------------------------------------------------
 REM  Item codes -- locked (Decision 5)
@@ -130,9 +113,9 @@ REM  exitHidden[i]: 0 = visible to player, 1 = hidden until SEARCHed
 REM ----------------------------------------------------------------
 DIM roomExitStart[MAX_ROOMS] AS INTEGER
 DIM roomExitCount[MAX_ROOMS] AS INTEGER
-DIM exitDir[30] AS INTEGER
-DIM exitDest[30] AS INTEGER
-DIM exitHidden[30] AS INTEGER
+DIM exitDir[MAX_EXITS] AS INTEGER
+DIM exitDest[MAX_EXITS] AS INTEGER
+DIM exitHidden[MAX_EXITS] AS INTEGER
 
 REM ----------------------------------------------------------------
 REM  Game loop control
@@ -273,7 +256,7 @@ END SUB
 
 REM =================================================================
 REM  SUB PrintSeparator
-REM  Prints a line of 80 - characters. Divides the header chrome
+REM  Prints a line of 80 = characters. Divides the header chrome
 REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
@@ -641,7 +624,7 @@ SUB InitExits()
     LET roomExitCount[ROOM_GATE - 1] = 1
     LET exitDir[23] = DIR_N
     LET exitDest[23] = ROOM_THRONE
-    LET exitHidden[22] = 0
+    LET exitHidden[23] = 0
 END SUB
 
 REM =================================================================
@@ -783,10 +766,10 @@ FUNCTION TestLuck() AS INTEGER
     LET roll = RollDice(2)
     SET GLOBAL luckTestCount = luckTestCount + 1
     IF roll <= luck THEN
-        SET GLOBAL luck = luck - 1
+        SET GLOBAL luck = MAX(luck - 1, 0)
         RETURN 1
     ELSE
-        SET GLOBAL luck = luck - 1
+        SET GLOBAL luck = MAX(luck - 1, 0)
         RETURN 0
     END IF
 END FUNCTION
@@ -1617,7 +1600,7 @@ SUB HandleSearch()
                 PRINT "  The cold in the room doubles before you have touched anything. The"
                 PRINT "  luminescence fixes on you -- steady, no longer drifting. It knew the"
                 PRINT "  moment your attention shifted."
-            CASE 10
+            CASE ROOM_UNDERHALL
                 PRINT "  The small dark eyes find you the instant you crouch. It doesn't roar."
                 PRINT "  It doesn't rush. It simply stands and keeps coming with the patient"
                 PRINT "  certainty of something that has never needed to hurry."
@@ -2173,8 +2156,8 @@ SUB HandleGo(dir AS INTEGER)
             RETURN
         END IF
     NEXT i
-    PRINT "  There is no way through in that direction."
-    PRINT ""
+    CALL QueueFlavour("  There is no way through in that direction.")
+    CALL QueueFlavour("")
 END SUB
 
 REM =================================================================
@@ -3194,7 +3177,8 @@ WHILE keepPlaying = 1
     LET kingStamina = 0
     LET terrorActive = 0
     LET gateCorrectDoor = 0
-    REM  Re-hide Riddle Room exits (may have been unhidden by previous run)
+    REM  Re-hide exits that may have been unhidden by previous run
+    LET exitHidden[11] = 1
     LET exitHidden[14] = 1
     LET exitHidden[15] = 1
     FOR i = 1 TO 4
@@ -3242,12 +3226,6 @@ WHILE keepPlaying = 1
                 IF gameOver = 0 THEN
                     CALL EnterRoom(currentRoom, 1)
                 END IF
-            CASE "CHEAT"
-                REM  DEV TOOL -- strip before release (Issue 10)
-                LET skill = 12
-                LET stamina = 100
-                PRINT "  [CHEAT] SKILL: " & skill & "  STAMINA: " & stamina
-                PRINT ""
             CASE "SEARCH"
                 CALL HandleSearch()
             CASE "INVENTORY"
