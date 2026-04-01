@@ -68,7 +68,7 @@ cd SharpBasic
 
 **VS Code syntax highlighting (optional):**
 
-Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In VS Code: Extensions panel → `...` menu → Install from VSIX → select `sharpbasic-syntax-0.3.0.vsix`.
+Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In VS Code: Extensions panel → `...` menu → Install from VSIX → select `sharpbasic-syntax-0.4.0.vsix`.
 
 ---
 
@@ -108,6 +108,7 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 | [tic-tac-toe.sbx](samples/tic-tac-toe/tic-tac-toe.sbx) | Two-player ASCII Tic-Tac-Toe with a flat array board, SUBs for drawing, and a FUNCTION for win detection |
 | [hangman.sbx](samples/hangman/hangman.sbx) | Word guessing game with a letter-tracking array, ASCII scaffold drawing SUB, and recursive-position display FUNCTION |
 | [wordle.sbx](samples/wordle/wordle.sbx) | Six-attempt Wordle clone with green/yellow/grey scoring logic implemented in FUNCTIONs and a display SUB |
+| [the-sunken-crown.sbx](samples/the-sunken-crown/the-sunken-crown.sbx) | Fighting Fantasy-inspired text adventure — dungeon crawler with combat, inventory, and parallel array state management |
 
 ---
 
@@ -120,6 +121,7 @@ SharpBASIC was built as a structured learning project: ten phases, TDD throughou
 - [Architecture decisions](learning/decisions/architecture-decisions.md)
 - [Theory notes](learning/theory/) — Pratt parsing, call frames, pitfalls
 - [AI setup](learning/ai-setup/) — how to recreate the AI-assisted learning experience
+- [Language specification](docs/language-spec-v1.md) — the definitive v1 language reference
 
 ---
 
@@ -131,13 +133,10 @@ SharpBasic/
 ├── tests/                      ← xUnit test suite, one project per interpreter stage
 ├── samples/                    ← Working .sbx example programs
 ├── docs/                       ← Language reference (v1), lessons learned, build notes
-├── spec/                       ← Project plan, learning guide, Copilot instructions
-├── learning/                   ← Phase specs, theory notes, AI setup (coming)
+├── learning/                   ← Phase specs, theory notes, AI setup
 ├── vscode-extension/           ← SharpBASIC syntax highlighting for VS Code
 ├── .github/                    ← GitHub Actions workflows
-├── artifacts/                  ← Build output (nupkg) and git state logs
 ├── install.ps1                 ← Build and install as global .NET tool
-├── tasks.md                    ← Current phase task tracking
 ├── SharpBasic.sln              ← Solution file
 ├── LICENSE                     ← MIT
 └── README.md                   ← This file

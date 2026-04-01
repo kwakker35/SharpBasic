@@ -4,20 +4,5 @@
 			"path": "."
 		}
 	],
-	"settings": {
-		"chat.tools.terminal.autoApprove": {
-			"dotnet new": true,
-			"dotnet sln": true,
-			"dotnet add": true,
-			"New-Item": true,
-			"Out-Null": true,
-			"dotnet build": true,
-			"ForEach-Object": true,
-			"dotnet test": true,
-			"git add": true,
-			"git commit": true,
-			"git checkout": true
-		},
-		"github.copilot.nextEditSuggestions.enabled": false
-	}
+	"settings": {}
 }

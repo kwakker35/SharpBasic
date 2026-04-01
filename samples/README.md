@@ -27,6 +27,7 @@ sharpbasic <sample-folder>/<sample-name>.sbx
 | 11 | [hangman](hangman/) | `SUB`, `FUNCTION`, boolean arrays, string ops, game loop | ⭐⭐⭐⭐ |
 | 12 | [tic-tac-toe](tic-tac-toe/) | Flat array as 2D grid, ASCII board, win detection | ⭐⭐⭐⭐ |
 | 13 | [wordle](wordle/) | Two-pass scoring algorithm, function-scoped arrays, complex game logic | ⭐⭐⭐⭐⭐ |
+| 14 | [the-sunken-crown](the-sunken-crown/) | Complete text adventure: parallel arrays, combat system, inventory, 2D state, `SLEEP`, `CHR$`, `RND` | ⭐⭐⭐⭐⭐ |
 
 ---
 
@@ -49,3 +50,4 @@ sharpbasic <sample-folder>/<sample-name>.sbx
 | `DIM`, array indexing, 2D arrays | arrays |
 | `SUB`, `CALL` | hangman |
 | Multi-array programs, algorithms | wordle |
+| `SLEEP`, `CHR$`, `ASC`, `STRING$`, parallel arrays, game architecture | the-sunken-crown |

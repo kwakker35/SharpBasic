@@ -987,12 +987,12 @@ public class Evaluator(
         }
         catch (ReturnException re)
         {
-            //sucess hit return statement and swallow the return value
+            //success hit return statement and swallow the return value
             return new EvalSuccess(new VoidValue());
         }
         catch (Exception e)
         {
-            //unkown exception
+            //unknown exception
             return new EvalFailure(
                         [
                             new Diagnostic(
@@ -1005,7 +1005,7 @@ public class Evaluator(
                     );
         }
 
-        //no return statment - no problem!
+        //no return statement - no problem!
         return new EvalSuccess(new VoidValue());
     }
 
@@ -1080,12 +1080,12 @@ public class Evaluator(
         }
         catch (ReturnException re)
         {
-            //sucess hit return statement 
+            //success hit return statement 
             return new EvalSuccess(re.ReturnValue);
         }
         catch (Exception e)
         {
-            //unkown exception
+            //unknown exception
             return new EvalFailure(
                         [
                             new Diagnostic(

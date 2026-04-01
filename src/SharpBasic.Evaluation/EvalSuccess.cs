@@ -1,3 +1,3 @@
-using SharpBasic.Evaluation;
+namespace SharpBasic.Evaluation;
 
-public record EvalSuccess(Value? Value): EvalResult; // null = void/no value
+public record EvalSuccess(Value? Value) : EvalResult; // null = void/no value
