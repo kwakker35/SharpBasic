@@ -95,6 +95,12 @@ Does the distribution look right? You are looking for roughly equal frequency ac
 ## The Listing
 
 ```
+REM === ADD TO: file header comment block, after Issue 2 line ===
+
+REM  Issue 3: The Dice and the Dark
+REM  RollDice, attribute rolling, opening sequence.
+
+
 REM === ADD TO: player stats block, after LET luck = 0 ===
 LET startSkill = 0   REM starting SKILL -- reference value for end screen
 LET startStamina = 0 REM starting STAMINA -- healing cap; never changes after RollStartingStats

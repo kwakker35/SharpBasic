@@ -95,23 +95,33 @@ There is no right answer. It is a design question. The published version does no
 ```
 REM === ADD TO: file header comment block, after Issue 7 line ===
 
-REM  Issue 8: Traps and Riddles
-REM  TestLuck, InitRiddle, PrintRiddle, StillChamberSequence,
-REM  RiddleRoomSequence, Collapsed Passage rubble, LUCK command.
+REM  Issue 8: Riddle, Still Chamber, Underhall lock
+REM  Still Chamber teleport, riddle room, Underhall east door lock.
 
 
-REM === ADD TO: globals block, after LET riddleSolved = 0 ===
+REM === ADD TO: globals block, after LET zombieRoom = 0 ===
+
+REM ----------------------------------------------------------------
+REM  Riddle state
+REM  riddleIndex: 1-8, which riddle is active this run.
+REM  riddleCorrectDoor: 1=LEFT, 2=RIGHT -- the safe door.
+REM  riddleSolved: 0 = unsolved, 1 = solved (pass-through on revisit).
+REM ----------------------------------------------------------------
+LET riddleIndex = 0
+LET riddleCorrectDoor = 0
+LET riddleSolved = 0
 
 REM  Lucky and unlucky teleport pools for the Still Chamber
 DIM luckyPool[2] AS INTEGER
 DIM unluckyPool[6] AS INTEGER
 
 
-REM === ADD TO: reset block inside WHILE keepPlaying, after LET riddleSolved = 0 ===
+REM === ADD TO: reset block, after LET zombieRoom = 0 ===
 
-REM  Re-hide Riddle Room exits (may have been unhidden by previous run)
-LET exitHidden[14] = 1
-LET exitHidden[15] = 1
+    LET riddleIndex = 0
+    LET riddleCorrectDoor = 0
+    LET riddleSolved = 0
+    LET pendingFlavourCount = 0
 
 
 REM === ADD BEFORE: SUB CombatLoop (or wherever InitRiddle fits logically) ===
@@ -125,10 +135,10 @@ FUNCTION TestLuck() AS INTEGER
     LET roll = RollDice(2)
     SET GLOBAL luckTestCount = luckTestCount + 1
     IF roll <= luck THEN
-        SET GLOBAL luck = luck - 1
+        SET GLOBAL luck = MAX(luck - 1, 0)
         RETURN 1
     ELSE
-        SET GLOBAL luck = luck - 1
+        SET GLOBAL luck = MAX(luck - 1, 0)
         RETURN 0
     END IF
 END FUNCTION
@@ -381,10 +391,11 @@ REM  Add before CALL PrintHeader(), at the very top of EnterRoom:
     END IF
 
 
-REM === MODIFY: SUB HandleGo -- add sealed door and rubble clearing ===
+REM === MODIFY: SUB HandleGo -- add sealed Underhall door ===
 
-REM  Add after the zombie monster-block check, before LET start = ...:
+REM  Add after the rubble-clearing check, before LET start = ...:
 
+    REM --- Issue 8: Underhall east door locked until riddle solved ---
     IF currentRoom = ROOM_UNDERHALL AND dir = DIR_E AND riddleSolved = 0 THEN
         CALL QueueFlavour("  The eastern passage ends at a door. It is sealed -- not locked,")
         CALL QueueFlavour("  sealed, as though the stone grew shut around it. Whatever opens")
@@ -393,24 +404,6 @@ REM  Add after the zombie monster-block check, before LET start = ...:
         RETURN
     END IF
 
-REM  Add inside the exit-found branch, before overburdened check:
-
-    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
-        LET exitHidden[11] = 0
-        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
-        CALL QueueFlavour("")
-    END IF
-
-
-REM === MODIFY: SUB HandleSneak -- add rubble clearing for Cistern ===
-
-REM  Add inside the no-target branch, before SET GLOBAL currentRoom = dest:
-
-    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
-        LET exitHidden[11] = 0
-        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
-        CALL QueueFlavour("")
-    END IF
 
 
 REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
@@ -427,7 +420,7 @@ REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
                 CALL AdvanceTurns(1)
 
 
-REM === MODIFY: SUB PrintDeathScreen -- add endState 3 branch ===
+REM === MODIFY: SUB PrintEndScreen -- add endState 3 branch ===
 
     IF endState = 3 THEN
         PRINT "  You pass through the door into a room straight from your worst nightmare."
@@ -443,22 +436,6 @@ REM === MODIFY: SUB PrintDeathScreen -- add endState 3 branch ===
     ELSE
         PRINT "  Your STAMINA reached zero."
     END IF
-
-
-REM === MODIFY: InitExits -- add hidden exits for Riddle Room and Collapsed Passage ===
-
-    REM --- Room 6: Collapsed Passage -- E->Crossroads, S->Cistern (hidden) ---
-    LET exitDir[11] = DIR_S
-    LET exitDest[11] = ROOM_CISTERN
-    LET exitHidden[11] = 1
-
-    REM --- Room 8: Riddle Room -- N->Pit, W->Underhall (both hidden until solved) ---
-    LET exitDir[14] = DIR_N
-    LET exitDest[14] = ROOM_PIT
-    LET exitHidden[14] = 1
-    LET exitDir[15] = DIR_W
-    LET exitDest[15] = ROOM_UNDERHALL
-    LET exitHidden[15] = 1
 
 
 REM === ADD TO: startup block, after CALL InitMonsters() ===

@@ -37,9 +37,9 @@ The dungeon's rooms and exits live in arrays — fixed-size collections of value
 ```
 DIM roomExitCount[MAX_ROOMS] AS INTEGER   REM  how many exits each room has
 DIM roomExitStart[MAX_ROOMS] AS INTEGER   REM  index of first exit slot for each room
-DIM exitDir[30] AS INTEGER         REM  direction code for each exit slot
-DIM exitDest[30] AS INTEGER        REM  destination room for each exit slot
-DIM exitHidden[30] AS INTEGER      REM  1 = hidden until SEARCH finds it
+DIM exitDir[MAX_EXITS] AS INTEGER  REM  direction code for each exit slot
+DIM exitDest[MAX_EXITS] AS INTEGER REM  destination room for each exit slot
+DIM exitHidden[MAX_EXITS] AS INTEGER REM  1 = hidden until SEARCH finds it
 ```
 
 This is the parallel array pattern. Five separate arrays, but they describe one thing: the map. They are kept in sync by the initialisation code that populates them.
@@ -139,9 +139,9 @@ REM  exitDest[i]:   destination room for exit slot i
 REM  exitHidden[i]: 0 = visible to player, 1 = hidden until SEARCHed
 DIM roomExitStart[MAX_ROOMS] AS INTEGER
 DIM roomExitCount[MAX_ROOMS] AS INTEGER
-DIM exitDir[30] AS INTEGER
-DIM exitDest[30] AS INTEGER
-DIM exitHidden[30] AS INTEGER
+DIM exitDir[MAX_EXITS] AS INTEGER
+DIM exitDest[MAX_EXITS] AS INTEGER
+DIM exitHidden[MAX_EXITS] AS INTEGER
 
 REM === NEW FUNCTION: add after FUNCTION RollDice ===
 REM =================================================================
@@ -280,23 +280,23 @@ SUB InitExits()
     LET exitDest[13] = ROOM_RIDDLE
     LET exitHidden[13] = 0
 
-    REM --- Room 8: The Riddle Room -- N->Pit, S->Underhall (hidden until solved) (slots 14-15) ---
+    REM --- Room 8: The Riddle Room -- N->Pit, W->Underhall (both hidden until solved) (slots 14-15) ---
     LET roomExitStart[ROOM_RIDDLE - 1] = 14
     LET roomExitCount[ROOM_RIDDLE - 1] = 2
     LET exitDir[14] = DIR_N
     LET exitDest[14] = ROOM_PIT
-    LET exitHidden[14] = 0
-    LET exitDir[15] = DIR_S
+    LET exitHidden[14] = 1
+    LET exitDir[15] = DIR_W
     LET exitDest[15] = ROOM_UNDERHALL
     LET exitHidden[15] = 1
 
-    REM --- Room 9: The Cistern -- N->Collapsed, S->Underhall (slots 16-17) ---
+    REM --- Room 9: The Cistern -- N->Collapsed, E->Underhall (slots 16-17) ---
     LET roomExitStart[ROOM_CISTERN - 1] = 16
     LET roomExitCount[ROOM_CISTERN - 1] = 2
     LET exitDir[16] = DIR_N
     LET exitDest[16] = ROOM_COLLAPSED
     LET exitHidden[16] = 0
-    LET exitDir[17] = DIR_S
+    LET exitDir[17] = DIR_E
     LET exitDest[17] = ROOM_UNDERHALL
     LET exitHidden[17] = 0
 
@@ -479,7 +479,7 @@ SUB PrintRoom(roomId AS INTEGER)
             PRINT ""
             PRINT "  The floor comes up to meet you."
         ELSE
-            PRINT "  The passage ends in a room that shouldn't be here."
+            PRINT "  The passage ends in a room that should not be here."
             PRINT ""
             PRINT "  It is perfectly circular. The walls are smooth in a way the rest of the"
             PRINT "  dungeon is not -- not worn smooth, shaped smooth, as though the stone was"

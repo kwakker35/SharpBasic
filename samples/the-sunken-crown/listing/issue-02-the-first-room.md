@@ -93,6 +93,15 @@ This is exactly how every room in the game gets added. The pattern is always the
 > lines into your program.
 
 ```
+' === MODIFY: file header comment block ===
+
+REM  Replace "Everything that follows in subsequent issues goes inside it."
+REM  with:
+
+REM  Issue 2: The First Room
+REM  Room description system, PrintRoom, EnterRoom, command loop.
+
+
 ' === ADD TO: constants block, after CONST COMBAT_DELAY ===
 
 CONST MAX_ROOMS = 12

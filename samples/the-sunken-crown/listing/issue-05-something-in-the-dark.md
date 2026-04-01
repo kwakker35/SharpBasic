@@ -82,19 +82,10 @@ Raise the Brute's SKILL by 3 and fight it again. Then lower yours by 3 instead. 
 ## The Listing
 
 ```
-REM === ADD TO: constants block, after CONST MAX_ROOMS = 12 ===
+REM === ADD TO: file header comment block, after Issue 4 line ===
 
-REM ----------------------------------------------------------------
-REM  Monster identity constants
-REM  Room numbers for each fixed monster. Declared as CONST so the
-REM  code always refers to monsters by name, not by raw room number.
-REM ----------------------------------------------------------------
-CONST MONSTER_BRUTE = 2
-CONST MONSTER_HORROR = 6
-CONST MONSTER_GUARDIAN = 7
-CONST MONSTER_MAGE = 9
-CONST MONSTER_TROLL = 10
-CONST MONSTER_KING = 11
+REM  Issue 5: Something in the Dark
+REM  Combat system, Guardroom Brute, monster state, dead-variant room text.
 
 
 REM === ADD TO: globals block, replace the REM/LET for gameOver ===
@@ -121,6 +112,7 @@ DIM monsterAlive[MAX_ROOMS] AS INTEGER
 LET minStamina = 0
 LET turns = 0
 LET poisoned = 0
+LET inCombat = 0
 LET luckTestCount = 0
 
 
@@ -313,6 +305,7 @@ SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina A
                hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER,
                hasPoison AS INTEGER, isBoss AS INTEGER,
                searchInterrupt AS INTEGER)
+    SET GLOBAL inCombat = 1
     LET round = 1
     LET firstRound = 1
     LET terrorActive = 0
@@ -457,6 +450,7 @@ SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina A
         SET GLOBAL skill = skill + 2
         SET GLOBAL luck = luck + 1
     END IF
+    SET GLOBAL inCombat = 0
 END SUB
 
 
@@ -634,7 +628,7 @@ END SUB
 
 REM === NEW SUB: add after SUB HandleFight() ===
 
-SUB PrintDeathScreen()
+SUB PrintEndScreen()
     PRINT ""
     CALL PrintSeparator()
     PRINT ""
@@ -713,7 +707,7 @@ WHILE keepPlaying = 1
         END SELECT
     WEND
 
-    CALL PrintDeathScreen()
+    CALL PrintEndScreen()
     INPUT "  Play again? (YES / NO): "; playAgain$
     LET playAgain$ = UPPER$(playAgain$)
     PRINT ""

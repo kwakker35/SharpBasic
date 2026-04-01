@@ -19,7 +19,7 @@ This issue changes that. Inventory goes in. TAKE, DROP, USE, and SEARCH all star
 
 - `inventory` array and `invCount` — the carry system
 - `overburdened` flag — set when `invCount` reaches 4, cleared when it drops below
-- Loot slot arrays — `slotContents`, `slotTaken`, `slotRoom`
+- Loot slot arrays — `slotContents`, `slotTaken`
 - `SUB ShuffleLoot()` — Fisher-Yates shuffle of 5 items across 6 loot slots at startup
 - `FUNCTION ItemName(code AS INTEGER) AS STRING` — converts item codes to display names
 - `SUB AddToInventory(itemCode AS INTEGER)` — adds an item, updates carry state
@@ -35,7 +35,7 @@ This issue changes that. Inventory goes in. TAKE, DROP, USE, and SEARCH all star
 Inventory is stored as an array of item codes:
 
 ```
-DIM inventory[4] AS INTEGER    REM  item code per slot, 0 = empty
+DIM inventory[5] AS INTEGER    REM  item code per slot, 0 = empty
 LET invCount = 0               REM  number of items currently carried
 LET overburdened = 0           REM  0 = normal, 1 = carrying 4 items
 ```
@@ -138,10 +138,10 @@ Drop an item and pick it up again. Check `invCount` before and after. Does it re
 ```
 REM === ADD TO: file header comment block, add Issue 6 line after Issue 5 ===
 REM  Issue 6: What You Carry
-REM  Inventory, loot shuffle, SEARCH, TAKE, DROP, USE, overburdened,
-REM  Sword/Shard/Medal combat effects, Guardroom Key drop.
+REM  All monsters wired. Items: antidote, bangle, magic sword.
+REM  Inventory, SEARCH, TAKE, DROP, USE, overburdened, loot shuffle, luck tests.
 
-REM === ADD TO: constants block, after CONST MONSTER_KING = 11 ===
+REM === ADD TO: constants block, after CONST ROOM_GATE = 12 ===
 
 REM ----------------------------------------------------------------
 REM  Item codes -- locked (Decision 5)
@@ -1172,17 +1172,23 @@ WHILE keepPlaying = 1
                 CALL HandleDrop(RIGHT$(cmd$, LEN(cmd$) - 5))
             CASE "USE KEY", "USE POTION", "USE CHARM", "USE SHARD", "USE BREAD", "USE MEDAL", "USE ANTIDOTE", "USE BANGLE", "USE SWORD", "USE MOULDY"
                 CALL HandleUse(RIGHT$(cmd$, LEN(cmd$) - 4))
+            CASE "CHEAT"
+                REM  DEV TOOL -- strip before release (Issue 10)
+                LET skill = 12
+                LET stamina = 24
+                PRINT "  [CHEAT] SKILL: " & skill & "  STAMINA: " & stamina
+                PRINT ""
             CASE ELSE
                 PRINT "  The dungeon does not respond to that."
                 PRINT ""
         END SELECT
     WEND
 
-    CALL PrintDeathScreen()
+    CALL PrintEndScreen()
     INPUT "  Play again? (YES / NO): "; playAgain$
     LET playAgain$ = UPPER$(playAgain$)
     PRINT ""
-    IF playAgain$ = "YES" THEN
+    IF playAgain$ = "YES" OR playAgain$ = "Y" THEN
         LET keepPlaying = 1
     ELSE
         LET keepPlaying = 0

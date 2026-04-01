@@ -97,15 +97,12 @@ The threshold is a design decision as much as a code decision. 8.5 is right for 
 ## The Listing
 
 ```
-REM === ADD TO: file header comment block, after Issue 5 line ===
-REM  Issue 6: What You Carry
-REM  All monsters wired. Items: antidote, bangle, magic sword.
-REM  Inventory, SEARCH, TAKE, DROP, USE, overburdened, loot shuffle, luck tests.
+REM === ADD TO: file header comment block, after Issue 6 line ===
 REM  Issue 7: The Dungeon Breathes
 REM  Atmospheric events, wandering zombie, SNEAK, LOOK, AdvanceTurns, poison drain.
 
 
-REM === ADD TO: globals block, after LET poisoned = 0 ===
+REM === ADD TO: globals block, after LET luckTestCount = 0 ===
 
 REM ----------------------------------------------------------------
 REM  Zombie state
@@ -116,13 +113,6 @@ REM ----------------------------------------------------------------
 LET zombieSpawned = 0
 LET zombieAlive = 0
 LET zombieRoom = 0
-
-REM ----------------------------------------------------------------
-REM  Combat state
-REM  inCombat: 1 while CombatLoop is running; suppresses flavour
-REM  atmospheric events (cases 1-7, 12) during fights.
-REM ----------------------------------------------------------------
-LET inCombat = 0
 
 
 REM === MODIFY: SUB QueueFlavour -- add inCombat bypass ===
@@ -141,12 +131,15 @@ SUB QueueFlavour(line$ AS STRING)
 END SUB
 
 
-REM === ADD TO: reset block inside WHILE keepPlaying, after LET searchInterruptActive = 0 ===
+REM === ADD TO: reset block, add LET inCombat = 0 after LET poisoned = 0 ===
 
-LET zombieSpawned = 0
-LET zombieAlive = 0
-LET zombieRoom = 0
-LET inCombat = 0
+    LET inCombat = 0
+
+REM === ADD TO: reset block, after LET searchInterruptActive = 0 ===
+
+    LET zombieSpawned = 0
+    LET zombieAlive = 0
+    LET zombieRoom = 0
 
 
 REM === ADD BEFORE: SUB HandleSearch ===
@@ -163,16 +156,18 @@ SUB WanderZombie()
     LET validCount = 0
     FOR i = zStart TO zStart + zCount - 1
         LET dest = exitDest[i]
-        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE THEN
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE AND monsterAlive[dest - 1] = 0 THEN
             LET validCount = validCount + 1
         END IF
     NEXT i
-    IF validCount = 0 THEN RETURN END IF
+    IF validCount = 0 THEN
+        RETURN
+    END IF
     LET pick = CINT(RND() * validCount) + 1
     LET seen = 0
     FOR i = zStart TO zStart + zCount - 1
         LET dest = exitDest[i]
-        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE THEN
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE AND monsterAlive[dest - 1] = 0 THEN
             LET seen = seen + 1
             IF seen = pick THEN
                 SET GLOBAL zombieRoom = dest
@@ -185,55 +180,74 @@ END SUB
 REM =================================================================
 REM  SUB AtmosphericEvent
 REM  Fires one of 12 atmospheric events chosen at random.
-REM  Events 1-7 and case 12 are suppressed during combat (inCombat = 1).
-REM  Events 8-9 (STAMINA drain) always fire. Event 10 fires damage if
-REM  overburdened; text varies by inCombat. Event 11 runs silently.
+REM  Events 1-7 are pure flavour. Events 8-9 deal STAMINA -1.
+REM  Event 10 is conditional on overburdened. Events 11-12 are
+REM  threat escalation: zombie spawn check and proximity presence.
 REM  Text sourced from Deliverable 3 of the content asset file.
 REM =================================================================
 SUB AtmosphericEvent()
     LET evt = CINT(RND() * 12) + 1
     SELECT CASE evt
         CASE 1
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  Your torch gutters. For a moment the darkness is absolute -- a living,")
-            CALL QueueFlavour("  pressing thing. Then the flame catches again. You breathe out. You")
-            CALL QueueFlavour("  hadn't noticed you'd stopped.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Your torch gutters. For a moment the darkness is absolute -- a living,")
+                CALL QueueFlavour("  pressing thing. Then the flame catches again. You breathe out. You")
+                CALL QueueFlavour("  hadn't noticed you'd stopped.")
+                CALL QueueFlavour("")
+            END IF
         CASE 2
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  Something scrapes in the dark below. Once. Then silence. You wait.")
-            CALL QueueFlavour("  Nothing follows. The dungeon does not explain itself.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Somewhere below you -- deeper than you've been -- something moves. A")
+                CALL QueueFlavour("  slow, rhythmic scraping. Stone on stone. It stops. You wait. It doesn't")
+                CALL QueueFlavour("  start again.")
+                CALL QueueFlavour("")
+            END IF
         CASE 3
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  The wall is warm here. Not the residual warmth of stone that has held")
-            CALL QueueFlavour("  heat. Something warmer than that, and more deliberate. You move on.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You place your hand against the wall to steady yourself. The stone is")
+                CALL QueueFlavour("  warm. Not the warmth of your own body heat -- it was warm before you")
+                CALL QueueFlavour("  touched it. You take your hand away.")
+                CALL QueueFlavour("")
+            END IF
         CASE 4
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  A current of cold air from somewhere below. Steady, purposeful. As if")
-            CALL QueueFlavour("  something down there is still breathing.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The air changes. A cold current from nowhere, carrying the smell of")
+                CALL QueueFlavour("  standing water and something older. Something that hasn't seen light")
+                CALL QueueFlavour("  in a very long time.")
+                CALL QueueFlavour("")
+            END IF
         CASE 5
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  Old bones in the corner. Not arranged -- just accumulated. The dungeon")
-            CALL QueueFlavour("  is not interested in ceremony.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You almost step on them. Small. Difficult to identify. You don't try.")
+                CALL QueueFlavour("")
+            END IF
         CASE 6
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  The silence in here is a different quality than before. Thicker.")
-            CALL QueueFlavour("  You have the distinct feeling that something nearby has gone very still.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The dungeon goes completely quiet. No drip of water, no distant groan")
+                CALL QueueFlavour("  of settling stone. Nothing. It lasts perhaps ten seconds. It feels much")
+                CALL QueueFlavour("  longer. Then the sounds return, and you realise how much you'd been")
+                CALL QueueFlavour("  relying on them.")
+                CALL QueueFlavour("")
+            END IF
         CASE 7
-            CALL QueueFlavour("")
-            CALL QueueFlavour("  Scratched into the wall at eye level: three marks, then a fourth")
-            CALL QueueFlavour("  crossing them. Then more sets. Someone was counting.")
-            CALL QueueFlavour("  The tally runs to the corner and does not stop.")
-            CALL QueueFlavour("")
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Scratches in the wall at eye height. You lean close. Letters, cut deep")
+                CALL QueueFlavour("  and fast by someone who knew they were running out of time. Three words.")
+                CALL QueueFlavour("  The middle one is illegible. The first is " & CHR$(34) & "do not" & CHR$(34) & " and the last is " & CHR$(34) & "alone." & CHR$(34))
+                CALL QueueFlavour("")
+            END IF
         CASE 8
             CALL QueueFlavour("")
-            CALL QueueFlavour("  A cold settles in your chest. Not the cold of stone -- something older.")
-            CALL QueueFlavour("  You feel it costing you.")
+            CALL QueueFlavour("  The cold gets into you. Not the sharp cold of wind -- the slow cold of")
+            CALL QueueFlavour("  deep stone, of places that have never been warm. You feel it in your")
+            CALL QueueFlavour("  chest first.")
             CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
@@ -245,8 +259,8 @@ SUB AtmosphericEvent()
             END IF
         CASE 9
             CALL QueueFlavour("")
-            CALL QueueFlavour("  Hunger. Not gradual. A sudden sharp reminder that you have been down")
-            CALL QueueFlavour("  here a long time. It takes something out of you.")
+            CALL QueueFlavour("  You haven't eaten. You'd forgotten until now. Your body reminds you")
+            CALL QueueFlavour("  with a clarity that's difficult to ignore.")
             CALL QueueFlavour("")
             SET GLOBAL stamina = stamina - 1
             SET GLOBAL minStamina = MIN(minStamina, stamina)
@@ -258,10 +272,17 @@ SUB AtmosphericEvent()
             END IF
         CASE 10
             IF overburdened = 1 THEN
-                CALL QueueFlavour("")
-                CALL QueueFlavour("  The weight of what you are carrying is becoming a problem you cannot")
-                CALL QueueFlavour("  ignore. Every step costs more than it should.")
-                CALL QueueFlavour("")
+                IF inCombat = 1 THEN
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  The weight you are carrying pulls at your arms. You are slower")
+                    CALL QueueFlavour("  than you should be. It costs you.")
+                    CALL QueueFlavour("")
+                ELSE
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. The weight pulls you down hard.")
+                    CALL QueueFlavour("  You catch yourself on one knee. It costs you.")
+                    CALL QueueFlavour("")
+                END IF
                 SET GLOBAL stamina = stamina - 1
                 SET GLOBAL minStamina = MIN(minStamina, stamina)
                 CALL QueueFlavour("  STAMINA: " & stamina)
@@ -271,10 +292,12 @@ SUB AtmosphericEvent()
                     SET GLOBAL endState = 5
                 END IF
             ELSE
-                CALL QueueFlavour("")
-                CALL QueueFlavour("  The passage narrows briefly -- low ceiling, close walls. Then opens")
-                CALL QueueFlavour("  again. The dungeon is not consistent. It was not built to be.")
-                CALL QueueFlavour("")
+                IF inCombat = 0 THEN
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. You catch yourself easily.")
+                    CALL QueueFlavour("  A reminder that the floor is not your friend.")
+                    CALL QueueFlavour("")
+                END IF
             END IF
         CASE 11
             IF zombieSpawned = 0 AND turns > 3 THEN
@@ -285,24 +308,23 @@ SUB AtmosphericEvent()
                 END IF
             END IF
         CASE 12
-            IF zombieAlive = 1 THEN
-                LET isNear = 0
-                LET pStart = roomExitStart[currentRoom - 1]
-                LET pCount = roomExitCount[currentRoom - 1]
-                FOR i = pStart TO pStart + pCount - 1
-                    IF exitDest[i] = zombieRoom THEN
-                        LET isNear = 1
-                    END IF
+            IF zombieAlive = 1 AND inCombat = 0 THEN
+                LET zNear = 0
+                LET zStart = roomExitStart[currentRoom - 1]
+                LET zCount = roomExitCount[currentRoom - 1]
+                FOR i = zStart TO zStart + zCount - 1
+                    IF exitDest[i] = zombieRoom THEN LET zNear = 1 END IF
                 NEXT i
-                IF isNear = 1 THEN
+                IF zombieRoom = currentRoom THEN LET zNear = 1 END IF
+                IF zNear = 1 THEN
                     CALL QueueFlavour("")
-                    CALL QueueFlavour("  Something is moving in the passage nearby. You can hear it.")
-                    CALL QueueFlavour("  Irregular. Getting closer.")
+                    CALL QueueFlavour("  Something is moving in the dungeon. Not far away. The sound has")
+                    CALL QueueFlavour("  direction.")
                     CALL QueueFlavour("")
                 ELSE
                     CALL QueueFlavour("")
-                    CALL QueueFlavour("  A distinct feeling -- not sound, not smell. Something else is")
-                    CALL QueueFlavour("  moving through these passages. You are not alone down here.")
+                    CALL QueueFlavour("  You have the distinct feeling you are not alone. You stand very")
+                    CALL QueueFlavour("  still. Whatever it was, it passes.")
                     CALL QueueFlavour("")
                 END IF
             END IF
@@ -318,13 +340,14 @@ REM  Stops early if gameOver is set during event processing.
 REM =================================================================
 SUB AdvanceTurns(n AS INTEGER)
     FOR t = 1 TO n
-        IF gameOver = 1 THEN RETURN END IF
-        SET GLOBAL turns = turns + 1
-        IF RND() * 10 > 8.5 THEN
-            CALL AtmosphericEvent()
-        END IF
-        IF zombieSpawned = 1 AND zombieAlive = 1 THEN
-            CALL WanderZombie()
+        IF gameOver = 0 THEN
+            SET GLOBAL turns = turns + 1
+            IF RND() * 10 > 8.5 THEN
+                CALL AtmosphericEvent()
+            END IF
+            IF zombieSpawned = 1 AND zombieAlive = 1 THEN
+                CALL WanderZombie()
+            END IF
         END IF
     NEXT t
 END SUB
@@ -350,6 +373,12 @@ REM  ROOM_THRONE always refuses. Roll: RollDice(2) <= skill = success
 REM  (move to dest, 1 turn). Failure: fight in current room, no move.
 REM =================================================================
 SUB HandleSneak(dir AS INTEGER)
+    REM --- Collapsed Passage: entering from Cistern clears the rubble ---
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        LET exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
+    END IF
     LET dest = 0
     LET sStart = roomExitStart[currentRoom - 1]
     LET sCount = roomExitCount[currentRoom - 1]
@@ -403,6 +432,8 @@ REM  Add immediately after SUB CombatLoop(...) declaration:
 REM  Add immediately before END SUB (after terror restore block):
     SET GLOBAL inCombat = 0
 
+REM === MODIFY: SUB HandleGo -- add monster/zombie block, rubble-clearing, AdvanceTurns ===
+
 REM  Add at top of SUB HandleGo, before LET start = ...:
 
     IF monsterAlive[currentRoom - 1] = 1 THEN
@@ -414,6 +445,12 @@ REM  Add at top of SUB HandleGo, before LET start = ...:
         CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
         CALL QueueFlavour("")
         RETURN
+    END IF
+    REM --- Collapsed Passage: entering from Cistern clears the rubble ---
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        LET exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
     END IF
 
 REM  Replace bare RETURN inside the exit-found branch with:

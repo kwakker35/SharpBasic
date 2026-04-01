@@ -25,7 +25,9 @@ This issue wires the final boss, the gold mechanic, and the crown. It is the mos
 - Crown reveal — `crownAvailable` flag set after combat, crown appears on SEARCH
 - `SUB CrownSequence()` — fires immediately on TAKE CROWN, bypasses inventory entirely
 - `endState` variable — tracks how the run ended, read by the end screen in Issue 10
-- `EnterRoom` updated to detect room 11 and route to `BoundKingSequence` while the King is alive
+- `EnterRoom` postFight text for Throne Room aftermath
+- `PrintRoom` ROOM_THRONE updated with dead-king revisit text
+- `HandleFight` Throne Room branch replaced — routes to `BoundKingSequence` (replaces Issue 6 placeholder)
 - `SUB HandleQuit()` — QUIT command: instant, no confirmation, context-sensitive death flavour, `endState = 6`
 - `CASE "QUIT"` added to game loop — calls `HandleQuit()`, no `EnterRoom` after
 
@@ -104,11 +106,6 @@ REM  Issue 9: The Bound King
 REM  Boss fight, gold bags, crown, Bangle terror negation, QUIT command.
 
 
-REM === ADD TO: constants block, after CONST MONSTER_TROLL = 10 ===
-
-CONST MONSTER_KING = 11
-
-
 REM === ADD TO: item code constants, after CONST ITEM_KEY = 10 ===
 
 CONST ITEM_GOLD     = 11
@@ -155,9 +152,9 @@ REM === ADD TO: reset block inside WHILE keepPlaying, after Issue 8 reset lines 
     LET terrorActive = 0
 
 
-REM === MODIFY: SUB CombatLoop -- add full terror block after variable init ===
+REM === MODIFY: SUB CombatLoop -- replace terror block (update Issue 5 version) ===
 
-REM  Add after LET poisonRoll = 0:
+REM  Replace the existing terror block (after LET poisonRoll = 0) with:
 
     REM  Full terror -- Bound King only.
     REM  Bangle of Courage negates terror entirely (passive item).
@@ -193,9 +190,9 @@ REM  Add inside the stamina <= 0 check in monster-wins branch:
                 END IF
 
 
-REM === MODIFY: SUB CombatLoop -- add terror restore after combat WEND ===
+REM === MODIFY: SUB CombatLoop -- replace terror restore (update Issue 5 version) ===
 
-REM  Add after the WEND and SET GLOBAL inCombat = 0:
+REM  Replace the existing terror restore block (between WEND and SET GLOBAL inCombat = 0):
 
     REM  Restore full terror modifier after combat ends (Bound King only).
     IF terrorActive = 1 THEN
@@ -497,6 +494,44 @@ SUB HandleQuit()
 END SUB
 
 
+REM === ADD TO: SUB EnterRoom -- postFight section, after ROOM_UNDERHALL block ===
+
+        IF roomId = ROOM_THRONE THEN
+            PRINT "  The room is as you left it. The gold is everywhere. The throne is"
+            PRINT "  empty."
+            PRINT ""
+            PRINT "  The room is quiet in a way it was not before."
+        END IF
+
+
+REM === MODIFY: SUB PrintRoom -- ROOM_THRONE visited branch ===
+
+REM  Wrap the existing visited text in a monsterAlive check and add
+REM  the dead-king revisit text. Replace:
+REM    IF visited[roomId - 1] = 1 THEN
+REM        PRINT "  He is already looking..."
+REM        ...
+REM    ELSE
+REM  With:
+
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  He is already looking at the door when you enter."
+                PRINT ""
+                PRINT "  The gold is as it was. The throne is as it was. The figure on it is as"
+                PRINT "  it was -- minus whatever STAMINA you took from him, already restored,"
+                PRINT "  already waiting."
+                PRINT ""
+                PRINT "  He does not look surprised to see you again."
+            ELSE
+                PRINT "  The room is as you left it. The gold is everywhere. The throne is"
+                PRINT "  empty."
+                PRINT ""
+                PRINT "  The room is quiet in a way it was not before."
+            END IF
+        ELSE
+
+
 REM === ADD TO: SUB HandleSearch -- after floor item loop, before "nothing here" ===
 
     IF currentRoom = ROOM_THRONE AND monsterAlive[ROOM_THRONE - 1] = 0 THEN
@@ -513,7 +548,9 @@ REM === ADD TO: SUB HandleSearch -- after floor item loop, before "nothing here"
     END IF
 
 
-REM === ADD TO: SUB HandleFight -- Throne Room branch, before zombie branch ===
+REM === REPLACE: SUB HandleFight -- Throne Room branch (replaces Issue 6 placeholder) ===
+
+REM  Issue 6 had a "turn back" placeholder. Issue 9 routes to BoundKingSequence.
 
     IF roomId = ROOM_THRONE THEN
         CALL BoundKingSequence()
@@ -549,7 +586,7 @@ REM === ADD TO: game loop SELECT CASE, before CASE ELSE ===
                 CALL HandleQuit()
 
 
-REM === MODIFY: SUB PrintDeathScreen -- replace endState 3 / ELSE block ===
+REM === MODIFY: SUB PrintEndScreen -- replace endState 3 / ELSE block ===
 
 REM  Replace the existing IF endState = 3 / ELSE block with:
 

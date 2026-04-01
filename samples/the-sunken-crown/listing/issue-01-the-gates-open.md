@@ -21,8 +21,7 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 
 - The `.sbx` file is created for the first time
 - `CONST FRAME_WIDTH = 80` — the terminal width, used throughout
-- `CONST SCREEN_HEIGHT = 30` — total terminal rows
-- `CONST CONTENT_ROWS = 20` — rows available for content after chrome
+- `CONST COMBAT_DELAY = 1500` — milliseconds between combat roll and outcome display
 - `SUB PrintHeader()` — draws the title bar and stats line
 - `SUB PrintSeparator()` — draws the dividing line
 - `SUB QueueFlavour(line$)` — buffers a line of narrative text for display after the next header
@@ -31,7 +30,7 @@ This issue builds the frame. A handful of PRINT statements, carefully arranged, 
 - Placeholder stats so the frame has something to display
 - The `>` prompt
 
-This issue introduces the frame and the screen constants that every subsequent issue will use. Get them right here and you won't need to touch them again.
+This issue introduces the frame and the constants that every subsequent issue will use. Get them right here and you won't need to touch them again.
 
 ---
 
@@ -58,16 +57,12 @@ The `&` operator is SharpBASIC's string concatenation operator. It calls `.ToStr
 Now the separator line — eighty `=` characters across the full width of the terminal:
 
 ```
-LET sep = ""
-FOR i = 1 TO 80
-    LET sep = sep & "="
-NEXT i
-PRINT sep
+PRINT STRING$("=", FRAME_WIDTH)
 ```
 
-SharpBASIC has no string repeat function. So you build one. Start with an empty string. Loop eighty times. Add one `=` on each pass. At the end of the loop, `sep` holds eighty equals signs. Print it.
+`STRING$(char, count)` is SharpBASIC's string repeat function. `STRING$("=", 80)` produces eighty equals signs in a single call. No loop required. The same function is used later with `STRING$(" ", padLen)` to build right-aligned padding for the stats line.
 
-This loop pattern — building a string character by character — is used throughout the game wherever a fixed-width line is needed. Learn its shape here.
+Learn its shape here — `STRING$` appears throughout the game wherever a fixed-width line or dynamic padding is needed.
 
 ---
 
@@ -121,13 +116,9 @@ REM =================================================================
 
 REM ----------------------------------------------------------------
 REM  Constants
-REM  FRAME_WIDTH governs every separator and alignment calculation
-REM  throughout the game. SCREEN_HEIGHT and CONTENT_ROWS govern
-REM  the paging model used by Pause() in later issues.
+REM  FRAME_WIDTH governs every separator and alignment calculation.
 REM ----------------------------------------------------------------
 CONST FRAME_WIDTH = 80
-CONST SCREEN_HEIGHT = 30
-CONST CONTENT_ROWS = 20
 CONST COMBAT_DELAY = 1500   REM milliseconds between attack roll and outcome
 
 REM ----------------------------------------------------------------
@@ -155,8 +146,6 @@ REM  SUB PrintHeader
 REM  Prints the full header frame: an = separator, then the title
 REM  and current stats on one line, then another = separator.
 REM  Reads skill, stamina, luck from global scope -- read-only.
-REM  Padding is computed dynamically so the stats right-align
-REM  regardless of how many digits each value has.
 REM =================================================================
 SUB PrintHeader()
     CALL PrintSeparator()
@@ -168,7 +157,7 @@ END SUB
 
 REM =================================================================
 REM  SUB PrintSeparator
-REM  Prints a line of 80 - characters. Divides the header chrome
+REM  Prints a line of 80 = characters. Divides the header chrome
 REM  from the room content area below it.
 REM =================================================================
 SUB PrintSeparator()
@@ -178,8 +167,8 @@ END SUB
 REM =================================================================
 REM  SUB QueueFlavour -- line$ AS STRING
 REM  Appends one line to the pending flavour buffer. Pass "" for a
-REM  blank line. Buffered lines are displayed by FlushFlavour after
-REM  the next PrintHeader call, so the player always sees them.
+REM  blank line. If inCombat = 1, prints immediately instead so that
+REM  combat-time events remain visible inline.
 REM =================================================================
 SUB QueueFlavour(line$ AS STRING)
     IF pendingFlavourCount < 30 THEN
@@ -191,7 +180,8 @@ END SUB
 REM =================================================================
 REM  SUB FlushFlavour
 REM  Prints all buffered flavour lines then resets the buffer.
-REM  Called by EnterRoom immediately after PrintHeader.
+REM  Called by EnterRoom immediately after PrintHeader, and as a
+REM  safety net before the command prompt for SEARCH / USE / LUCK.
 REM =================================================================
 SUB FlushFlavour()
     IF pendingFlavourCount > 0 THEN
