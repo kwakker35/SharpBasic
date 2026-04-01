@@ -17,41 +17,70 @@ public class Evaluator(
 
     private static Dictionary<string, Func<List<Value>, Value?>> CreateBuiltins() => new()
     {
-        ["LEN"] = args => args[0] is StringValue sv ?
-                            new IntValue(sv.V.Length)
-                            : null,
-        ["MID$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 &&
-                            args[2] is IntValue iv2 ? new StringValue(
-                                sv.V.Substring(iv1.V - 1, iv2.V)
-                            ) : null,
-        ["LEFT$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 ? new StringValue(
-                                sv.V[..iv1.V]
-                            ) : null,
-        ["RIGHT$"] = args => args[0] is StringValue sv &&
-                            args[1] is IntValue iv1 ? new StringValue(
-                                sv.V[^iv1.V..]
-                            ) : null,
-        ["TRIM$"] = args => args[0] is StringValue sv ? new StringValue(
-                                sv.V.Trim()
-                            ) : null,
-        ["UPPER$"] = args => args[0] is StringValue sv ? new StringValue(
-                            sv.V.ToUpperInvariant()
-                            ) : null,
-        ["LOWER$"] = args => args[0] is StringValue sv ? new StringValue(
-                            sv.V.ToLowerInvariant()
-                            ) : null,
-        ["INT"] = args => args[0] is IntValue iv ?
-                            new IntValue(iv.V) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Floor(fv.V))
-                            : null,
-        ["STR$"] = args => args[0] is IntValue iv ?
-                            new StringValue(iv.V.ToString()) :
-                            args[0] is FloatValue fv ?
-                            new StringValue(fv.V.ToString())
-                            : null,
+        ["LEN"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("LEN requires a string argument");
+            return new IntValue(sv.V.Length);
+        },
+        ["MID$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1 || args[2] is not IntValue iv2)
+                throw new InvalidOperationException("MID$ requires a string and two integer arguments");
+            if (iv1.V < 1)
+                throw new InvalidOperationException("MID$ start index must be at least 1");
+            if (iv2.V < 0)
+                throw new InvalidOperationException("MID$ length must be non-negative");
+            if (iv1.V - 1 + iv2.V > sv.V.Length)
+                throw new InvalidOperationException("MID$ length exceeds string bounds");
+            return new StringValue(sv.V.Substring(iv1.V - 1, iv2.V));
+        },
+        ["LEFT$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1)
+                throw new InvalidOperationException("LEFT$ requires a string and integer argument");
+            if (iv1.V < 0 || iv1.V > sv.V.Length)
+                throw new InvalidOperationException("LEFT$ length is out of range");
+            return new StringValue(sv.V[..iv1.V]);
+        },
+        ["RIGHT$"] = args =>
+        {
+            if (args[0] is not StringValue sv || args[1] is not IntValue iv1)
+                throw new InvalidOperationException("RIGHT$ requires a string and integer argument");
+            if (iv1.V < 0 || iv1.V > sv.V.Length)
+                throw new InvalidOperationException("RIGHT$ length is out of range");
+            return new StringValue(iv1.V == 0 ? "" : sv.V[^iv1.V..]);
+        },
+        ["TRIM$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("TRIM$ requires a string argument");
+            return new StringValue(sv.V.Trim());
+        },
+        ["UPPER$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("UPPER$ requires a string argument");
+            return new StringValue(sv.V.ToUpperInvariant());
+        },
+        ["LOWER$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("LOWER$ requires a string argument");
+            return new StringValue(sv.V.ToLowerInvariant());
+        },
+        ["INT"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(iv.V);
+            if (args[0] is FloatValue fv) return new FloatValue(Math.Floor(fv.V));
+            throw new InvalidOperationException("INT requires a numeric argument");
+        },
+        ["STR$"] = args =>
+        {
+            if (args[0] is IntValue iv) return new StringValue(iv.V.ToString());
+            if (args[0] is FloatValue fv) return new StringValue(fv.V.ToString());
+            throw new InvalidOperationException("STR$ requires a numeric argument");
+        },
         ["VAL"] = args => args[0] is StringValue sv ?
                             int.TryParse(sv.V, out int ir) ? new IntValue(ir) :
                             double.TryParse(sv.V,
@@ -60,19 +89,85 @@ public class Evaluator(
                                 out double dr) ? new FloatValue(dr)
                             : null
                             : null,
-        ["ABS"] = args => args[0] is IntValue iv ?
-                            new IntValue(Math.Abs(iv.V)) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Abs(fv.V))
-                            : null,
-        ["SQR"] = args => args[0] is IntValue iv ?
-                            new FloatValue(Math.Sqrt(iv.V)) :
-                            args[0] is FloatValue fv ?
-                            new FloatValue(Math.Sqrt(fv.V))
-                            : null,
+        ["ABS"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(Math.Abs(iv.V));
+            if (args[0] is FloatValue fv) return new FloatValue(Math.Abs(fv.V));
+            throw new InvalidOperationException("ABS requires a numeric argument");
+        },
+        ["SQR"] = args =>
+        {
+            if (args[0] is IntValue iv)
+            {
+                if (iv.V < 0) throw new InvalidOperationException("SQR requires a non-negative argument");
+                return new FloatValue(Math.Sqrt(iv.V));
+            }
+            if (args[0] is FloatValue fv)
+            {
+                if (fv.V < 0) throw new InvalidOperationException("SQR requires a non-negative argument");
+                return new FloatValue(Math.Sqrt(fv.V));
+            }
+            throw new InvalidOperationException("SQR requires a numeric argument");
+        },
         ["RND"] = args => new FloatValue(Random.Shared.NextDouble()),
         ["TYPENAME"] = args => new StringValue(args[0].TypeName),
-        ["CHR$"] = args => args[0] is IntValue iv ? new StringValue(((char)iv.V).ToString()) : null
+        ["CHR$"] = args =>
+        {
+            if (args[0] is not IntValue iv)
+                throw new InvalidOperationException("CHR$ requires an integer argument");
+            return new StringValue(((char)iv.V).ToString());
+        },
+        ["STRING$"] = args => args[0] is StringValue sv && args[1] is IntValue iv2
+            ? sv.V.Length == 1 && iv2.V >= 0
+                ? new StringValue(new string(sv.V[0], iv2.V))
+                : null
+            : null,
+        ["ASC"] = args =>
+        {
+            if (args[0] is not StringValue sv) return null;
+            if (sv.V.Length == 0) throw new InvalidOperationException("ASC requires a non-empty string argument");
+            return new IntValue((int)sv.V[0]);
+        },
+        ["CINT"] = args =>
+        {
+            if (args[0] is IntValue iv) return new IntValue(iv.V);
+            if (args[0] is FloatValue fv) return new IntValue((int)fv.V);
+            throw new InvalidOperationException("CINT requires a numeric argument");
+        },
+        ["CLAMP"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            bool allNumeric = args[0] is IntValue or FloatValue
+                           && args[1] is IntValue or FloatValue
+                           && args[2] is IntValue or FloatValue;
+            if (!allNumeric)
+                throw new InvalidOperationException("CLAMP requires numeric arguments");
+            double min = ToDouble(args[1]);
+            double max = ToDouble(args[2]);
+            if (min > max)
+                throw new InvalidOperationException("CLAMP requires min to be less than or equal to max");
+            if (args[0] is IntValue iv && args[1] is IntValue && args[2] is IntValue)
+                return new IntValue(Math.Clamp(iv.V, (int)min, (int)max));
+            return new FloatValue(Math.Clamp(ToDouble(args[0]), min, max));
+        },
+        ["MAX"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            if (args[0] is not (IntValue or FloatValue) || args[1] is not (IntValue or FloatValue))
+                throw new InvalidOperationException("MAX requires numeric arguments");
+            if (args[0] is IntValue a && args[1] is IntValue b)
+                return new IntValue(Math.Max(a.V, b.V));
+            return new FloatValue(Math.Max(ToDouble(args[0]), ToDouble(args[1])));
+        },
+        ["MIN"] = args =>
+        {
+            static double ToDouble(Value v) => v is IntValue i ? i.V : ((FloatValue)v).V;
+            if (args[0] is not (IntValue or FloatValue) || args[1] is not (IntValue or FloatValue))
+                throw new InvalidOperationException("MIN requires numeric arguments");
+            if (args[0] is IntValue a && args[1] is IntValue b)
+                return new IntValue(Math.Min(a.V, b.V));
+            return new FloatValue(Math.Min(ToDouble(args[0]), ToDouble(args[1])));
+        }
     };
 
     public EvalResult Evaluate()
@@ -160,6 +255,7 @@ public class Evaluator(
             ConstStatement cs => EvaluateConstStatement(cs),
             SelectCaseStatement scs => EvaluateSelectCaseStatement(scs),
             SetGlobalStatement sgs => EvaluateSetGlobalStatement(sgs),
+            SleepStatement ss => EvaluateSleepStatement(ss),
             _
                 => new EvalFailure(
                     [
@@ -198,11 +294,152 @@ public class Evaluator(
                 )]
             );
 
-        var valueResult = EvaluateExpression(stmt.Value);
-        if (valueResult is EvalFailure) return valueResult;
+        // ----------------------------------------------------------
+        // Scalar form: SET GLOBAL name = value
+        // ----------------------------------------------------------
+        if (stmt.Index is null)
+        {
+            var valueResult = EvaluateExpression(stmt.Value);
+            if (valueResult is EvalFailure) return valueResult;
+            root.Set(stmt.Identifier, ((EvalSuccess)valueResult).Value!);
+            return new EvalSuccess(new VoidValue());
+        }
 
-        root.Set(stmt.Identifier, ((EvalSuccess)valueResult).Value!);
+        // ----------------------------------------------------------
+        // Array form — fetch the global ArrayValue
+        // ----------------------------------------------------------
+        var getVal = root.Get(stmt.Identifier);
+        if (getVal is not ArrayValue arrVal)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"'{stmt.Identifier}' is not an array.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var idxResult = EvaluateExpression(stmt.Index);
+        if (idxResult is not EvalSuccess idxSuccess || idxSuccess.Value is not IntValue idxIv)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    "Array index must be an integer.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        var valueRes = EvaluateExpression(stmt.Value);
+        if (valueRes is not EvalSuccess valueSuccess)
+            return valueRes;
+        var value = valueSuccess.Value;
+        var targetType = arrVal.ElementTypeName.ToUpperInvariant();
+
+        // ----------------------------------------------------------
+        // 2D form: SET GLOBAL name[r][c] = value
+        // ----------------------------------------------------------
+        if (stmt.ColIndex is not null)
+        {
+            if (arrVal.Cols == 0)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"'{stmt.Identifier}' is not a 2D array.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var colResult = EvaluateExpression(stmt.ColIndex);
+            if (colResult is not EvalSuccess colSuccess || colSuccess.Value is not IntValue colIv)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        "Column index must be an integer.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var row = idxIv.V;
+            var col = colIv.V;
+            var rows = arrVal.Items.Length / arrVal.Cols;
+
+            if (row < 0 || row >= rows)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Row index {row} is outside the range 0-{rows - 1} for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            if (col < 0 || col >= arrVal.Cols)
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Column index {col} is outside the range 0-{arrVal.Cols - 1} for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            var flatIdx = row * arrVal.Cols + col;
+            if (!AssignArrayElement(arrVal, flatIdx, targetType, value))
+                return new EvalFailure(
+                    [new Diagnostic(
+                        stmt.Location.Line,
+                        stmt.Location.Col,
+                        $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
+                        DiagnosticSeverity.Error
+                    )]
+                );
+
+            root.Set(stmt.Identifier, arrVal);
+            return new EvalSuccess(new VoidValue());
+        }
+
+        // ----------------------------------------------------------
+        // 1D form: SET GLOBAL name[i] = value
+        // ----------------------------------------------------------
+        var idx = idxIv.V;
+        if (idx < 0 || idx >= arrVal.Items.Length)
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"Index {idx} is outside the range 0-{arrVal.Items.Length - 1} for array '{stmt.Identifier}'.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        if (!AssignArrayElement(arrVal, idx, targetType, value))
+            return new EvalFailure(
+                [new Diagnostic(
+                    stmt.Location.Line,
+                    stmt.Location.Col,
+                    $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
+                    DiagnosticSeverity.Error
+                )]
+            );
+
+        root.Set(stmt.Identifier, arrVal);
         return new EvalSuccess(new VoidValue());
+    }
+
+    /// <summary>
+    /// Writes <paramref name="value"/> into <c>arrVal.Items[flatIdx]</c> if the
+    /// runtime type matches <paramref name="targetType"/>. Returns false on mismatch.
+    /// </summary>
+    private static bool AssignArrayElement(ArrayValue arrVal, int flatIdx, string targetType, Value value)
+    {
+        if (targetType == "INTEGER" && value is IntValue iv) { arrVal.Items[flatIdx] = iv; return true; }
+        if (targetType == "FLOAT" && value is FloatValue fv) { arrVal.Items[flatIdx] = fv; return true; }
+        if (targetType == "STRING" && value is StringValue sv) { arrVal.Items[flatIdx] = sv; return true; }
+        if (targetType == "BOOLEAN" && value is BoolValue bv) { arrVal.Items[flatIdx] = bv; return true; }
+        return false;
     }
 
     private EvalResult EvaluateSelectCaseStatement(SelectCaseStatement stmt)
@@ -282,9 +519,23 @@ public class Evaluator(
             );
         }
 
-        var arrVal = new Value[stmt.Size];
+        var sizeResult = EvaluateExpression(stmt.SizeExpr);
+        if (sizeResult is EvalFailure) return sizeResult;
+        if (((EvalSuccess)sizeResult).Value is not IntValue sizeVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+        var size = sizeVal.V;
 
-        for (var i = 0; i < stmt.Size; i++)
+        var arrVal = new Value[size];
+
+        for (var i = 0; i < size; i++)
         {
             arrVal[i] = stmt.TypeName.ToUpperInvariant() switch
             {
@@ -320,7 +571,33 @@ public class Evaluator(
             );
         }
 
-        var total = stmt.Rows * stmt.Cols;
+        var rowsResult = EvaluateExpression(stmt.RowsExpr);
+        if (rowsResult is EvalFailure) return rowsResult;
+        if (((EvalSuccess)rowsResult).Value is not IntValue rowsVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array row size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        var colsResult = EvaluateExpression(stmt.ColsExpr);
+        if (colsResult is EvalFailure) return colsResult;
+        if (((EvalSuccess)colsResult).Value is not IntValue colsVal)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        stmt.Location?.Line ?? 0,
+                        stmt.Location?.Col ?? 0,
+                        "Array column size must be an integer.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        var total = rowsVal.V * colsVal.V;
         var arrVal = new Value[total];
         var defaultVal = stmt.TypeName.ToUpperInvariant() switch
         {
@@ -334,13 +611,16 @@ public class Evaluator(
         for (var i = 0; i < total; i++)
             arrVal[i] = defaultVal;
 
-        var val = new ArrayValue(arrVal, stmt.TypeName, stmt.Cols);
+        var val = new ArrayValue(arrVal, stmt.TypeName, colsVal.V);
         _table.Set(name, val);
         return new EvalSuccess(new VoidValue());
     }
 
     private EvalResult EvaluateReturnStatement(ReturnStatement stmt)
     {
+        if (_diagnostics.Count > 0)
+            return new EvalFailure(_diagnostics);
+
         if (stmt.Value is null)
             throw new ReturnException(null);
 
@@ -359,6 +639,39 @@ public class Evaluator(
         if (result is EvalSuccess es)
             Console.WriteLine(es.Value?.ToString() ?? string.Empty);
 
+        return new EvalSuccess(new VoidValue());
+    }
+
+    private EvalResult EvaluateSleepStatement(SleepStatement s)
+    {
+        var result = EvaluateExpression(s.Milliseconds);
+        if (result is EvalFailure) return result;
+
+        var value = ((EvalSuccess)result).Value;
+
+        if (value is not IntValue iv)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        s.Location?.Line ?? 0,
+                        s.Location?.Col ?? 0,
+                        "SLEEP requires an integer argument.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        if (iv.V < 0)
+            return new EvalFailure(
+                [
+                    new Diagnostic(
+                        s.Location?.Line ?? 0,
+                        s.Location?.Col ?? 0,
+                        "SLEEP requires a non-negative integer argument.",
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+
+        System.Threading.Thread.Sleep(iv.V);
         return new EvalSuccess(new VoidValue());
     }
 
@@ -712,7 +1025,22 @@ public class Evaluator(
                 localArgs.Add(((EvalSuccess)argResult).Value!);
             }
 
-            return new EvalSuccess(builtIn!(localArgs));
+            try
+            {
+                return new EvalSuccess(builtIn!(localArgs));
+            }
+            catch (Exception ex)
+            {
+                return new EvalFailure(
+                [
+                    new Diagnostic(
+                        expr.Location?.Line ?? 0,
+                        expr.Location?.Col ?? 0,
+                        ex.Message,
+                        DiagnosticSeverity.Error
+                    )
+                ]);
+            }
         }
 
         var funcExists = _functions.TryGetValue(expr.Name, out var func);
@@ -973,7 +1301,21 @@ public class Evaluator(
 
     private EvalResult EvaluateArrayAssignStatement(ArrayAssignStatement stmt)
     {
-        var getVal = _table.Get(stmt.Name);
+        var getVal = _table.GetLocal(stmt.Name);
+
+        if (getVal is null && _table.Get(stmt.Name) is ArrayValue)
+        {
+            return new EvalFailure(
+                    [
+                        new Diagnostic(
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0,
+                            $"Cannot assign to array '{stmt.Name}' from inside a SUB or FUNCTION. Use SET GLOBAL.",
+                            DiagnosticSeverity.Error
+                        )
+                    ]
+                );
+        }
 
         if (getVal is not ArrayValue)
         {
@@ -1143,7 +1485,16 @@ public class Evaluator(
 
     private EvalResult EvaluateArray2dAssignStatement(Array2dAssignStatement stmt)
     {
-        var getVal = _table.Get(stmt.Name);
+        var getVal = _table.GetLocal(stmt.Name);
+
+        if (getVal is null && _table.Get(stmt.Name) is ArrayValue)
+        {
+            return new EvalFailure([
+                new Diagnostic(stmt.Location?.Line ?? 0, stmt.Location?.Col ?? 0,
+                    $"Cannot assign to array '{stmt.Name}' from inside a SUB or FUNCTION. Use SET GLOBAL.",
+                    DiagnosticSeverity.Error)
+            ]);
+        }
 
         if (getVal is not ArrayValue arrVal || arrVal.Cols == 0)
         {

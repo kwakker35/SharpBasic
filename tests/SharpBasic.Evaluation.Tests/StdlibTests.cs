@@ -129,6 +129,151 @@ public class StdlibTests
     Assert.Equal("hello world", output);
   }
 
+  // --- STRING$ ---
+
+  [Fact]
+  public void STRING_Dollar_Repeats_Char_Five_Times()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"=\", 5)");
+    Assert.Equal("=====", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Repeats_Char_Once()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"*\", 1)");
+    Assert.Equal("*", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Count_Zero_Returns_Empty_String()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"x\", 0)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Count_80_Has_Correct_Length()
+  {
+    var output = RunHelper.Run("CONST FRAME_WIDTH = 80\nPRINT LEN(STRING$(\"=\", FRAME_WIDTH))");
+    Assert.Equal("80", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Concatenation_With_Ampersand()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"-\", 10) & \"X\" & STRING$(\"-\", 10)");
+    Assert.Equal("----------X----------", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_With_Variable_Char_And_Count()
+  {
+    var source = "LET ch = \"=\"\nLET n = 20\nPRINT STRING$(ch, n)";
+    var output = RunHelper.Run(source);
+    Assert.Equal("====================", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_With_CHR_Dollar_Argument()
+  {
+    var output = RunHelper.Run("PRINT STRING$(CHR$(34), 3)");
+    Assert.Equal("\"\"\"", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Multi_Char_Arg_Returns_Null_Prints_Empty()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"ab\", 5)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Empty_Char_Arg_Returns_Null_Prints_Empty()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"\", 5)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Negative_Count_Returns_Null_Prints_Empty()
+  {
+    var output = RunHelper.Run("PRINT STRING$(\"=\", -1)");
+    Assert.Equal("", output);
+  }
+
+  [Fact]
+  public void STRING_Dollar_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB STRING$(c AS STRING, n AS INTEGER)\nPRINT c\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("STRING$") && d.Message.Contains("built in"));
+  }
+
+  // --- ASC ---
+
+  [Fact]
+  public void ASC_Returns_Code_For_Uppercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"A\")");
+    Assert.Equal("65", output);
+  }
+
+  [Fact]
+  public void ASC_Returns_Code_For_Lowercase_Letter()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"a\")");
+    Assert.Equal("97", output);
+  }
+
+  [Fact]
+  public void ASC_Returns_Code_For_Space()
+  {
+    var output = RunHelper.Run("PRINT ASC(\" \")");
+    Assert.Equal("32", output);
+  }
+
+  [Fact]
+  public void ASC_Round_Trip_With_CHR_Dollar()
+  {
+    var output = RunHelper.Run("PRINT ASC(CHR$(65))");
+    Assert.Equal("65", output);
+  }
+
+  [Fact]
+  public void ASC_Multi_Char_String_Uses_First_Character()
+  {
+    var output = RunHelper.Run("PRINT ASC(\"Hello\")");
+    Assert.Equal("72", output);
+  }
+
+  [Fact]
+  public void ASC_Result_Stored_In_Variable()
+  {
+    var output = RunHelper.Run("LET code = ASC(\"Z\")\nPRINT code");
+    Assert.Equal("90", output);
+  }
+
+  [Fact]
+  public void ASC_Empty_String_Returns_EvalFailure_With_Diagnostic()
+  {
+    var result = RunHelper.RunResult("PRINT ASC(\"\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-empty"));
+  }
+
+  [Fact]
+  public void ASC_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB ASC(s AS STRING)\nPRINT s\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("ASC") && d.Message.Contains("built in"));
+  }
+
   // --- INT ---
 
   [Fact]
@@ -404,11 +549,11 @@ public class StdlibTests
   }
 
   [Fact]
-  public void SQR_Negative_Number_Returns_NaN()
+  public void SQR_Negative_Number_Returns_EvalFailure()
   {
-    // Math.Sqrt(-1) = NaN; FloatValue.ToString() renders it as "NaN".
-    var output = RunHelper.Run("PRINT SQR(-1)");
-    Assert.Equal("NaN", output);
+    var result = RunHelper.RunResult("PRINT SQR(-1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-negative"));
   }
 
   [Fact]
@@ -817,5 +962,424 @@ public class StdlibTests
       "    PRINT \"fallback\"\n" +
       "END SELECT");
     Assert.Equal("matched", output);
+  }
+
+  // --- Built-in argument errors ---
+
+  [Fact]
+  public void LEN_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEN(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Start_Index_Zero_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(\"Hello\", 0, 2)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("1"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Length_Overflow_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(\"Hello\", 2, 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("bounds"));
+  }
+
+  [Fact]
+  public void MID_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MID$(42, 1, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Count_Exceeds_Length_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(\"Hello\", 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Negative_Count_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(\"Hello\", -1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void LEFT_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LEFT$(42, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Count_Exceeds_Length_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(\"Hello\", 99)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Negative_Count_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(\"Hello\", -1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("range"));
+  }
+
+  [Fact]
+  public void RIGHT_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT RIGHT$(42, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void TRIM_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT TRIM$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void UPPER_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT UPPER$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void LOWER_Dollar_Non_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT LOWER$(42)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void INT_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT INT(\"foo\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void STR_Dollar_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STR$(TRUE)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void ABS_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT ABS(\"hello\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void SQR_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT SQR(\"hello\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CHR_Dollar_String_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CHR$(\"H\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("integer"));
+  }
+
+  // --- CINT ---
+
+  [Fact]
+  public void CINT_Truncates_Float_Toward_Zero_Positive()
+  {
+    var output = RunHelper.Run("PRINT CINT(3.9)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void CINT_Truncates_Float_Toward_Zero_Fractional()
+  {
+    var output = RunHelper.Run("PRINT CINT(3.1)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void CINT_Truncates_Negative_Float_Toward_Zero()
+  {
+    // Key difference from INT: CINT(-3.9) = -3, INT(-3.9) = -4
+    var output = RunHelper.Run("PRINT CINT(-3.9)");
+    Assert.Equal("-3", output);
+  }
+
+  [Fact]
+  public void CINT_Zero_Float_Returns_Zero()
+  {
+    var output = RunHelper.Run("PRINT CINT(0.0)");
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void CINT_Integer_Passthrough()
+  {
+    var output = RunHelper.Run("PRINT CINT(7)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void CINT_Result_Is_Integer_Not_Float()
+  {
+    // Verify return type is Integer: integer arithmetic gives 4 not 4.0
+    var output = RunHelper.Run("LET i = CINT(3.9)\nPRINT i + 1");
+    Assert.Equal("4", output);
+  }
+
+  [Fact]
+  public void CINT_Result_Stored_In_Variable()
+  {
+    var output = RunHelper.Run("LET f = 7.8\nLET i = CINT(f)\nPRINT i");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void CINT_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CINT(\"foo\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CINT_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB CINT(n AS INTEGER)\nPRINT n\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("CINT") && d.Message.Contains("built in"));
+  }
+
+  // --- CLAMP ---
+
+  [Fact]
+  public void CLAMP_Value_In_Range_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(5, 1, 10)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_Below_Min_Returns_Min()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(0, 1, 10)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_Above_Max_Returns_Max()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(15, 1, 10)");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_At_Lower_Boundary_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(1, 1, 10)");
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void CLAMP_Value_At_Upper_Boundary_Returns_Value()
+  {
+    var output = RunHelper.Run("PRINT CLAMP(10, 1, 10)");
+    Assert.Equal("10", output);
+  }
+
+  [Fact]
+  public void CLAMP_Stamina_Healing_Cap_Use_Case()
+  {
+    var source = "LET stamina = 20\nLET startStamina = 18\nLET result = CLAMP(stamina, 0, startStamina)\nPRINT result";
+    var output = RunHelper.Run(source);
+    Assert.Equal("18", output);
+  }
+
+  [Fact]
+  public void CLAMP_Luck_Floor_Use_Case()
+  {
+    var source = "LET luck = -1\nLET result = CLAMP(luck, 0, 12)\nPRINT result";
+    var output = RunHelper.Run(source);
+    Assert.Equal("0", output);
+  }
+
+  [Fact]
+  public void CLAMP_Min_Greater_Than_Max_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CLAMP(5, 10, 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("min") && d.Message.Contains("max"));
+  }
+
+  [Fact]
+  public void CLAMP_Non_Numeric_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT CLAMP(\"x\", 1, 10)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void CLAMP_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB CLAMP(n AS INTEGER, lo AS INTEGER, hi AS INTEGER)\nPRINT n\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("CLAMP") && d.Message.Contains("built in"));
+  }
+
+  // --- MAX ---
+
+  [Fact]
+  public void MAX_Returns_Larger_Value()
+  {
+    var output = RunHelper.Run("PRINT MAX(3, 7)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void MAX_Returns_Larger_Value_Reversed()
+  {
+    var output = RunHelper.Run("PRINT MAX(7, 3)");
+    Assert.Equal("7", output);
+  }
+
+  [Fact]
+  public void MAX_Equal_Values_Returns_Same()
+  {
+    var output = RunHelper.Run("PRINT MAX(5, 5)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void MAX_Negative_Values()
+  {
+    var output = RunHelper.Run("PRINT MAX(-3, -7)");
+    Assert.Equal("-3", output);
+  }
+
+  [Fact]
+  public void MAX_Minimum_Damage_Use_Case()
+  {
+    var source = "LET rawDamage = 2\nLET damage = MAX(rawDamage - 2, 1)\nPRINT damage";
+    var output = RunHelper.Run(source);
+    Assert.Equal("1", output);
+  }
+
+  [Fact]
+  public void MAX_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MAX(\"x\", 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void MAX_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB MAX(a AS INTEGER, b AS INTEGER)\nPRINT a\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("MAX") && d.Message.Contains("built in"));
+  }
+
+  // --- MIN ---
+
+  [Fact]
+  public void MIN_Returns_Smaller_Value()
+  {
+    var output = RunHelper.Run("PRINT MIN(3, 7)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void MIN_Returns_Smaller_Value_Reversed()
+  {
+    var output = RunHelper.Run("PRINT MIN(7, 3)");
+    Assert.Equal("3", output);
+  }
+
+  [Fact]
+  public void MIN_Equal_Values_Returns_Same()
+  {
+    var output = RunHelper.Run("PRINT MIN(5, 5)");
+    Assert.Equal("5", output);
+  }
+
+  [Fact]
+  public void MIN_Negative_Values()
+  {
+    var output = RunHelper.Run("PRINT MIN(-3, -7)");
+    Assert.Equal("-7", output);
+  }
+
+  [Fact]
+  public void MIN_Healing_Cap_Use_Case_At_Max()
+  {
+    // stamina = 16, startStamina = 18 → MIN(20, 18) = 18
+    var source = "LET stamina = 16\nLET startStamina = 18\nLET healed = MIN(stamina + 4, startStamina)\nPRINT healed";
+    var output = RunHelper.Run(source);
+    Assert.Equal("18", output);
+  }
+
+  [Fact]
+  public void MIN_Healing_Cap_Use_Case_Below_Max()
+  {
+    // stamina = 10, startStamina = 18 → MIN(14, 18) = 14
+    var source = "LET stamina = 10\nLET startStamina = 18\nLET healed = MIN(stamina + 4, startStamina)\nPRINT healed";
+    var output = RunHelper.Run(source);
+    Assert.Equal("14", output);
+  }
+
+  [Fact]
+  public void MIN_Non_Numeric_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT MIN(\"x\", 1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("numeric"));
+  }
+
+  [Fact]
+  public void MIN_Sub_Cannot_Shadow_Builtin()
+  {
+    var source = "SUB MIN(a AS INTEGER, b AS INTEGER)\nPRINT a\nEND SUB";
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("MIN") && d.Message.Contains("built in"));
   }
 }

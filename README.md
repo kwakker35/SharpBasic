@@ -85,7 +85,7 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 | Global scope | `SET GLOBAL name = value`; writes a value to a variable in an enclosing scope by name |
 | Subroutines | `SUB`/`END SUB`; typed parameters; invoked with `CALL`; hoisted — call before declaration is valid |
 | Functions | `FUNCTION`/`END FUNCTION`; typed return value; called in expression position; recursive; hoisted |
-| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `ABS`, `SQR`, `RND`, `CHR$`, `TYPENAME` |
+| Built-in functions | `LEN`, `MID$`, `LEFT$`, `RIGHT$`, `UPPER$`, `LOWER$`, `TRIM$`, `STR$`, `VAL`, `INT`, `CINT`, `ABS`, `SQR`, `RND`, `CHR$`, `STRING$`, `ASC`, `MAX`, `MIN`, `CLAMP`, `TYPENAME` |
 | I/O | `PRINT expression` (always appends newline); `INPUT varname` and `INPUT "prompt"; varname` |
 | Comments | `REM` — full-line or inline |
 
@@ -98,7 +98,7 @@ Install the extension from the `vscode-extension/sharpbasic-syntax/` folder. In 
 | [hello-world.sbx](samples/hello-world/hello-world.sbx) | The minimal SharpBASIC program — a single PRINT statement |
 | [user-input.sbx](samples/user-input/user-input.sbx) | Reads the user's name with INPUT and prints a greeting |
 | [variables.sbx](samples/variables/variables.sbx) | Demonstrates all four primitive types and the TYPENAME built-in |
-| [string-utilities.sbx](samples/string-utilities/string-utilities.sbx) | Exercises every built-in string function: TRIM$, UPPER$, LOWER$, LEFT$, RIGHT$, MID$, LEN |
+| [string-utilities.sbx](samples/string-utilities/string-utilities.sbx) | Exercises every built-in string function: `TRIM$`, `UPPER$`, `LOWER$`, `LEFT$`, `RIGHT$`, `MID$`, `LEN`, `CHR$`, `ASC`, `STRING$` |
 | [fizzbuzz.sbx](samples/fizzbuzz/fizzbuzz.sbx) | Classic FOR loop with nested IF/ELSE — Fizz, Buzz, FizzBuzz for 1–30 |
 | [times-tables.sbx](samples/times-tables/times-tables.sbx) | Nested FOR loops generating the complete 1–12 multiplication table |
 | [arrays.sbx](samples/arrays/arrays.sbx) | DIM, indexed read/write, and aggregate calculations (total, average, maximum) over a score array |

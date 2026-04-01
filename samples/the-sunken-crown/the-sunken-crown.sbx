@@ -1,0 +1,3332 @@
+REM =================================================================
+REM  THE SUNKEN CROWN -- A SharpBASIC v1 Adventure
+REM =================================================================
+REM  Issue 1: The Gates Open
+REM  Establishes the display frame -- header, separator, prompt.
+REM  Issue 2: The First Room
+REM  Room description system, PrintRoom, EnterRoom, command loop.
+REM  Issue 3: The Dice and the Dark
+REM  RollDice, attribute rolling, opening sequence.
+REM  Issue 4: Moving Through Stone
+REM  Exit arrays, full map, navigation, all 12 room descriptions.
+REM  Issue 5: Something in the Dark
+REM  Combat system, Guardroom Brute, monster state, dead-variant room text.
+REM  Issue 6: What You Carry
+REM  All monsters wired. Items: antidote, bangle, magic sword.
+REM  Inventory, SEARCH, TAKE, DROP, USE, overburdened, loot shuffle, luck tests.
+REM  Issue 7: The Dungeon Breathes
+REM  Atmospheric events, wandering zombie, SNEAK, LOOK, AdvanceTurns, poison drain.
+REM  Issue 8: Riddle, Still Chamber, Underhall lock
+REM  Still Chamber teleport, riddle room, Underhall east door lock.
+REM  Issue 9: The Bound King
+REM  Boss fight, gold bags, crown, Bangle terror negation, QUIT command.
+REM  Issue 10: The Gate
+REM  Gate room door choice, win/death paths, PrintEndScreen, HELP, STATS.
+REM =================================================================
+
+REM ----------------------------------------------------------------
+REM  Constants
+REM  FRAME_WIDTH governs every separator and alignment calculation.
+REM  Direction codes: 1=N, 2=S, 3=E, 4=W, 5=NE.
+REM  MAX_EXITS and MAX_ROOMS bound the exit and room arrays.
+REM ----------------------------------------------------------------
+CONST FRAME_WIDTH = 80
+CONST COMBAT_DELAY = 1500   REM milliseconds between attack roll and outcome
+CONST DIR_N = 1
+CONST DIR_S = 2
+CONST DIR_E = 3
+CONST DIR_W = 4
+CONST DIR_NE = 5
+CONST MAX_EXITS = 30
+CONST MAX_ROOMS = 12
+
+REM ----------------------------------------------------------------
+REM  Room identity constants
+REM  Symbolic names for every room. Used everywhere a room is
+REM  referenced -- navigation, combat, descriptions, loot.
+REM ----------------------------------------------------------------
+CONST ROOM_ENTRY      = 1
+CONST ROOM_GUARDROOM  = 2
+CONST ROOM_ARMOURY    = 3
+CONST ROOM_CROSSROADS = 4
+CONST ROOM_STILL      = 5
+CONST ROOM_COLLAPSED  = 6
+CONST ROOM_PIT        = 7
+CONST ROOM_RIDDLE     = 8
+CONST ROOM_CISTERN    = 9
+CONST ROOM_UNDERHALL  = 10
+CONST ROOM_THRONE     = 11
+CONST ROOM_GATE       = 12
+
+REM ----------------------------------------------------------------
+REM  Item codes -- locked (Decision 5)
+REM  0=empty, 1=Healing Potion, 2=Lucky Charm, 3=Armour Shard,
+REM  4=Dark Bread, 5=Medal of Valour, 6=Antidote Vial,
+REM  7=Bangle of Courage, 8=Sword of Sharpness, 9=Mouldy Bread,
+REM  10=Guardroom Key
+REM ----------------------------------------------------------------
+CONST ITEM_EMPTY    = 0
+CONST ITEM_POTION   = 1
+CONST ITEM_CHARM    = 2
+CONST ITEM_SHARD    = 3
+CONST ITEM_BREAD    = 4
+CONST ITEM_MEDAL    = 5
+CONST ITEM_ANTIDOTE = 6
+CONST ITEM_BANGLE   = 7
+CONST ITEM_SWORD    = 8
+CONST ITEM_MOULDY   = 9
+CONST ITEM_KEY      = 10
+CONST ITEM_GOLD     = 11
+CONST MAX_GOLD_BAGS = 4
+
+REM ----------------------------------------------------------------
+REM  Player stats
+REM  Declared here at zero. RollStartingStats (Issue 3) sets the
+REM  real values when the opening sequence runs. PrintHeader reads
+REM  these via the parent scope chain -- no SET GLOBAL required.
+REM ----------------------------------------------------------------
+LET skill = 0
+LET stamina = 0
+LET luck = 0
+LET startSkill = 0   REM starting SKILL -- reference value for end screen
+LET startStamina = 0 REM starting STAMINA -- healing cap; never changes after RollStartingStats
+LET startLuck = 0 REM starting LUCK -- reference value for end screen
+
+REM ----------------------------------------------------------------
+REM  Navigation state
+REM  currentRoom: the room the player is currently in (1-12)
+REM  visited[12]: 0 = first visit, 1 = revisited. Index = roomId - 1.
+REM  searched[12]: 0 = unsearched, 1 = exhausted. Index = roomId - 1.
+REM ----------------------------------------------------------------
+LET currentRoom = ROOM_ENTRY
+DIM visited[MAX_ROOMS] AS INTEGER
+DIM searched[MAX_ROOMS] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Exit map -- parallel arrays indexed by exit slot number (1-based)
+REM  Slot 0 is unused; valid slots are 1 to 23 for this 12-room map.
+REM  roomExitStart[r-1]: index of first exit slot for room r
+REM  roomExitCount[r-1]: number of exits for room r
+REM  exitDir[i]:    direction code for exit slot i
+REM  exitDest[i]:   destination room for exit slot i
+REM  exitHidden[i]: 0 = visible to player, 1 = hidden until SEARCHed
+REM ----------------------------------------------------------------
+DIM roomExitStart[MAX_ROOMS] AS INTEGER
+DIM roomExitCount[MAX_ROOMS] AS INTEGER
+DIM exitDir[MAX_EXITS] AS INTEGER
+DIM exitDest[MAX_EXITS] AS INTEGER
+DIM exitHidden[MAX_EXITS] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Game loop control
+REM  gameOver: 0 = game running, 1 = game ended
+REM  endState: 0 = ongoing, 1=win, 2=became king, 3=riddle,
+REM            4=gate, 5=stamina, 6=quit
+REM ----------------------------------------------------------------
+LET gameOver = 0
+LET endState = 0
+LET keepPlaying = 1
+
+REM ----------------------------------------------------------------
+REM  Combat and status state
+REM  monsterAlive[r-1]: 0 = dead/absent, 1 = present and alive
+REM  minStamina: lowest STAMINA reached this run (for end screen)
+REM  turns: total turns elapsed
+REM  poisoned: 0 = clean, 1 = poisoned
+REM  luckTestCount: number of LUCK tests taken (for end screen)
+REM ----------------------------------------------------------------
+DIM monsterAlive[MAX_ROOMS] AS INTEGER
+LET minStamina = 0
+LET turns = 0
+LET poisoned = 0
+LET inCombat = 0
+LET luckTestCount = 0
+
+REM ----------------------------------------------------------------
+REM  Inventory state
+REM  inventory[1..4]: item code per slot (0 = empty). Slot 0 unused.
+REM  invCount: items currently carried (0-4).
+REM  overburdened: 1 when invCount = 4 -- movement costs STAMINA.
+REM  medalTaken: 1 after Medal of Valour first pickup (SKILL -1).
+REM ----------------------------------------------------------------
+DIM inventory[5] AS INTEGER
+LET invCount = 0
+LET overburdened = 0
+LET medalTaken = 0
+
+REM ----------------------------------------------------------------
+REM  Loot slots (shuffled at each run start)
+REM  slotContents[1..6]: item code assigned to each slot (0 = empty).
+REM  slotTaken[1..6]: 0 = available, 1 = collected. Slot 0 unused.
+REM  Slot-to-room mapping handled by FUNCTION RoomLootSlot.
+REM ----------------------------------------------------------------
+DIM slotContents[7] AS INTEGER
+DIM slotTaken[7] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Armoury state
+REM  armouryLocked: 1 = chest locked, 0 = opened with Guardroom Key.
+REM ----------------------------------------------------------------
+LET armouryLocked = 1
+
+REM ----------------------------------------------------------------
+REM  Room floor items
+REM  droppedItem[r][s]: item code at floor slot s in room r (0-based r).
+REM  droppedCount[r]: items currently on room r's floor. Max 12/room.
+REM  r = roomId - 1. Supports stockpiling: drops, monster loot, etc.
+REM ----------------------------------------------------------------
+DIM droppedItem[MAX_ROOMS][MAX_ROOMS] AS INTEGER
+DIM droppedCount[MAX_ROOMS] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Zombie state
+REM  zombieSpawned: 0 = not yet in dungeon, 1 = spawned at Crossroads
+REM  zombieAlive:   0 = dead or unspawned, 1 = roaming
+REM  zombieRoom:    current room (1-12); 0 when unspawned
+REM ----------------------------------------------------------------
+LET zombieSpawned = 0
+LET zombieAlive = 0
+LET zombieRoom = 0
+
+REM ----------------------------------------------------------------
+REM  SEARCH interrupt flag
+REM  Set to 1 by HandleSearch when SEARCH interrupts a live-monster
+REM  room. Read and consumed inside HandleFight; reset to 0 after use.
+REM ----------------------------------------------------------------
+LET searchInterruptActive = 0
+
+REM ----------------------------------------------------------------
+REM  Riddle Room state (Issue 8)
+REM  riddleIndex:     which riddle was selected (1-8) for this run
+REM  riddleCorrectDoor: 1 = LEFT, 2 = RIGHT
+REM  riddleSolved:    0 = unsolved, 1 = player passed through correctly
+REM ----------------------------------------------------------------
+LET riddleIndex = 0
+LET riddleCorrectDoor = 0
+LET riddleSolved = 0
+
+REM ----------------------------------------------------------------
+REM  Bound King state (Issue 9)
+REM  goldBags:       bags of gold taken from the Throne Room (0-4)
+REM  secondFight:    1 if King regenerated and must be fought again
+REM  crownAvailable: 1 after SEARCH reveals the crown post-combat
+REM  kingSkill:      King's SKILL value, fixed per run
+REM  kingStamina:    King's current STAMINA this fight
+REM ----------------------------------------------------------------
+LET goldBags = 0
+LET secondFight = 0
+LET crownAvailable = 0
+LET kingSkill = 0
+LET kingStamina = 0
+LET terrorActive = 0
+
+REM ----------------------------------------------------------------
+REM  Gate state (Issue 10)
+REM  gateCorrectDoor: correct door (1=LEFT, 2=RIGHT), randomised
+REM ----------------------------------------------------------------
+LET gateCorrectDoor = 0
+
+REM  Lucky and unlucky teleport pools for the Still Chamber
+DIM luckyPool[2] AS INTEGER
+DIM unluckyPool[6] AS INTEGER
+
+REM ----------------------------------------------------------------
+REM  Pending flavour buffer
+REM  Lines queued during AdvanceTurns / HandleGo / HandleSneak are
+REM  flushed by EnterRoom after PrintHeader, keeping them visible
+REM  between the header and the room description.
+REM  pendingFlavourCount: number of lines currently buffered (0-29).
+REM ----------------------------------------------------------------
+DIM pendingFlavour[30] AS STRING
+LET pendingFlavourCount = 0
+
+REM =================================================================
+REM  SUB PrintHeader
+REM  Prints the full header frame: an = separator, then the title
+REM  and current stats on one line, then another = separator.
+REM  Reads skill, stamina, luck from global scope -- read-only.
+REM =================================================================
+SUB PrintHeader()
+    CALL PrintSeparator()
+    LET statsLine$ = "SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+    LET padLen = FRAME_WIDTH - 18 - LEN(statsLine$)
+    PRINT "  THE SUNKEN CROWN" & STRING$(" ", padLen) & statsLine$
+    CALL PrintSeparator()
+END SUB
+
+REM =================================================================
+REM  SUB PrintSeparator
+REM  Prints a line of 80 = characters. Divides the header chrome
+REM  from the room content area below it.
+REM =================================================================
+SUB PrintSeparator()
+    PRINT STRING$("=", FRAME_WIDTH)
+END SUB
+
+REM =================================================================
+REM  SUB Pause
+REM  Prints a continue prompt and waits for the player to press
+REM  ENTER. Used wherever long text sequences exceed the screen.
+REM  The terminal scrolls naturally -- no clearing is performed.
+REM =================================================================
+SUB Pause()
+    INPUT "  Press ENTER to continue."; p$
+END SUB
+
+REM =================================================================
+REM  SUB QueueFlavour -- line$ AS STRING
+REM  Appends one line to the pending flavour buffer. Pass "" for a
+REM  blank line. If inCombat = 1, prints immediately instead so that
+REM  combat-time events remain visible inline.
+REM =================================================================
+SUB QueueFlavour(line$ AS STRING)
+    IF inCombat = 1 THEN
+        PRINT line$
+    ELSE
+        IF pendingFlavourCount < 30 THEN
+            SET GLOBAL pendingFlavour[pendingFlavourCount] = line$
+            SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
+        END IF
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB FlushFlavour
+REM  Prints all buffered flavour lines then resets the buffer.
+REM  Called by EnterRoom immediately after PrintHeader, and as a
+REM  safety net before the command prompt for SEARCH / USE / LUCK.
+REM =================================================================
+SUB FlushFlavour()
+    IF pendingFlavourCount > 0 THEN
+        FOR i = 0 TO pendingFlavourCount - 1
+            PRINT pendingFlavour[i]
+        NEXT i
+        SET GLOBAL pendingFlavourCount = 0
+    END IF
+END SUB
+
+REM =================================================================
+REM  FUNCTION RollDice -- n AS INTEGER -> INTEGER
+REM  Rolls n six-sided dice and returns the sum. Called with 1 or 2.
+REM  Note: INT(Float) returns Float, so total promotes to Float after
+REM  the first iteration. Return type is advisory -- the caller
+REM  receives the Float value and arithmetic works correctly.
+REM =================================================================
+FUNCTION RollDice(n AS INTEGER) AS INTEGER
+    LET total = 0
+    FOR i = 1 TO n
+        LET total = total + CINT(RND() * 6) + 1
+    NEXT i
+    RETURN total
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION DirName -- dir AS INTEGER -> STRING
+REM  Returns the display name for a direction code.
+REM  Used by PrintExits to build the exits line.
+REM =================================================================
+FUNCTION DirName(dir AS INTEGER) AS STRING
+    SELECT CASE dir
+        CASE DIR_N
+            RETURN "NORTH"
+        CASE DIR_S
+            RETURN "SOUTH"
+        CASE DIR_E
+            RETURN "EAST"
+        CASE DIR_W
+            RETURN "WEST"
+        CASE DIR_NE
+            RETURN "NE"
+        CASE ELSE
+            RETURN "?"
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION ItemCode -- item$ AS STRING -> INTEGER
+REM  Maps a player-typed item keyword to its integer item code.
+REM  Returns -1 if the keyword is not recognised. Used by HandleTake,
+REM  HandleDrop, and HandleUse for input validation.
+REM =================================================================
+FUNCTION ItemCode(item$ AS STRING) AS INTEGER
+    SELECT CASE item$
+        CASE "POTION"
+            RETURN ITEM_POTION
+        CASE "CHARM"
+            RETURN ITEM_CHARM
+        CASE "SHARD"
+            RETURN ITEM_SHARD
+        CASE "BREAD"
+            RETURN ITEM_BREAD
+        CASE "MEDAL"
+            RETURN ITEM_MEDAL
+        CASE "ANTIDOTE"
+            RETURN ITEM_ANTIDOTE
+        CASE "BANGLE"
+            RETURN ITEM_BANGLE
+        CASE "SWORD"
+            RETURN ITEM_SWORD
+        CASE "MOULDY"
+            RETURN ITEM_MOULDY
+        CASE "KEY"
+            RETURN ITEM_KEY
+        CASE "BAG", "GOLD"
+            RETURN ITEM_GOLD
+        CASE ELSE
+            RETURN -1
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION HasItem -- itemCode AS INTEGER -> INTEGER
+REM  Returns 1 if the player is carrying the given item code in any
+REM  inventory slot (1-4), 0 otherwise. Utility used by CombatLoop
+REM  for Bangle of Courage terror checks.
+REM =================================================================
+FUNCTION HasItem(itemCode AS INTEGER) AS INTEGER
+    FOR h = 1 TO 4
+        IF inventory[h] = itemCode THEN RETURN 1 END IF
+    NEXT h
+    RETURN 0
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION RoomLootSlot -- roomId AS INTEGER -> INTEGER
+REM  Returns the loot slot number (1-6) for a room, or 0 if the room
+REM  has no shuffled loot slot. Used by HandleSearch and HandleTake.
+REM =================================================================
+FUNCTION RoomLootSlot(roomId AS INTEGER) AS INTEGER
+    SELECT CASE roomId
+        CASE ROOM_ENTRY
+            RETURN 1
+        CASE ROOM_GUARDROOM
+            RETURN 2
+        CASE ROOM_CROSSROADS
+            RETURN 3
+        CASE ROOM_COLLAPSED
+            RETURN 4
+        CASE ROOM_RIDDLE
+            RETURN 5
+        CASE ROOM_UNDERHALL
+            RETURN 6
+        CASE ELSE
+            RETURN 0
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION ItemName -- code AS INTEGER -> STRING
+REM  Returns the display name for an item code. Used throughout
+REM  inventory display, SEARCH results, and TAKE/DROP/USE feedback.
+REM =================================================================
+FUNCTION ItemName(code AS INTEGER) AS STRING
+    SELECT CASE code
+        CASE ITEM_POTION
+            RETURN "Healing Potion"
+        CASE ITEM_CHARM
+            RETURN "Lucky Charm"
+        CASE ITEM_SHARD
+            RETURN "Armour Shard"
+        CASE ITEM_BREAD
+            RETURN "Dark Bread"
+        CASE ITEM_MEDAL
+            RETURN "Medal of Valour"
+        CASE ITEM_ANTIDOTE
+            RETURN "Antidote Vial"
+        CASE ITEM_BANGLE
+            RETURN "Bangle of Courage"
+        CASE ITEM_SWORD
+            RETURN "Sword of Sharpness"
+        CASE ITEM_MOULDY
+            RETURN "Mouldy Bread"
+        CASE ITEM_KEY
+            RETURN "Guardroom Key"
+        CASE ITEM_GOLD
+            RETURN "Bag of Gold"
+        CASE ELSE
+            RETURN "Unknown Item"
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  FUNCTION RoomName -- roomId AS INTEGER -> STRING
+REM  Returns the display name for a room number.
+REM  Used by EnterRoom to print the LOCATION line.
+REM =================================================================
+FUNCTION RoomName(roomId AS INTEGER) AS STRING
+    SELECT CASE roomId
+        CASE ROOM_ENTRY
+            RETURN "Entry Hall"
+        CASE ROOM_GUARDROOM
+            RETURN "Guardroom"
+        CASE ROOM_ARMOURY
+            RETURN "Armoury"
+        CASE ROOM_CROSSROADS
+            RETURN "The Crossroads"
+        CASE ROOM_STILL
+            RETURN "The Still Chamber"
+        CASE ROOM_COLLAPSED
+            RETURN "Collapsed Passage"
+        CASE ROOM_PIT
+            RETURN "The Pit"
+        CASE ROOM_RIDDLE
+            RETURN "The Riddle Room"
+        CASE ROOM_CISTERN
+            RETURN "The Cistern"
+        CASE ROOM_UNDERHALL
+            RETURN "The Underhall"
+        CASE ROOM_THRONE
+            RETURN "Throne Room"
+        CASE ROOM_GATE
+            RETURN "The Gate"
+        CASE ELSE
+            RETURN "Unknown"
+    END SELECT
+END FUNCTION
+
+REM =================================================================
+REM  SUB RollStartingStats
+REM  Rolls SKILL, STAMINA, and LUCK using Fighting Fantasy ranges.
+REM  Stores starting values in startSkill and startStamina for the
+REM  healing cap and end screen. Uses SET GLOBAL for all five writes.
+REM =================================================================
+SUB RollStartingStats()
+    SET GLOBAL skill = RollDice(1) + 6
+    SET GLOBAL startSkill = skill
+    SET GLOBAL stamina = RollDice(2) + 12
+    SET GLOBAL startStamina = stamina
+    SET GLOBAL luck = RollDice(1) + 6
+    SET GLOBAL startLuck = luck
+    SET GLOBAL minStamina = stamina
+END SUB
+
+REM =================================================================
+REM  SUB InitExits
+REM  Populates the exit map for all 12 rooms. Called once at startup
+REM  before OpeningSequence. All arrays use 0-based room indexing
+REM  (roomExitStart[roomId - 1]) and 1-based slot numbering
+REM  (slot 0 is unused; first slot is 1). exitHidden = 1 marks exits
+REM  that do not display until the room is SEARCHed (Issue 6).
+REM =================================================================
+SUB InitExits()
+    REM --- Room 1: Entry Hall -- S->Guardroom (slot 1) ---
+    SET GLOBAL roomExitStart[ROOM_ENTRY - 1] = 1
+    SET GLOBAL roomExitCount[ROOM_ENTRY - 1] = 1
+    SET GLOBAL exitDir[1] = DIR_S
+    SET GLOBAL exitDest[1] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[1] = 0
+
+    REM --- Room 2: Guardroom -- N->Entry, E->Armoury, S->Crossroads (slots 2-4) ---
+    SET GLOBAL roomExitStart[ROOM_GUARDROOM - 1] = 2
+    SET GLOBAL roomExitCount[ROOM_GUARDROOM - 1] = 3
+    SET GLOBAL exitDir[2] = DIR_N
+    SET GLOBAL exitDest[2] = ROOM_ENTRY
+    SET GLOBAL exitHidden[2] = 0
+    SET GLOBAL exitDir[3] = DIR_E
+    SET GLOBAL exitDest[3] = ROOM_ARMOURY
+    SET GLOBAL exitHidden[3] = 0
+    SET GLOBAL exitDir[4] = DIR_S
+    SET GLOBAL exitDest[4] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[4] = 0
+
+    REM --- Room 3: Armoury -- W->Guardroom (slot 5) ---
+    SET GLOBAL roomExitStart[ROOM_ARMOURY - 1] = 5
+    SET GLOBAL roomExitCount[ROOM_ARMOURY - 1] = 1
+    SET GLOBAL exitDir[5] = DIR_W
+    SET GLOBAL exitDest[5] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[5] = 0
+
+    REM --- Room 4: Crossroads -- N->Guardroom, W->Collapsed, E->Pit, NE->Still (slots 6-9) ---
+    SET GLOBAL roomExitStart[ROOM_CROSSROADS - 1] = 6
+    SET GLOBAL roomExitCount[ROOM_CROSSROADS - 1] = 4
+    SET GLOBAL exitDir[6] = DIR_N
+    SET GLOBAL exitDest[6] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[6] = 0
+    SET GLOBAL exitDir[7] = DIR_W
+    SET GLOBAL exitDest[7] = ROOM_COLLAPSED
+    SET GLOBAL exitHidden[7] = 0
+    SET GLOBAL exitDir[8] = DIR_E
+    SET GLOBAL exitDest[8] = ROOM_PIT
+    SET GLOBAL exitHidden[8] = 0
+    SET GLOBAL exitDir[9] = DIR_NE
+    SET GLOBAL exitDest[9] = ROOM_STILL
+    SET GLOBAL exitHidden[9] = 0
+
+    REM --- Room 5: The Still Chamber -- no exits (teleport handled in Issue 8) ---
+    SET GLOBAL roomExitStart[ROOM_STILL - 1] = 10
+    SET GLOBAL roomExitCount[ROOM_STILL - 1] = 0
+
+    REM --- Room 6: Collapsed Passage -- E->Crossroads, S->Cistern (hidden) (slots 10-11) ---
+    SET GLOBAL roomExitStart[ROOM_COLLAPSED - 1] = 10
+    SET GLOBAL roomExitCount[ROOM_COLLAPSED - 1] = 2
+    SET GLOBAL exitDir[10] = DIR_E
+    SET GLOBAL exitDest[10] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[10] = 0
+    SET GLOBAL exitDir[11] = DIR_S
+    SET GLOBAL exitDest[11] = ROOM_CISTERN
+    SET GLOBAL exitHidden[11] = 1
+
+    REM --- Room 7: The Pit -- W->Crossroads, S->Riddle (slots 12-13) ---
+    SET GLOBAL roomExitStart[ROOM_PIT - 1] = 12
+    SET GLOBAL roomExitCount[ROOM_PIT - 1] = 2
+    SET GLOBAL exitDir[12] = DIR_W
+    SET GLOBAL exitDest[12] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[12] = 0
+    SET GLOBAL exitDir[13] = DIR_S
+    SET GLOBAL exitDest[13] = ROOM_RIDDLE
+    SET GLOBAL exitHidden[13] = 0
+
+    REM --- Room 8: The Riddle Room -- N->Pit, W->Underhall (both hidden until solved) (slots 14-15) ---
+    SET GLOBAL roomExitStart[ROOM_RIDDLE - 1] = 14
+    SET GLOBAL roomExitCount[ROOM_RIDDLE - 1] = 2
+    SET GLOBAL exitDir[14] = DIR_N
+    SET GLOBAL exitDest[14] = ROOM_PIT
+    SET GLOBAL exitHidden[14] = 1
+    SET GLOBAL exitDir[15] = DIR_W
+    SET GLOBAL exitDest[15] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[15] = 1
+
+    REM --- Room 9: The Cistern -- N->Collapsed, E->Underhall (slots 16-17) ---
+    SET GLOBAL roomExitStart[ROOM_CISTERN - 1] = 16
+    SET GLOBAL roomExitCount[ROOM_CISTERN - 1] = 2
+    SET GLOBAL exitDir[16] = DIR_N
+    SET GLOBAL exitDest[16] = ROOM_COLLAPSED
+    SET GLOBAL exitHidden[16] = 0
+    SET GLOBAL exitDir[17] = DIR_E
+    SET GLOBAL exitDest[17] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[17] = 0
+
+    REM --- Room 10: The Underhall -- W->Cistern, E->Riddle, S->Throne (slots 18-20) ---
+    SET GLOBAL roomExitStart[ROOM_UNDERHALL - 1] = 18
+    SET GLOBAL roomExitCount[ROOM_UNDERHALL - 1] = 3
+    SET GLOBAL exitDir[18] = DIR_W
+    SET GLOBAL exitDest[18] = ROOM_CISTERN
+    SET GLOBAL exitHidden[18] = 0
+    SET GLOBAL exitDir[19] = DIR_E
+    SET GLOBAL exitDest[19] = ROOM_RIDDLE
+    SET GLOBAL exitHidden[19] = 0
+    SET GLOBAL exitDir[20] = DIR_S
+    SET GLOBAL exitDest[20] = ROOM_THRONE
+    SET GLOBAL exitHidden[20] = 0
+
+    REM --- Room 11: Throne Room -- N->Underhall, S->Gate (slots 21-22) ---
+    SET GLOBAL roomExitStart[ROOM_THRONE - 1] = 21
+    SET GLOBAL roomExitCount[ROOM_THRONE - 1] = 2
+    SET GLOBAL exitDir[21] = DIR_N
+    SET GLOBAL exitDest[21] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[21] = 0
+    SET GLOBAL exitDir[22] = DIR_S
+    SET GLOBAL exitDest[22] = ROOM_GATE
+    SET GLOBAL exitHidden[22] = 0
+
+    REM --- Room 12: The Gate -- N->Throne (slot 23) ---
+    SET GLOBAL roomExitStart[ROOM_GATE - 1] = 23
+    SET GLOBAL roomExitCount[ROOM_GATE - 1] = 1
+    SET GLOBAL exitDir[23] = DIR_N
+    SET GLOBAL exitDest[23] = ROOM_THRONE
+    SET GLOBAL exitHidden[23] = 0
+END SUB
+
+REM =================================================================
+REM  SUB InitMonsters
+REM  Sets all fixed monsters to alive at startup. Called once
+REM  alongside InitExits before OpeningSequence. Arrays are 0-based:
+REM  room r occupies index r-1. Wiring schedule: Brute (Issue 5),
+REM  Horror/Guardian/Mage/Troll (Issue 7), Bound King (Issue 9).
+REM =================================================================
+SUB InitMonsters()
+    SET GLOBAL monsterAlive[ROOM_GUARDROOM - 1] = 1   REM  Guardroom Brute
+    SET GLOBAL monsterAlive[ROOM_COLLAPSED - 1] = 1   REM  Skittering Horror
+    SET GLOBAL monsterAlive[ROOM_PIT - 1] = 1         REM  Pit Guardian
+    SET GLOBAL monsterAlive[ROOM_CISTERN - 1] = 1     REM  Hollow Mage
+    SET GLOBAL monsterAlive[ROOM_UNDERHALL - 1] = 1   REM  Troll
+    SET GLOBAL monsterAlive[ROOM_THRONE - 1] = 1      REM  Bound King
+END SUB
+
+REM =================================================================
+REM  SUB InitRiddle
+REM  Selects one of eight riddles at random and assigns the correct
+REM  door (1=LEFT, 2=RIGHT). Also populates the lucky and unlucky
+REM  teleport pools for the Still Chamber. Called once per run.
+REM =================================================================
+SUB InitRiddle()
+    LET pick = CINT(RND() * 8) + 1
+    SET GLOBAL riddleIndex = pick
+    REM  Door is randomised independently: 1=LEFT, 2=RIGHT
+    SET GLOBAL riddleCorrectDoor = CINT(RND() * 2) + 1
+    SET GLOBAL riddleSolved = 0
+
+    REM  Lucky pool: safe rooms with no monsters
+    SET GLOBAL luckyPool[0] = ROOM_ENTRY
+    SET GLOBAL luckyPool[1] = ROOM_ARMOURY
+
+    REM  Unlucky pool: dangerous rooms (may have live monsters)
+    SET GLOBAL unluckyPool[0] = ROOM_GUARDROOM
+    SET GLOBAL unluckyPool[1] = ROOM_COLLAPSED
+    SET GLOBAL unluckyPool[2] = ROOM_PIT
+    SET GLOBAL unluckyPool[3] = ROOM_RIDDLE
+    SET GLOBAL unluckyPool[4] = ROOM_CISTERN
+    SET GLOBAL unluckyPool[5] = ROOM_UNDERHALL
+END SUB
+
+REM =================================================================
+REM  SUB InitGate
+REM  Randomises the correct Gate door (1=LEFT, 2=RIGHT).
+REM  Called once per run alongside InitRiddle.
+REM =================================================================
+SUB InitGate()
+    SET GLOBAL gateCorrectDoor = CINT(RND() * 2) + 1
+END SUB
+
+REM =================================================================
+REM  SUB PrintRiddle
+REM  Prints the active riddle text based on riddleIndex, then labels
+REM  each door with a candidate answer. The correct answer is placed
+REM  on the door matching riddleCorrectDoor (1=LEFT, 2=RIGHT).
+REM =================================================================
+SUB PrintRiddle()
+    LET answer$ = ""
+    LET decoy$ = ""
+    SELECT CASE riddleIndex
+        CASE 1
+            PRINT "  I have cities, but no houses."
+            PRINT "  Mountains, but no trees."
+            PRINT "  Water, but no fish."
+            PRINT "  Roads, but no carriages."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "A Map"
+            LET decoy$ = "A Dream"
+        CASE 2
+            PRINT "  The more you take, the more you leave behind."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "Footsteps"
+            LET decoy$ = "Shadows"
+        CASE 3
+            PRINT "  I speak without a mouth and hear without ears."
+            PRINT "  I have no body, but I come alive with wind."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "An Echo"
+            LET decoy$ = "The Wind"
+        CASE 4
+            PRINT "  This man's father is my father's son."
+            PRINT "  I have no brothers."
+            PRINT ""
+            PRINT "  Who is this man?"
+            LET answer$ = "My Son"
+            LET decoy$ = "Myself"
+        CASE 5
+            PRINT "  Two guards. Two doors. One guard always lies."
+            PRINT "  One always tells the truth."
+            PRINT "  You may ask one question of one guard."
+            PRINT ""
+            PRINT "  Which door is safe?"
+            LET answer$ = "The opposite"
+            LET decoy$ = "Their answer"
+        CASE 6
+            PRINT "  The more you have of it, the less you see."
+            PRINT ""
+            PRINT "  What is it?"
+            LET answer$ = "Darkness"
+            LET decoy$ = "Silence"
+        CASE 7
+            PRINT "  I am not alive, but I grow."
+            PRINT "  I have no lungs, but I need air."
+            PRINT "  I have no mouth, but water kills me."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "Fire"
+            LET decoy$ = "Time"
+        CASE 8
+            PRINT "  I can run but never walk."
+            PRINT "  I have a mouth but never talk."
+            PRINT "  I have a head but never weep."
+            PRINT "  I have a bed but never sleep."
+            PRINT ""
+            PRINT "  What am I?"
+            LET answer$ = "A River"
+            LET decoy$ = "A Road"
+    END SELECT
+    PRINT ""
+    IF riddleCorrectDoor = 1 THEN
+        PRINT "  LEFT: " & answer$ & "          RIGHT: " & decoy$
+    ELSE
+        PRINT "  LEFT: " & decoy$ & "          RIGHT: " & answer$
+    END IF
+END SUB
+
+REM =================================================================
+REM  FUNCTION TestLuck -> INTEGER
+REM  Rolls 2d6 against current LUCK. Returns 1 if lucky, 0 if not.
+REM  Decrements LUCK by 1 regardless. Increments luckTestCount.
+REM =================================================================
+FUNCTION TestLuck() AS INTEGER
+    LET roll = RollDice(2)
+    SET GLOBAL luckTestCount = luckTestCount + 1
+    IF roll <= luck THEN
+        SET GLOBAL luck = MAX(luck - 1, 0)
+        RETURN 1
+    ELSE
+        SET GLOBAL luck = MAX(luck - 1, 0)
+        RETURN 0
+    END IF
+END FUNCTION
+
+REM =================================================================
+REM  SUB StillChamberSequence
+REM  Fires when the player enters Room 5 (The Still Chamber).
+REM  Prints narrative, advances 3 turns, tests luck, and teleports
+REM  the player to a random room from the lucky or unlucky pool.
+REM  If the destination is the Riddle Room and the riddle is unsolved,
+REM  the riddle sequence fires on arrival via EnterRoom.
+REM =================================================================
+SUB StillChamberSequence()
+    CALL PrintHeader()
+    CALL FlushFlavour()
+    PRINT "  LOCATION: " & RoomName(ROOM_STILL)
+    PRINT ""
+    IF visited[ROOM_STILL - 1] = 1 THEN
+        PRINT "  You recognise it immediately. The circular walls. The sourceless light."
+        PRINT "  The silence with weight in it."
+        PRINT ""
+        PRINT "  You know what this room does."
+        PRINT ""
+        PRINT "  Knowing does not help."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    ELSE
+        PRINT "  The passage ends in a room that should not be here."
+        PRINT ""
+        PRINT "  The walls are smooth -- not hewn, not carved, smooth in a way that"
+        PRINT "  stone has no right to be. The air is still. Not quiet -- still."
+        PRINT "  There is a difference. Quiet is the absence of sound. Still is the"
+        PRINT "  absence of everything else."
+        PRINT ""
+        PRINT "  The floor comes up to meet you."
+    END IF
+    PRINT ""
+    CALL Pause()
+    PRINT ""
+    PRINT "  You do not remember falling. You do not remember how long you were"
+    PRINT "  down. When the world reassembles itself, you are somewhere else."
+    PRINT ""
+    CALL AdvanceTurns(3)
+    LET result = TestLuck()
+    IF result = 1 THEN
+        LET pick = CINT(RND() * 2)
+        SET GLOBAL currentRoom = luckyPool[pick]
+        PRINT "  Fortune held. You wake in familiar ground."
+        PRINT ""
+    ELSE
+        LET pick = CINT(RND() * 6)
+        SET GLOBAL currentRoom = unluckyPool[pick]
+        PRINT "  The dice betray you. You wake somewhere worse."
+        PRINT ""
+    END IF
+    SET GLOBAL visited[ROOM_STILL - 1] = 1
+    CALL EnterRoom(currentRoom, 0)
+END SUB
+
+REM =================================================================
+REM  SUB RiddleRoomSequence
+REM  Fires when the player enters Room 8 and riddleSolved = 0.
+REM  Prints the room description, the riddle, then enters an inner
+REM  loop accepting only LEFT or RIGHT. Correct answer: riddleSolved=1,
+REM  unhide both exits. Wrong answer: instant death (endState=3).
+REM =================================================================
+SUB RiddleRoomSequence()
+    CALL PrintHeader()
+    CALL FlushFlavour()
+    PRINT "  LOCATION: " & RoomName(ROOM_RIDDLE)
+    PRINT ""
+    PRINT "  The door behind you is gone."
+    PRINT ""
+    PRINT "  You did not hear it close. You did not feel it move. You turned and it"
+    PRINT "  was simply not there -- solid stone where the entrance was, seamless,"
+    PRINT "  cold, indifferent."
+    PRINT ""
+    PRINT "  Ahead of you are two doors, identical in every respect except one: a"
+    PRINT "  riddle is carved into the stone wall between them, deep and deliberate,"
+    PRINT "  cut by someone who knew exactly what they were doing."
+    PRINT ""
+    PRINT "  Below the riddle, two words. One above each door."
+    PRINT ""
+    PRINT "  LEFT. RIGHT."
+    PRINT ""
+    PRINT "  The room waits."
+    PRINT ""
+    CALL PrintSeparator()
+    PRINT ""
+    CALL PrintRiddle()
+    PRINT ""
+    WHILE riddleSolved = 0
+        INPUT "  Choose a door (LEFT / RIGHT): "; cmd$
+        LET cmd$ = UPPER$(cmd$)
+        LET chosenDoor = 0
+        IF cmd$ = "LEFT" THEN
+            LET chosenDoor = 1
+        END IF
+        IF cmd$ = "RIGHT" THEN
+            LET chosenDoor = 2
+        END IF
+        IF chosenDoor > 0 THEN
+            IF chosenDoor = riddleCorrectDoor THEN
+                SET GLOBAL riddleSolved = 1
+                PRINT ""
+                PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
+                PRINT "  The wall behind you is still solid. But you are through."
+                PRINT ""
+                SET GLOBAL exitHidden[14] = 0
+                SET GLOBAL exitHidden[15] = 0
+                SET GLOBAL visited[ROOM_RIDDLE - 1] = 1
+                CALL EnterRoom(ROOM_RIDDLE, 0)
+            ELSE
+                PRINT ""
+                PRINT "  You pass through the door into a room straight from your worst nightmare."
+                PRINT "  The mouldy bones of previous adventurers litter the floor. Realising"
+                PRINT "  your mistake you turn to leave -- only to find the door has no handle."
+                PRINT "  On closer examination you notice bloody scratches, and is that a fingernail?"
+                PRINT ""
+                PRINT "  A deep rumble shakes your body and turns your bowels to water. You look"
+                PRINT "  up to see the ceiling, slow but inexorably, lowering."
+                PRINT ""
+                PRINT "  You frantically try to open the door, adding to the bloody legacy, as"
+                PRINT "  the room crushes the life out of you."
+                PRINT ""
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 3
+                RETURN
+            END IF
+        ELSE
+            PRINT "  The doors do not move. The room waits."
+            PRINT ""
+        END IF
+    WEND
+END SUB
+
+REM =================================================================
+REM  SUB BoundKingSequence
+REM  The Bound King boss encounter. Manages the full Throne Room
+REM  sequence: encounter text, first fight, post-combat gold loop,
+REM  regeneration-triggered second fight. Terror is handled inside
+REM  CombatLoop (isBoss = 1). King stats persist across visits.
+REM  Called from HandleFight when roomId = ROOM_THRONE.
+REM =================================================================
+SUB BoundKingSequence()
+    PRINT ""
+    PRINT "  The crown is fused to his temples in a way that stopped being jewellery"
+    PRINT "  a very long time ago. The metal has grown into the skin, or the skin"
+    PRINT "  has grown into the metal -- after three centuries the distinction has"
+    PRINT "  ceased to matter. He wears it because there is no longer a version of"
+    PRINT "  him that doesn't."
+    PRINT ""
+    PRINT "  He looks like a man in his forties. Tired in a way that has nothing to"
+    PRINT "  do with sleep."
+    PRINT ""
+    PRINT "  He stands. He is very still for a moment. Then he comes toward you, and"
+    PRINT "  there is nothing in his movement that suggests he expects this to end"
+    PRINT "  differently than it always has."
+    PRINT ""
+    IF HasItem(ITEM_BANGLE) = 0 THEN
+        PRINT "  The full weight of what he is lands on you before he takes three"
+        PRINT "  steps. Your SKILL falters. Your luck feels suddenly thin."
+        PRINT ""
+    END IF
+    REM  Roll king stats on first encounter only.
+    IF kingSkill = 0 THEN
+        SET GLOBAL kingSkill = CINT(RollDice(1)) + 9
+        SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
+    END IF
+    CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+    IF stamina <= 0 THEN
+        PRINT ""
+        PRINT "  He watches you fall. He has seen it before. He returns to his throne,"
+        PRINT "  sits, and waits. He has been waiting a long time. He can wait longer."
+        PRINT ""
+        RETURN
+    END IF
+    REM  King beaten.
+    SET GLOBAL monsterAlive[ROOM_THRONE - 1] = 0
+    PRINT ""
+    PRINT "  The King falls. You don't wait. You can already see his fingers moving."
+    PRINT ""
+    REM  Gold loop -- player collects bags until they choose to leave or max out.
+    LET wantsMoreGold = 1
+    WHILE goldBags < MAX_GOLD_BAGS AND wantsMoreGold = 1 AND stamina > 0 AND gameOver = 0
+        PRINT "  TAKE BAG, or LEAVE."
+        PRINT ""
+        INPUT " > "; goldCmd$
+        LET goldCmd$ = UPPER$(goldCmd$)
+        SELECT CASE goldCmd$
+            CASE "TAKE ALL"
+                PRINT "  You don't have time for that."
+                PRINT ""
+            CASE "TAKE BAG"
+                CALL HandleTakeBag()
+            CASE "LEAVE"
+                LET wantsMoreGold = 0
+            CASE "QUIT"
+                CALL HandleQuit()
+            CASE ELSE
+                PRINT "  The dungeon does not respond to that."
+                PRINT ""
+        END SELECT
+    WEND
+    REM  Second fight -- King regenerated during gold collection.
+    IF secondFight = 1 AND stamina > 0 AND gameOver = 0 THEN
+        PRINT ""
+        PRINT "  He is already on his feet when you turn back."
+        PRINT ""
+        PRINT "  The gold you took is still in your hands. He looks at it, then at"
+        PRINT "  you. Whatever he feels about it does not reach his face."
+        PRINT ""
+        PRINT "  He comes toward you again. Same certainty. Same weight. He has done"
+        PRINT "  this before. So, now, have you."
+        PRINT ""
+        IF HasItem(ITEM_BANGLE) = 0 THEN
+            PRINT "  The full weight of what he is lands on you again."
+            PRINT ""
+        END IF
+        SET GLOBAL kingStamina = CINT(RollDice(2)) + 18
+        CALL CombatLoop("The Bound King", kingSkill, kingStamina, 0, 0, 0, 0, 0, 1, 0)
+        IF stamina <= 0 THEN
+            PRINT ""
+            PRINT "  He watches you fall. He returns to his throne. He sits."
+            PRINT ""
+            RETURN
+        END IF
+        PRINT ""
+        PRINT "  The King falls. This time, he does not move."
+        PRINT ""
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB HandleTakeBag
+REM  Adds a bag of gold to inventory, increments goldBags, and rolls
+REM  for regeneration on bags after the first. Thresholds escalate:
+REM  bag 2 = 11+, bag 3 = 9+, bag 4 = 7+ on 2d6.
+REM  Called from the gold loop inside BoundKingSequence.
+REM =================================================================
+SUB HandleTakeBag()
+    IF invCount >= 4 THEN
+        PRINT "  Your hands are full. DROP something first."
+        PRINT ""
+        RETURN
+    END IF
+    SET GLOBAL goldBags = goldBags + 1
+    CALL AddToInventory(ITEM_GOLD)
+    PRINT "  Taken."
+    PRINT ""
+    REM  Regen rolls -- bags after the first risk waking the King.
+    IF goldBags = 2 THEN
+        IF CINT(RollDice(2)) >= 11 THEN
+            PRINT "  His fingers move."
+            PRINT ""
+            SET GLOBAL secondFight = 1
+        END IF
+    END IF
+    IF goldBags = 3 THEN
+        IF CINT(RollDice(2)) >= 9 THEN
+            PRINT "  His hand closes into a fist."
+            PRINT ""
+            SET GLOBAL secondFight = 1
+        END IF
+    END IF
+    IF goldBags = 4 THEN
+        IF CINT(RollDice(2)) >= 7 THEN
+            PRINT "  He draws a breath."
+            PRINT ""
+            SET GLOBAL secondFight = 1
+        END IF
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB CrownSequence
+REM  Fires on TAKE CROWN. The crown never enters inventory -- it
+REM  bypasses the carry limit entirely. Sets endState = 2 and ends
+REM  the game. The player becomes the Bound King.
+REM =================================================================
+SUB CrownSequence()
+    PRINT ""
+    PRINT "  You pick it up. You don't mean to put it on. You do anyway."
+    PRINT ""
+    PRINT "  It fits perfectly. It always did."
+    PRINT ""
+    PRINT "  The Bound King opens his eyes."
+    PRINT ""
+    PRINT "  He looks at you for a long moment. Then he looks at his own hands --"
+    PRINT "  empty, unburdened, free for the first time in three hundred years."
+    PRINT ""
+    PRINT "  He stands. He walks past you without a word. You hear his footsteps"
+    PRINT "  on the stairs."
+    PRINT ""
+    PRINT "  You try to follow. Your feet will not move."
+    PRINT ""
+    PRINT "  You are still there when the torch goes out."
+    PRINT ""
+    SET GLOBAL endState = 2
+    SET GLOBAL stamina = 0
+    SET GLOBAL gameOver = 1
+END SUB
+
+REM =================================================================
+REM  SUB HandleQuit
+REM  Context-sensitive quit handler. Priority: monster alive in room,
+REM  zombie present, room-specific special case, ambient pool.
+REM  No confirmation. Sets endState = 6 and gameOver = 1.
+REM =================================================================
+SUB HandleQuit()
+    PRINT ""
+    LET handled = 0
+    IF monsterAlive[currentRoom - 1] = 1 AND handled = 0 THEN
+        SELECT CASE currentRoom
+            CASE ROOM_GUARDROOM
+                PRINT "  You lower your weapon. The Brute watches you do it. Then it does"
+                PRINT "  what it was always going to do -- efficiently, without interest,"
+                PRINT "  the way it has ended everything else that came through that door."
+            CASE ROOM_COLLAPSED
+                PRINT "  You stop moving. For a moment so does it. Then the chitinous legs"
+                PRINT "  find their grip and it crosses the room in the time it takes you"
+                PRINT "  to exhale. The last thing you feel is the cold of it, and then"
+                PRINT "  nothing."
+            CASE ROOM_PIT
+                PRINT "  You drop your guard and the Guardian notes it with the same"
+                PRINT "  unhurried certainty it brings to everything. It raises its weapon."
+                PRINT "  It does not hurry. It has never needed to."
+            CASE ROOM_CISTERN
+                PRINT "  The luminescence fixes on you. The cold doubles, then redoubles."
+                PRINT "  You don't fight it. That is the last decision you make."
+            CASE ROOM_UNDERHALL
+                PRINT "  The small dark eyes watch you put your hands down. The Troll"
+                PRINT "  stands. It has been waiting for this. It comes forward with a"
+                PRINT "  patience that has outlasted everything else down here, and it"
+                PRINT "  outlasts you too."
+            CASE ROOM_THRONE
+                PRINT "  You sink to your knees before him. He looks through you as though"
+                PRINT "  you are not there -- as though you have never been there, as"
+                PRINT "  though the effort of acknowledgement is beneath him. His sword"
+                PRINT "  finds your neck without him appearing to move. The last thing you"
+                PRINT "  see is his face, and it holds nothing. Not contempt. Not"
+                PRINT "  satisfaction. Nothing at all."
+        END SELECT
+        LET handled = 1
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = currentRoom AND handled = 0 THEN
+        PRINT "  It doesn't rush. It has never needed to rush. You stand still long"
+        PRINT "  enough for it to find you, and then it takes its time. Whatever is"
+        PRINT "  left of you when it is done is not much."
+        LET handled = 1
+    END IF
+    IF handled = 0 THEN
+        SELECT CASE currentRoom
+            CASE ROOM_PIT
+                PRINT "  You stand at the edge and look down. Then something you never"
+                PRINT "  saw -- never heard -- places a hand flat against your back and"
+                PRINT "  pushes. Not hard. It barely needs to. The darkness below takes"
+                PRINT "  you, and you fall for longer than you thought possible. The"
+                PRINT "  bottom, when it comes, does not come gently."
+            CASE ROOM_CISTERN
+                PRINT "  You are looking at the water when it happens. A single dark"
+                PRINT "  shape beneath the surface, and then a cold pressure around your"
+                PRINT "  ankle, and then you are moving and the room is moving away from"
+                PRINT "  you and the water closes over your head. The channel beneath is"
+                PRINT "  deep. Deeper than the dungeon has any right to go."
+            CASE ROOM_RIDDLE
+                PRINT "  You face the doors. It doesn't matter anymore which one. You"
+                PRINT "  pick one -- the wrong one, of course; it was always going to be"
+                PRINT "  the wrong one -- and as it swings open you understand for a"
+                PRINT "  single clear instant what the riddle was actually about. Then"
+                PRINT "  the understanding is gone, and so are you."
+            CASE ROOM_GATE
+                PRINT "  You hear it before you turn: a low, resonant creak from the"
+                PRINT "  Gate itself, the sound of something that has not moved in a very"
+                PRINT "  long time deciding to move. You turn. The Gate is open. Whatever"
+                PRINT "  is on the other side has been there since before the dungeon was"
+                PRINT "  built, and it has been patient, and you have come close enough."
+                PRINT "  It steps through. The last thing you see is the dark beyond the"
+                PRINT "  threshold closing behind it like a curtain."
+            CASE ELSE
+                LET qLine = CINT(RND() * 6) + 1
+                SELECT CASE qLine
+                    CASE 1
+                        PRINT "  You hear something behind you. Not footsteps -- the"
+                        PRINT "  absence of footsteps. A silence that follows you and gets"
+                        PRINT "  closer. You turn too slowly. The cold enters you between"
+                        PRINT "  the shoulder blades, precise and final, and the torchlight"
+                        PRINT "  dims in a straight line down to nothing."
+                    CASE 2
+                        PRINT "  The torch goes out. In the dark, something is already"
+                        PRINT "  there. You hear it breathing -- or something like"
+                        PRINT "  breathing, something close enough. You do not have time"
+                        PRINT "  to relight the flame."
+                    CASE 3
+                        PRINT "  The floor shifts under your foot. Just once, just slightly."
+                        PRINT "  By the time you understand what it means, the stone has"
+                        PRINT "  already decided, and you with it. The chamber below is"
+                        PRINT "  silent. You are not."
+                    CASE 4
+                        PRINT "  There is a gap in the wall at arm height that you never"
+                        PRINT "  looked at closely. There is a hand in it, pale and entirely"
+                        PRINT "  still, and it has been there the whole time. Now it moves."
+                        PRINT "  It is faster than it has any right to be."
+                    CASE 5
+                        PRINT "  The cold intensifies. That is all. Just cold, deepening,"
+                        PRINT "  past the point where cold feels like cold and becomes"
+                        PRINT "  something else instead -- a pressure, a weight, a slow"
+                        PRINT "  erasure. You are less warm than you were. Then less"
+                        PRINT "  present. Then gone."
+                    CASE 6
+                        PRINT "  Something in the room has been waiting. Not the monster --"
+                        PRINT "  not anything you saw. Something older than the room itself,"
+                        PRINT "  something that was here when the stones were cut and has"
+                        PRINT "  been here every moment since. You only know it is there"
+                        PRINT "  the moment before it decides you have stayed long enough."
+                END SELECT
+        END SELECT
+    END IF
+    PRINT ""
+    SET GLOBAL endState = 6
+    SET GLOBAL gameOver = 1
+END SUB
+
+REM =================================================================
+REM  SUB GateSequence -- choice AS INTEGER
+REM  Resolves the Gate room door choice. choice = 1 (LEFT) or
+REM  2 (RIGHT). Correct door = win (endState 1), wrong = death
+REM  (endState 4). Gold count at win reads inventory slots holding
+REM  ITEM_GOLD (Decision 10). Win narrative includes a PAUSE break.
+REM =================================================================
+SUB GateSequence(choice AS INTEGER)
+    IF choice = gateCorrectDoor THEN
+        REM  === WIN PATH ===
+        SET GLOBAL endState = 1
+        SET GLOBAL gameOver = 1
+        PRINT ""
+        PRINT "  The door opens onto grey sky."
+        PRINT ""
+        PRINT "  You don't move at first. You stand in the doorway and breathe. Cold air."
+        PRINT "  Real air. The smell of mud and grass and distance. Things that have"
+        PRINT "  nothing to do with stone and dark and death."
+        PRINT ""
+        PRINT "  Your legs carry you forward because they have forgotten how to stop."
+        PRINT ""
+        PRINT "  There is no crowd. There never is. The competition is not a spectacle"
+        PRINT "  -- it is a disposal."
+        PRINT ""
+        PRINT "  Lord Malachar is waiting in the courtyard. Six guards flank him. You"
+        PRINT "  notice, with the detached clarity of someone who has spent the last"
+        PRINT "  hours keeping themselves alive by noticing things, that any one of them"
+        PRINT "  could kill you where you stand. You have nothing left. Your hands are"
+        PRINT "  shaking. You hadn't noticed until now."
+        PRINT ""
+        PRINT "  He looks at you for a long moment. His expression does not change."
+        CALL Pause()
+        PRINT ""
+        PRINT "  " & CHR$(34) & "You survived." & CHR$(34)
+        PRINT ""
+        PRINT "  It is not a question. It is not a compliment. It is the pronouncement"
+        PRINT "  of something that was not supposed to happen, delivered by a man who has"
+        PRINT "  made his peace with occasionally being wrong."
+        PRINT ""
+        PRINT "  His eyes drop to the gold in your hands. The gold that was never his to"
+        PRINT "  give -- it belonged to the dungeon, and the dungeon let you take it."
+        PRINT ""
+        PRINT "  He steps aside."
+        PRINT ""
+        PRINT "  " & CHR$(34) & "Go." & CHR$(34)
+        PRINT ""
+        PRINT "  You go."
+        PRINT ""
+        PRINT "  You are alive. You are free. You are one of almost none."
+        PRINT ""
+    ELSE
+        REM  === DEATH PATH ===
+        SET GLOBAL endState = 4
+        SET GLOBAL gameOver = 1
+        PRINT ""
+        PRINT "  You walk through the door into yet another damp stone-lined corridor."
+        PRINT "  You walk on, exploring the ever more twisting path. Your torch finally"
+        PRINT "  stutters and dies, leaving you to roam the pitch black halls and"
+        PRINT "  corridors until you eventually succumb to starvation, or something that"
+        PRINT "  was already down here finds you first."
+        PRINT ""
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB ShuffleLoot
+REM  Fisher-Yates shuffle of the six-item loot pool (five named items
+REM  plus one empty slot). Assigns shuffled results to slotContents[1..6].
+REM  Entry Hall medal check: if Medal lands in slot 1, runs a free luck
+REM  roll (no LUCK cost); swaps with first helpful item in slots 2-6 on
+REM  success. Places fixed items: Antidote Vial in Room 9 (index 8).
+REM  Called once per run after OpeningSequence sets luck.
+REM =================================================================
+SUB ShuffleLoot()
+    DIM lootPool[6] AS INTEGER
+    LET lootPool[0] = ITEM_POTION
+    LET lootPool[1] = ITEM_CHARM
+    LET lootPool[2] = ITEM_SHARD
+    LET lootPool[3] = ITEM_BREAD
+    LET lootPool[4] = ITEM_MEDAL
+    LET lootPool[5] = ITEM_EMPTY
+
+    REM  Fisher-Yates shuffle -- 0-based, indices 0-5
+    FOR i = 5 TO 1 STEP -1
+        LET j = CINT(RND() * (i + 1))
+        LET temp = lootPool[i]
+        LET lootPool[i] = lootPool[j]
+        LET lootPool[j] = temp
+    NEXT i
+
+    FOR i = 0 TO 5
+        SET GLOBAL slotContents[i + 1] = lootPool[i]
+        SET GLOBAL slotTaken[i + 1] = 0
+    NEXT i
+
+    REM  Entry Hall medal check: Medal in slot 1 hurts a new player.
+    REM  Try a free luck roll (no LUCK decrement); swap on success.
+    IF slotContents[1] = ITEM_MEDAL THEN
+        LET swapRoll = RollDice(2)
+        IF swapRoll <= luck THEN
+            LET swapTarget = 0
+            FOR k = 2 TO 6
+                IF slotContents[k] >= ITEM_POTION AND slotContents[k] <= ITEM_BREAD AND swapTarget = 0 THEN
+                    LET swapTarget = k
+                END IF
+            NEXT k
+            IF swapTarget > 0 THEN
+                LET tempCode = slotContents[1]
+                SET GLOBAL slotContents[1] = slotContents[swapTarget]
+                SET GLOBAL slotContents[swapTarget] = tempCode
+            END IF
+        END IF
+    END IF
+
+    REM  Fixed item: Antidote Vial in Room 9 cistern cache (index 8)
+    SET GLOBAL droppedItem[8][0] = ITEM_ANTIDOTE
+    SET GLOBAL droppedCount[8] = 1
+END SUB
+
+REM =================================================================
+REM  SUB AddToInventory -- itemCode AS INTEGER
+REM  Adds an item to the first empty inventory slot, updates invCount
+REM  and overburdened. Fires the Medal of Valour SKILL penalty (once
+REM  only) on first pickup. Called by HandleTake for single and ALL.
+REM =================================================================
+SUB AddToInventory(itemCode AS INTEGER)
+    LET slot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = ITEM_EMPTY AND slot = 0 THEN LET slot = i END IF
+    NEXT i
+    SET GLOBAL inventory[slot] = itemCode
+    SET GLOBAL invCount = invCount + 1
+    IF invCount = 4 THEN SET GLOBAL overburdened = 1 END IF
+    IF itemCode = ITEM_MEDAL AND medalTaken = 0 THEN
+        PRINT "  It is heavier than it looks. Old -- older than anything else down here."
+        PRINT "  Decorated. Whatever it once meant, it meant something."
+        PRINT ""
+        SET GLOBAL skill = skill - 1
+        SET GLOBAL medalTaken = 1
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB WanderZombie
+REM  Moves the zombie one step via the exit arrays. Picks a random
+REM  valid exit from zombieRoom, excluding rooms 5, 8, and 11.
+REM  If no valid exit exists the zombie stays put this turn.
+REM  Only called when zombieSpawned = 1 AND zombieAlive = 1.
+REM =================================================================
+SUB WanderZombie()
+    LET zStart = roomExitStart[zombieRoom - 1]
+    LET zCount = roomExitCount[zombieRoom - 1]
+    LET validCount = 0
+    FOR i = zStart TO zStart + zCount - 1
+        LET dest = exitDest[i]
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE AND monsterAlive[dest - 1] = 0 THEN
+            LET validCount = validCount + 1
+        END IF
+    NEXT i
+    IF validCount = 0 THEN
+        RETURN
+    END IF
+    LET pick = CINT(RND() * validCount) + 1
+    LET seen = 0
+    FOR i = zStart TO zStart + zCount - 1
+        LET dest = exitDest[i]
+        IF dest <> ROOM_STILL AND dest <> ROOM_RIDDLE AND dest <> ROOM_THRONE AND monsterAlive[dest - 1] = 0 THEN
+            LET seen = seen + 1
+            IF seen = pick THEN
+                SET GLOBAL zombieRoom = dest
+                RETURN
+            END IF
+        END IF
+    NEXT i
+END SUB
+
+REM =================================================================
+REM  SUB AtmosphericEvent
+REM  Fires one of 12 atmospheric events chosen at random.
+REM  Events 1-7 are pure flavour. Events 8-9 deal STAMINA -1.
+REM  Event 10 is conditional on overburdened. Events 11-12 are
+REM  threat escalation: zombie spawn check and proximity presence.
+REM  Text sourced from Deliverable 3 of the content asset file.
+REM =================================================================
+SUB AtmosphericEvent()
+    LET evt = CINT(RND() * 12) + 1
+    SELECT CASE evt
+        CASE 1
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Your torch gutters. For a moment the darkness is absolute -- a living,")
+                CALL QueueFlavour("  pressing thing. Then the flame catches again. You breathe out. You")
+                CALL QueueFlavour("  hadn't noticed you'd stopped.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 2
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Somewhere below you -- deeper than you've been -- something moves. A")
+                CALL QueueFlavour("  slow, rhythmic scraping. Stone on stone. It stops. You wait. It doesn't")
+                CALL QueueFlavour("  start again.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 3
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You place your hand against the wall to steady yourself. The stone is")
+                CALL QueueFlavour("  warm. Not the warmth of your own body heat -- it was warm before you")
+                CALL QueueFlavour("  touched it. You take your hand away.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 4
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The air changes. A cold current from nowhere, carrying the smell of")
+                CALL QueueFlavour("  standing water and something older. Something that hasn't seen light")
+                CALL QueueFlavour("  in a very long time.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 5
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  You almost step on them. Small. Difficult to identify. You don't try.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 6
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  The dungeon goes completely quiet. No drip of water, no distant groan")
+                CALL QueueFlavour("  of settling stone. Nothing. It lasts perhaps ten seconds. It feels much")
+                CALL QueueFlavour("  longer. Then the sounds return, and you realise how much you'd been")
+                CALL QueueFlavour("  relying on them.")
+                CALL QueueFlavour("")
+            END IF
+        CASE 7
+            IF inCombat = 0 THEN
+                CALL QueueFlavour("")
+                CALL QueueFlavour("  Scratches in the wall at eye height. You lean close. Letters, cut deep")
+                CALL QueueFlavour("  and fast by someone who knew they were running out of time. Three words.")
+                CALL QueueFlavour("  The middle one is illegible. The first is " & CHR$(34) & "do not" & CHR$(34) & " and the last is " & CHR$(34) & "alone." & CHR$(34))
+                CALL QueueFlavour("")
+            END IF
+        CASE 8
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  The cold gets into you. Not the sharp cold of wind -- the slow cold of")
+            CALL QueueFlavour("  deep stone, of places that have never been warm. You feel it in your")
+            CALL QueueFlavour("  chest first.")
+            CALL QueueFlavour("")
+            SET GLOBAL stamina = stamina - 1
+            SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
+            IF stamina <= 0 THEN
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 5
+            END IF
+        CASE 9
+            CALL QueueFlavour("")
+            CALL QueueFlavour("  You haven't eaten. You'd forgotten until now. Your body reminds you")
+            CALL QueueFlavour("  with a clarity that's difficult to ignore.")
+            CALL QueueFlavour("")
+            SET GLOBAL stamina = stamina - 1
+            SET GLOBAL minStamina = MIN(minStamina, stamina)
+            CALL QueueFlavour("  STAMINA: " & stamina)
+            CALL QueueFlavour("")
+            IF stamina <= 0 THEN
+                SET GLOBAL gameOver = 1
+                SET GLOBAL endState = 5
+            END IF
+        CASE 10
+            IF overburdened = 1 THEN
+                IF inCombat = 1 THEN
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  The weight you are carrying pulls at your arms. You are slower")
+                    CALL QueueFlavour("  than you should be. It costs you.")
+                    CALL QueueFlavour("")
+                ELSE
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. The weight pulls you down hard.")
+                    CALL QueueFlavour("  You catch yourself on one knee. It costs you.")
+                    CALL QueueFlavour("")
+                END IF
+                SET GLOBAL stamina = stamina - 1
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
+                IF stamina <= 0 THEN
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 5
+                END IF
+            ELSE
+                IF inCombat = 0 THEN
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Your foot catches on uneven stone. You catch yourself easily.")
+                    CALL QueueFlavour("  A reminder that the floor is not your friend.")
+                    CALL QueueFlavour("")
+                END IF
+            END IF
+        CASE 11
+            IF zombieSpawned = 0 AND turns > 3 THEN
+                IF RND() * 10 > 7 THEN
+                    SET GLOBAL zombieSpawned = 1
+                    SET GLOBAL zombieAlive = 1
+                    SET GLOBAL zombieRoom = ROOM_CROSSROADS
+                END IF
+            END IF
+        CASE 12
+            IF zombieAlive = 1 AND inCombat = 0 THEN
+                LET zNear = 0
+                LET zStart = roomExitStart[currentRoom - 1]
+                LET zCount = roomExitCount[currentRoom - 1]
+                FOR i = zStart TO zStart + zCount - 1
+                    IF exitDest[i] = zombieRoom THEN LET zNear = 1 END IF
+                NEXT i
+                IF zombieRoom = currentRoom THEN LET zNear = 1 END IF
+                IF zNear = 1 THEN
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  Something is moving in the dungeon. Not far away. The sound has")
+                    CALL QueueFlavour("  direction.")
+                    CALL QueueFlavour("")
+                ELSE
+                    CALL QueueFlavour("")
+                    CALL QueueFlavour("  You have the distinct feeling you are not alone. You stand very")
+                    CALL QueueFlavour("  still. Whatever it was, it passes.")
+                    CALL QueueFlavour("")
+                END IF
+            END IF
+    END SELECT
+END SUB
+
+REM =================================================================
+REM  SUB AdvanceTurns -- n AS INTEGER
+REM  Increments the turn counter n times. After each increment fires
+REM  an atmospheric event (~15% chance) and moves the zombie one
+REM  step if it is alive. Central time-management point for the game.
+REM  All time-costing commands call this instead of incrementing turns
+REM  directly. Stops early if gameOver is set (e.g. atmospheric STAMINA
+REM  event kills the player).
+REM =================================================================
+SUB AdvanceTurns(n AS INTEGER)
+    FOR t = 1 TO n
+        IF gameOver = 0 THEN
+            SET GLOBAL turns = turns + 1
+            IF RND() * 10 > 8.5 THEN
+                CALL AtmosphericEvent()
+            END IF
+            IF zombieSpawned = 1 AND zombieAlive = 1 THEN
+                CALL WanderZombie()
+            END IF
+        END IF
+    NEXT t
+END SUB
+
+REM =================================================================
+REM  SUB HandleSearch
+REM  Processes the SEARCH command. Costs 2 turns regardless of outcome.
+REM  Live monster present: fires SEARCH interrupt combat (SKILL -1
+REM  round 1 via CombatLoop's searchInterrupt parameter).
+REM  Room 11 with King alive: refuses search entirely, no combat.
+REM  On success: shows loot slot contents, floor items, and any
+REM  room-specific reveals (Room 6 hidden exit, Room 3 chest state).
+REM  Sets searched[roomId-1] = 1 on completion.
+REM =================================================================
+SUB HandleSearch()
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET zLine = CINT(RND() * 3) + 1
+        SELECT CASE zLine
+            CASE 1
+                PRINT "  You hear it before you see it -- a wet, irregular shuffling."
+                PRINT "  It has found you."
+            CASE 2
+                PRINT "  Something cold brushes your arm. You spin."
+                PRINT "  It is closer than it should be."
+            CASE 3
+                PRINT "  The smell reaches you first. Then the shape in the dark shifts."
+                PRINT "  It is already here."
+        END SELECT
+        PRINT ""
+        CALL AdvanceTurns(2)
+        SET GLOBAL searchInterruptActive = 1
+        CALL HandleFight(currentRoom)
+        RETURN
+    END IF
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        IF currentRoom = ROOM_THRONE THEN
+            PRINT "  Not here. Not with him watching."
+            PRINT ""
+            CALL AdvanceTurns(2)
+            RETURN
+        END IF
+        SELECT CASE currentRoom
+            CASE ROOM_GUARDROOM
+                PRINT "  The Brute hears the scrape of your boot before you've taken a step"
+                PRINT "  toward the wall. It turns with the speed of something that has been"
+                PRINT "  waiting for an excuse. You are out of time."
+            CASE ROOM_COLLAPSED
+                PRINT "  The moment your hand touches the rubble the Horror is already moving."
+                PRINT "  Not toward the sound -- toward you. It has been still this whole time."
+                PRINT "  It was never unaware."
+            CASE ROOM_PIT
+                PRINT "  The Guardian does not hurry. It simply turns, raises its weapon, and"
+                PRINT "  begins walking toward you with the unhurried certainty of something"
+                PRINT "  that has done this before. You had your back to it."
+            CASE ROOM_CISTERN
+                PRINT "  The cold in the room doubles before you have touched anything. The"
+                PRINT "  luminescence fixes on you -- steady, no longer drifting. It knew the"
+                PRINT "  moment your attention shifted."
+            CASE ROOM_UNDERHALL
+                PRINT "  The small dark eyes find you the instant you crouch. It doesn't roar."
+                PRINT "  It doesn't rush. It simply stands and keeps coming with the patient"
+                PRINT "  certainty of something that has never needed to hurry."
+        END SELECT
+        PRINT ""
+        CALL AdvanceTurns(2)
+        SET GLOBAL searchInterruptActive = 1
+        CALL HandleFight(currentRoom)
+        RETURN
+    END IF
+
+    CALL AdvanceTurns(2)
+
+    IF searched[currentRoom - 1] = 1 THEN
+        LET floorFound = 0
+        LET mySlot = RoomLootSlot(currentRoom)
+        IF mySlot > 0 THEN
+            IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+                PRINT "  " & ItemName(slotContents[mySlot]) & " is here."
+                LET floorFound = 1
+            END IF
+        END IF
+        FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+            LET floorCode = droppedItem[currentRoom - 1][s]
+            IF floorCode > ITEM_EMPTY THEN
+                PRINT "  " & ItemName(floorCode) & " is here."
+                LET floorFound = 1
+            END IF
+        NEXT s
+        IF floorFound = 0 THEN
+            PRINT "  You go through the room again. You find nothing you missed the first time."
+        END IF
+        PRINT ""
+        RETURN
+    END IF
+
+    LET mySlot = RoomLootSlot(currentRoom)
+    LET foundSomething = 0
+
+    IF mySlot > 0 THEN
+        IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+            PRINT "  You find: " & ItemName(slotContents[mySlot])
+            LET foundSomething = 1
+        END IF
+    END IF
+
+    IF currentRoom = ROOM_ARMOURY THEN
+        IF armouryLocked = 1 THEN
+            PRINT "  The chest is here. Iron-banded, locked."
+            LET foundSomething = 1
+        END IF
+    END IF
+
+    IF currentRoom = ROOM_COLLAPSED THEN
+        SET GLOBAL exitHidden[11] = 0
+        PRINT "  You work through the rubble methodically. Most of it is solid --"
+        PRINT "  ceiling stone, heavy, immovable. But toward the base of the fall,"
+        PRINT "  where the collapse met the floor, there is a gap. Low, tight, passable"
+        PRINT "  if you commit to it."
+        PRINT ""
+        PRINT "  Beyond it: a passage, heading south."
+        PRINT ""
+        PRINT "  It was always there. The dungeon didn't hide it. You just had to look."
+        LET foundSomething = 1
+    END IF
+
+    FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+        LET floorCode = droppedItem[currentRoom - 1][s]
+        IF floorCode > ITEM_EMPTY THEN
+            PRINT "  " & ItemName(floorCode) & " is here."
+            LET foundSomething = 1
+        END IF
+    NEXT s
+
+    IF currentRoom = ROOM_THRONE AND monsterAlive[ROOM_THRONE - 1] = 0 THEN
+        SET GLOBAL crownAvailable = 1
+        PRINT "  Beneath the piled coin and the fallen king you see it clearly for the"
+        PRINT "  first time. The crown. Solid gold, heavily jewelled -- rubies, sapphires,"
+        PRINT "  stones you don't have names for. Nothing else in this room comes close."
+        PRINT "  Nothing you have ever owned comes close. One item. Carried out of here"
+        PRINT "  and you never work another day. You never fear another debt. You never"
+        PRINT "  need anything from anyone again."
+        PRINT ""
+        PRINT "  It is still on his head. His head is right there."
+        LET foundSomething = 1
+    END IF
+
+    IF foundSomething = 0 THEN
+        PRINT "  There is nothing here of use."
+    END IF
+
+    PRINT ""
+    SET GLOBAL searched[currentRoom - 1] = 1
+END SUB
+
+REM =================================================================
+REM  SUB PrintInventoryScreen
+REM  Redraws the full screen as a dedicated inventory frame.
+REM  Lists all four carry slots (occupied or empty) with passive item
+REM  tags. Waits for ENTER to continue. Costs 0 turns.
+REM =================================================================
+SUB PrintInventoryScreen()
+    CALL PrintHeader()
+    LET invCount$ = invCount & " / 4 items"
+    LET padLen = FRAME_WIDTH - 11 - LEN(invCount$)
+    PRINT "  INVENTORY" & STRING$(" ", padLen) & invCount$
+    PRINT ""
+    FOR i = 1 TO 4
+        IF inventory[i] > ITEM_EMPTY THEN
+            LET tag$ = ""
+            IF inventory[i] = ITEM_SHARD THEN LET tag$ = "  (passive -- damage -1)" END IF
+            IF inventory[i] = ITEM_BANGLE THEN LET tag$ = "  (passive -- negates Terror)" END IF
+            IF inventory[i] = ITEM_SWORD THEN LET tag$ = "  (passive -- +1 damage)" END IF
+            PRINT "  [" & i & "] " & ItemName(inventory[i]) & tag$
+        ELSE
+            PRINT "  [" & i & "] -- empty"
+        END IF
+    NEXT i
+    PRINT ""
+    INPUT "  [ Press ENTER to continue ]"; p$
+    PRINT ""
+    CALL PrintSeparator()
+END SUB
+
+REM =================================================================
+REM  SUB HandleTake -- item$ AS STRING
+REM  Processes TAKE [item] and TAKE ALL commands.
+REM  TAKE ALL: greedily picks up items in array order until invCount
+REM  reaches 4. If items remain, prints partial-fill flavour and leftovers.
+REM  TAKE [item]: checks item present, checks hard limit (4), adds it.
+REM  When full: shows current inventory inline + "DROP an item".
+REM  When at 3: prints overburdened warning before taking.
+REM  Costs 0 turns.
+REM =================================================================
+SUB HandleTake(item$ AS STRING)
+    IF item$ = "ALL" THEN
+        LET taken = 0
+        LET leftover = 0
+        LET leftoverNames$ = ""
+        LET mySlot = RoomLootSlot(currentRoom)
+        IF mySlot > 0 THEN
+            IF slotTaken[mySlot] = 0 AND slotContents[mySlot] > ITEM_EMPTY THEN
+                IF invCount < 4 THEN
+                    CALL AddToInventory(slotContents[mySlot])
+                    SET GLOBAL slotTaken[mySlot] = 1
+                    LET taken = taken + 1
+                ELSE
+                    IF leftoverNames$ = "" THEN
+                        LET leftoverNames$ = ItemName(slotContents[mySlot])
+                    ELSE
+                        LET leftoverNames$ = leftoverNames$ & ", " & ItemName(slotContents[mySlot])
+                    END IF
+                    LET leftover = leftover + 1
+                END IF
+            END IF
+        END IF
+
+        LET s = 0
+        WHILE s < droppedCount[currentRoom - 1]
+            LET floorCode = droppedItem[currentRoom - 1][s]
+            IF floorCode > ITEM_EMPTY THEN
+                IF invCount < 4 THEN
+                    CALL AddToInventory(floorCode)
+                    FOR k = s TO droppedCount[currentRoom - 1] - 2
+                        SET GLOBAL droppedItem[currentRoom - 1][k] = droppedItem[currentRoom - 1][k + 1]
+                    NEXT k
+                    SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1] - 1] = ITEM_EMPTY
+                    SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] - 1
+                    LET taken = taken + 1
+                ELSE
+                    IF leftoverNames$ = "" THEN
+                        LET leftoverNames$ = ItemName(floorCode)
+                    ELSE
+                        LET leftoverNames$ = leftoverNames$ & ", " & ItemName(floorCode)
+                    END IF
+                    LET leftover = leftover + 1
+                    LET s = s + 1
+                END IF
+            ELSE
+                LET s = s + 1
+            END IF
+        WEND
+
+        IF taken = 0 AND leftover = 0 THEN
+            PRINT "  There is nothing here to take."
+        ELSE
+            IF leftover > 0 THEN
+                PRINT "  You take what you can carry. The dungeon is patient."
+                PRINT ""
+                PRINT "  Left behind: " & leftoverNames$
+                PRINT ""
+                PRINT "  Use TAKE [item] to choose what matters most."
+            END IF
+        END IF
+        PRINT ""
+        RETURN
+    END IF
+
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET available = 0
+    LET fromSlot = 0
+    LET fromFloor = 0
+    LET floorSlot = 0
+    LET mySlot = RoomLootSlot(currentRoom)
+    IF mySlot > 0 THEN
+        IF slotTaken[mySlot] = 0 AND slotContents[mySlot] = itemCode THEN
+            LET available = 1
+            LET fromSlot = mySlot
+        END IF
+    END IF
+
+    IF available = 0 THEN
+        FOR s = 0 TO droppedCount[currentRoom - 1] - 1
+            IF droppedItem[currentRoom - 1][s] = itemCode AND available = 0 THEN
+                LET available = 1
+                LET fromFloor = 1
+                LET floorSlot = s
+            END IF
+        NEXT s
+    END IF
+
+    IF available = 0 THEN
+        PRINT "  There is nothing like that here."
+        PRINT ""
+        RETURN
+    END IF
+
+    IF invCount = 4 THEN
+        PRINT "  You cannot carry any more."
+        PRINT ""
+        PRINT "  Carrying:"
+        FOR i = 1 TO 4
+            PRINT "  [" & i & "] " & ItemName(inventory[i])
+        NEXT i
+        PRINT ""
+        PRINT "  DROP an item to make room."
+        PRINT ""
+        RETURN
+    END IF
+
+    IF invCount = 3 THEN
+        PRINT "  You are already carrying more than you should. You can take one more"
+        PRINT "  item, but you will feel it."
+        PRINT ""
+    END IF
+
+    CALL AddToInventory(itemCode)
+    IF fromSlot > 0 THEN
+        SET GLOBAL slotTaken[fromSlot] = 1
+    END IF
+    IF fromFloor = 1 THEN
+        FOR k = floorSlot TO droppedCount[currentRoom - 1] - 2
+            SET GLOBAL droppedItem[currentRoom - 1][k] = droppedItem[currentRoom - 1][k + 1]
+        NEXT k
+        SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1] - 1] = ITEM_EMPTY
+        SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] - 1
+    END IF
+
+    IF itemCode <> ITEM_MEDAL THEN
+        PRINT "  Taken."
+    END IF
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB HandleDrop -- item$ AS STRING
+REM  Removes an item from inventory, places it on the current room's
+REM  floor array, and updates invCount and overburdened.
+REM  Costs 0 turns.
+REM =================================================================
+SUB HandleDrop(item$ AS STRING)
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET found = 0
+    LET invSlot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = itemCode AND found = 0 THEN
+            LET found = 1
+            LET invSlot = i
+        END IF
+    NEXT i
+
+    IF found = 0 THEN
+        PRINT "  You are not carrying that."
+        PRINT ""
+        RETURN
+    END IF
+
+    SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+    SET GLOBAL invCount = invCount - 1
+    IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+    SET GLOBAL droppedItem[currentRoom - 1][droppedCount[currentRoom - 1]] = itemCode
+    SET GLOBAL droppedCount[currentRoom - 1] = droppedCount[currentRoom - 1] + 1
+    PRINT "  Dropped."
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB HandleUse -- item$ AS STRING
+REM  Activates an item from inventory. Consumables are removed from
+REM  the slot on use; passives print a reminder and stay.
+REM  Guardroom Key: unlocks Armoury chest if in Room 3, places Sword
+REM  of Sharpness on Room 3's floor, consumes the key.
+REM  Costs 1 turn.
+REM =================================================================
+SUB HandleUse(item$ AS STRING)
+    LET itemCode = ItemCode(item$)
+    IF itemCode = -1 THEN
+        PRINT "  You don't know what that is."
+        PRINT ""
+        RETURN
+    END IF
+
+    LET found = 0
+    LET invSlot = 0
+    FOR i = 1 TO 4
+        IF inventory[i] = itemCode AND found = 0 THEN
+            LET found = 1
+            LET invSlot = i
+        END IF
+    NEXT i
+
+    IF found = 0 THEN
+        PRINT "  You are not carrying that."
+        PRINT ""
+        RETURN
+    END IF
+
+    CALL AdvanceTurns(1)
+    SELECT CASE itemCode
+        CASE ITEM_POTION
+            SET GLOBAL stamina = startStamina
+            PRINT "  You drink it in one pull. The wounds close faster than they have any right to."
+            PRINT ""
+            PRINT "  STAMINA restored to " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_CHARM
+            SET GLOBAL luck = luck + 2
+            PRINT "  You close your fist around it and make your wish. Whatever it is, it takes it."
+            PRINT ""
+            PRINT "  LUCK: " & luck
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_SHARD
+            PRINT "  You are already wearing it. It reduces the damage you take while you carry it."
+            PRINT "  Nothing more to do."
+        CASE ITEM_BREAD
+            SET GLOBAL stamina = MIN(stamina + 4, startStamina)
+            PRINT "  Dry, dense, hard. You eat it without tasting it."
+            PRINT ""
+            PRINT "  STAMINA: " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_MEDAL
+            PRINT "  It sits in your palm. Cold. It does not respond to you."
+        CASE ITEM_ANTIDOTE
+            SET GLOBAL poisoned = 0
+            PRINT "  Bitter. You drain it and throw the vial aside. The cold in your blood recedes."
+            PRINT ""
+            PRINT "  Poison cleared."
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_BANGLE
+            PRINT "  You are already wearing it. It does what it does while you carry it."
+        CASE ITEM_SWORD
+            PRINT "  It is in your hand. Keep it there. It does its work in combat."
+        CASE ITEM_MOULDY
+            SET GLOBAL stamina = MIN(stamina + 3, startStamina)
+            PRINT "  You eat it. You try not to think about how long it has been down here."
+            PRINT ""
+            PRINT "  STAMINA: " & stamina
+            SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+            SET GLOBAL invCount = invCount - 1
+            IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+        CASE ITEM_KEY
+            IF currentRoom = ROOM_ARMOURY THEN
+                IF armouryLocked = 1 THEN
+                    PRINT "  You try the key in the lock. It turns."
+                    PRINT ""
+                    PRINT "  The chest opens. The air that comes out smells of oil and old metal."
+                    PRINT "  Inside: a sword. Old, but maintained. The edge catches the light."
+                    SET GLOBAL armouryLocked = 0
+                    SET GLOBAL droppedItem[2][droppedCount[2]] = ITEM_SWORD
+                    SET GLOBAL droppedCount[2] = droppedCount[2] + 1
+                    SET GLOBAL inventory[invSlot] = ITEM_EMPTY
+                    SET GLOBAL invCount = invCount - 1
+                    IF invCount < 4 THEN SET GLOBAL overburdened = 0 END IF
+                ELSE
+                    PRINT "  The chest is already open."
+                END IF
+            ELSE
+                PRINT "  There is nothing here to use it on."
+            END IF
+    END SELECT
+    PRINT ""
+END SUB
+
+REM  Prints the visible exits for the given room. Hidden exits
+REM  (exitHidden = 1) are not shown. Called from PrintRoom.
+REM  Builds the exits line by concatenating direction names.
+REM =================================================================
+SUB PrintExits(roomId AS INTEGER)
+    LET start = roomExitStart[roomId - 1]
+    LET count = roomExitCount[roomId - 1]
+    IF count = 0 THEN
+        PRINT "  Exits: none"
+        RETURN
+    END IF
+    LET exitLine = "  Exits:"
+    FOR i = start TO start + count - 1
+        IF exitHidden[i] = 0 THEN
+            LET exitLine = exitLine & " " & DirName(exitDir[i])
+        END IF
+    NEXT i
+    PRINT exitLine
+END SUB
+
+REM =================================================================
+REM  SUB HandleLook
+REM  Advances one turn (triggers atmospheric and zombie events)
+REM  then returns. The game loop re-renders the room via EnterRoom.
+REM =================================================================
+SUB HandleLook()
+    CALL AdvanceTurns(1)
+END SUB
+
+REM =================================================================
+REM  SUB HandleSneak -- dir AS INTEGER
+REM  Attempts to pass a monster or the wandering zombie unseen in
+REM  the given direction. Finds the exit first -- invalid direction
+REM  costs nothing. No hostile present: move, costs 2 turns.
+REM  Room 11 always refuses. Roll: RollDice(2) <= skill = success
+REM  (move to dest, 1 turn). Failure: fight in current room, no move.
+REM =================================================================
+SUB HandleSneak(dir AS INTEGER)
+    REM --- Collapsed Passage: entering from Cistern clears the rubble ---
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        SET GLOBAL exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
+    END IF
+    LET dest = 0
+    LET sStart = roomExitStart[currentRoom - 1]
+    LET sCount = roomExitCount[currentRoom - 1]
+    FOR i = sStart TO sStart + sCount - 1
+        IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
+            LET dest = exitDest[i]
+        END IF
+    NEXT i
+    IF dest = 0 THEN
+        PRINT "  There is no way through in that direction."
+        PRINT ""
+        RETURN
+    END IF
+    LET target = 0
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        LET target = 1
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET target = 1
+    END IF
+    IF target = 0 THEN
+        SET GLOBAL currentRoom = dest
+        CALL AdvanceTurns(2)
+        RETURN
+    END IF
+    IF currentRoom = ROOM_THRONE THEN
+        PRINT "  He is already looking at you. There is no passing unseen."
+        PRINT ""
+        RETURN
+    END IF
+    CALL AdvanceTurns(1)
+    LET roll = RollDice(2)
+    IF roll <= skill THEN
+        CALL QueueFlavour("  You hold your breath and move with extreme care. It does not notice.")
+        CALL QueueFlavour("  You are through.")
+        CALL QueueFlavour("")
+        SET GLOBAL currentRoom = dest
+    ELSE
+        PRINT "  It clocks you before you are halfway across."
+        PRINT ""
+        CALL HandleFight(currentRoom)
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB HandleGo -- dir AS INTEGER
+REM  Walks the exit slots for the current room. If a visible exit
+REM  matching dir is found, moves the player to the destination and
+REM  returns. If no match, prints the no-exit response.
+REM  Writes currentRoom via SET GLOBAL -- the only global write here.
+REM =================================================================
+SUB HandleGo(dir AS INTEGER)
+    IF monsterAlive[currentRoom - 1] = 1 THEN
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
+        RETURN
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        CALL QueueFlavour("  It moves to block your path. FIGHT or SNEAK.")
+        CALL QueueFlavour("")
+        RETURN
+    END IF
+    REM --- Collapsed Passage: entering from Cistern clears the rubble ---
+    IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
+        SET GLOBAL exitHidden[11] = 0
+        CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
+        CALL QueueFlavour("")
+    END IF
+    REM --- Issue 8: Underhall east door locked until riddle solved ---
+    IF currentRoom = ROOM_UNDERHALL AND dir = DIR_E AND riddleSolved = 0 THEN
+        CALL QueueFlavour("  The eastern passage ends at a door. It is sealed -- not locked,")
+        CALL QueueFlavour("  sealed, as though the stone grew shut around it. Whatever opens")
+        CALL QueueFlavour("  this, it is not a key.")
+        CALL QueueFlavour("")
+        RETURN
+    END IF
+    LET start = roomExitStart[currentRoom - 1]
+    LET count = roomExitCount[currentRoom - 1]
+    FOR i = start TO start + count - 1
+        IF exitDir[i] = dir AND exitHidden[i] = 0 THEN
+            SET GLOBAL currentRoom = exitDest[i]
+            IF overburdened = 1 THEN
+                CALL QueueFlavour("  You move, but the weight tells on you. Everything costs more")
+                CALL QueueFlavour("  when you are carrying this much.")
+                CALL QueueFlavour("")
+                SET GLOBAL stamina = stamina - 1
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
+                CALL QueueFlavour("  STAMINA: " & stamina)
+                CALL QueueFlavour("")
+                IF stamina <= 0 THEN
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 5
+                END IF
+            END IF
+            CALL AdvanceTurns(1)
+            RETURN
+        END IF
+    NEXT i
+    CALL QueueFlavour("  There is no way through in that direction.")
+    CALL QueueFlavour("")
+END SUB
+
+REM =================================================================
+REM  SUB OpeningSequence
+REM  Runs once at startup before the main game loop. Prints the
+REM  opening narrative, pauses, rolls and displays starting
+REM  attributes, then pauses again before the dungeon begins.
+REM =================================================================
+SUB OpeningSequence()
+    PRINT ""
+    PRINT "  You have sold everything. Your home, your tools, what little remained"
+    PRINT "  after the debts. Malachar's men took it all -- converted to coin, dropped"
+    PRINT "  down a chute into the dark beneath the keep. You watched it go."
+    PRINT ""
+    PRINT "  If you don't walk out of that dungeon, there is nothing to walk back to."
+    PRINT ""
+    CALL Pause()
+    PRINT ""
+    PRINT "  Rolling your attributes..."
+    PRINT ""
+    CALL RollStartingStats()
+    PRINT "  SKILL:    " & skill
+    PRINT "  STAMINA:  " & stamina
+    PRINT "  LUCK:     " & luck
+    PRINT ""
+    CALL Pause()
+END SUB
+
+REM =================================================================
+REM  SUB PrintRoom -- roomId AS INTEGER
+REM  Selects and prints the room description for the given room.
+REM  Branches on visited[] (first visit vs revisit) and, for rooms
+REM  with fixed monsters, on monsterAlive[] (alive vs dead).
+REM  Room 6 also branches on searched[] for passage visibility.
+REM  Calls PrintExits at the end of each room branch.
+REM =================================================================
+SUB PrintRoom(roomId AS INTEGER)
+    IF roomId = ROOM_ENTRY THEN
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  You have been here before. The torches are still burning."
+            PRINT "  Whatever tends them has been and gone since you passed through."
+            PRINT ""
+            PRINT "  The gates are still closed."
+        ELSE
+            PRINT "  The hall is wide and low, the ceiling barely clearing your head. The stone"
+            PRINT "  is older here than anywhere you have ever stood -- worn smooth by centuries"
+            PRINT "  of feet, most of which never came back. Torches burn in iron brackets on"
+            PRINT "  either wall. Someone keeps them lit. You have not seen who."
+            PRINT ""
+            PRINT "  The air smells of cold and damp and something faintly animal. Behind you,"
+            PRINT "  the gates are closed. You heard the bar drop. You did not look back."
+            PRINT ""
+            PRINT "  South is a doorway with no door. Beyond it, the sound of the dungeon"
+            PRINT "  settling into itself."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_GUARDROOM THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  It is still here. It has turned to face the door this time."
+            ELSE
+                PRINT "  The room is quieter now. The body is where you left it. The gouges"
+                PRINT "  in the floor catch the torchlight the same way they did before."
+                PRINT ""
+                PRINT "  You have been through here already. Whatever there is to find,"
+                PRINT "  you know where it is."
+            END IF
+        ELSE
+            PRINT "  The room smells of old iron and something worse underneath it. Weapon"
+            PRINT "  racks line the far wall -- empty, or nearly. Whatever was stored here"
+            PRINT "  has been used, or lost, or taken by someone who came before you."
+            PRINT ""
+            PRINT "  A broad figure stands in the passage to the south, back to you. Big."
+            PRINT "  The kind of big that moves slowly because it doesn't need to move fast."
+            PRINT "  It has not noticed you yet."
+            PRINT ""
+            PRINT "  There are deep gouges in the floor near the centre of the room. Something"
+            PRINT "  heavy was dragged here. You don't look too closely at the dark stain"
+            PRINT "  beside them."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_ARMOURY THEN
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  The chest is as you left it -- locked, or open, depending on what you"
+            PRINT "  did here."
+            PRINT ""
+            PRINT "  The brackets on the walls are still empty. The room has nothing more"
+            PRINT "  to offer you."
+        ELSE
+            PRINT "  A dead end -- or what passes for one down here. The room is narrow, the"
+            PRINT "  walls lined with empty brackets and bare hooks. Whatever armed the"
+            PRINT "  dungeon's original occupants is long gone."
+            PRINT ""
+            PRINT "  Against the far wall sits a chest. Iron-banded, old, locked. The lock"
+            PRINT "  is substantial. Someone thought what was inside was worth protecting."
+            PRINT ""
+            PRINT "  The only way out is west, back the way you came."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_CROSSROADS THEN
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  You are back at the crossroads. The passages sit where they were. The"
+            PRINT "  dungeon has not rearranged itself. Not here."
+        ELSE
+            PRINT "  Four passages meet here. The ceiling rises slightly -- not comfort, just"
+            PRINT "  space. The floor is worn in crossing patterns where feet have moved"
+            PRINT "  between directions over a very long time."
+            PRINT ""
+            PRINT "  North leads back toward the Guardroom. West opens into darkness that"
+            PRINT "  smells of dust and something crushed. East carries a faint sound you"
+            PRINT "  cannot quite identify. A passage angles away to the northeast."
+            PRINT ""
+            PRINT "  This is the centre of the dungeon. You feel it."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_STILL THEN
+        REM  The Still Chamber has no exits in Issue 4. The player is trapped here.
+        REM  The teleport mechanic (luck roll, lucky/unlucky pool) is implemented in Issue 8.
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  You recognise it immediately. The circular walls. The sourceless light."
+            PRINT "  The silence with weight in it."
+            PRINT ""
+            PRINT "  You know what this room does."
+            PRINT ""
+            PRINT "  Knowing does not help."
+            PRINT ""
+            PRINT "  The floor comes up to meet you."
+        ELSE
+            PRINT "  The passage ends in a room that shouldn't be here."
+            PRINT ""
+            PRINT "  It is perfectly circular. The walls are smooth in a way the rest of the"
+            PRINT "  dungeon is not -- not worn smooth, shaped smooth, as though the stone was"
+            PRINT "  never anything else. There are no torches. The light comes from nowhere"
+            PRINT "  you can identify and illuminates nothing clearly."
+            PRINT ""
+            PRINT "  There is no door. There is no exit. There is only the room, and the"
+            PRINT "  silence, and a heaviness behind your eyes that you notice too late to do"
+            PRINT "  anything about."
+            PRINT ""
+            PRINT "  The floor comes up to meet you."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_COLLAPSED THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  The skittering starts again the moment you step through the doorway."
+                PRINT ""
+                PRINT "  The rubble at the far end sits undisturbed. Whatever is buried under it,"
+                PRINT "  you haven't looked yet."
+            ELSE
+                IF searched[roomId - 1] = 1 THEN
+                    PRINT "  The passage is still. The body of the creature lies where it fell."
+                    PRINT ""
+                    PRINT "  The gap in the rubble is visible from the doorway now that you know"
+                    PRINT "  where to look. South, through the collapse, if you're ready to move on."
+                ELSE
+                    PRINT "  The passage is still. The body of the creature lies where it fell,"
+                    PRINT "  already desiccating in the cold air."
+                    PRINT ""
+                    PRINT "  The rubble at the far end sits as it has for decades. If there is a"
+                    PRINT "  way through, it is not obvious. Not yet."
+                END IF
+            END IF
+        ELSE
+            PRINT "  The ceiling has come down at the far end -- not recently. The rubble has"
+            PRINT "  been here long enough to gather its own dust. Whatever this passage once"
+            PRINT "  connected, it no longer does. Not obviously."
+            PRINT ""
+            PRINT "  The air is cold and close. Something has been moving through here. The"
+            PRINT "  dust on the rubble is disturbed in places, and not by your feet."
+            PRINT ""
+            PRINT "  You hear it before you see it -- a dry, chitinous skittering from"
+            PRINT "  somewhere in the dark beyond the fallen stone. Then the sound stops."
+            PRINT "  Then it is very close."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_PIT THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  It is still there. Still waiting. It turns to face you again with the"
+                PRINT "  same unhurried certainty."
+            ELSE
+                PRINT "  The armoured figure is down. The pit sits in the centre of the room,"
+                PRINT "  dropping into the same darkness it always did."
+                PRINT ""
+                PRINT "  South is clear."
+            END IF
+        ELSE
+            PRINT "  The floor drops away three feet below the entrance -- you step down into"
+            PRINT "  the room rather than walking into it. The pit that gives the room its"
+            PRINT "  name is in the centre: a square shaft, iron-railed, dropping into"
+            PRINT "  darkness. You cannot hear the bottom."
+            PRINT ""
+            PRINT "  Standing between you and the far passage is a figure in armour. Old"
+            PRINT "  armour -- dented, repaired, repaired again. It has the posture of"
+            PRINT "  something that has been waiting for a long time and has no particular"
+            PRINT "  feelings about waiting longer."
+            PRINT ""
+            PRINT "  It turns to face you with the unhurried certainty of something that has"
+            PRINT "  done this before."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_RIDDLE THEN
+        IF visited[roomId - 1] = 1 THEN
+            PRINT "  The door you chose stands open. The passage beyond is exactly as you"
+            PRINT "  left it. The riddle is still carved into the wall between them. The"
+            PRINT "  other door is sealed. There is no handle, no gap, no way through."
+            PRINT "  Whatever is on the other side stays there."
+        ELSE
+            PRINT "  The door behind you is gone."
+            PRINT ""
+            PRINT "  You did not hear it close. You did not feel it move. You turned and it"
+            PRINT "  was simply not there -- solid stone where the entrance was, seamless,"
+            PRINT "  cold, indifferent."
+            PRINT ""
+            PRINT "  Ahead of you are two doors, identical in every respect except one: a"
+            PRINT "  riddle is carved into the stone wall between them, deep and deliberate,"
+            PRINT "  cut by someone who knew exactly what they were doing."
+            PRINT ""
+            PRINT "  Below the riddle, two words. One above each door."
+            PRINT ""
+            PRINT "  LEFT. RIGHT."
+            PRINT ""
+            PRINT "  The room waits."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_CISTERN THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  The cold finds you again the moment you step through the doorway. The"
+                PRINT "  luminescence flickers at the edge of vision."
+                PRINT ""
+                PRINT "  It remembers you too."
+            ELSE
+                PRINT "  The room is warmer without it. The water sounds are clearer now --"
+                PRINT "  just water, just stone, just the dungeon's old plumbing doing what"
+                PRINT "  it was built to do."
+            END IF
+        ELSE
+            PRINT "  Water, somewhere below the floor. You can hear it moving through stone"
+            PRINT "  channels -- old infrastructure, still functioning, tending to a dungeon"
+            PRINT "  that has long outlasted whoever built it."
+            PRINT ""
+            PRINT "  The room is larger than it looks. The ceiling is vaulted, the far corners"
+            PRINT "  lost in shadow. Against the north wall, partially hidden by a fall of"
+            PRINT "  loose stone, is a recess that doesn't quite look accidental."
+            PRINT ""
+            PRINT "  Something is in the room with you. You sense it before you see it -- a"
+            PRINT "  chill that has nothing to do with the water, a faint luminescence at the"
+            PRINT "  edge of vision that vanishes when you look directly at it."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_UNDERHALL THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  It remembers you. The small dark eyes find you immediately."
+            ELSE
+                PRINT "  The Troll is down. The room is the same -- the bones along the"
+                PRINT "  walls, the high ceiling, the smell that does not quite go away."
+                PRINT ""
+                PRINT "  South is open. You are nearly through."
+            END IF
+        ELSE
+            PRINT "  The passages converge here. This is where the dungeon funnels everything."
+            PRINT ""
+            PRINT "  The ceiling is high and the room is wide and it smells of age and"
+            PRINT "  something organic and wrong. The walls are lined with what you first"
+            PRINT "  take for discarded equipment -- bundles of cloth and leather, dull metal,"
+            PRINT "  shapes that your eyes keep trying to resolve into something else."
+            PRINT ""
+            PRINT "  They are not equipment."
+            PRINT ""
+            PRINT "  They are what happens to people who made it this far and ran out of"
+            PRINT "  something -- STAMINA, luck, time. Dry bones in old armour. The dungeon"
+            PRINT "  keeps them here. A record."
+            PRINT ""
+            PRINT "  In the centre of the room, massive and still and watching you with small"
+            PRINT "  dark eyes, is the Troll."
+            PRINT ""
+            PRINT "  It does not move. It is waiting to see what you do."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_THRONE THEN
+        IF visited[roomId - 1] = 1 THEN
+            IF monsterAlive[roomId - 1] = 1 THEN
+                PRINT "  He is already looking at the door when you enter."
+                PRINT ""
+                PRINT "  The gold is as it was. The throne is as it was. The figure on it is as"
+                PRINT "  it was -- minus whatever STAMINA you took from him, already restored,"
+                PRINT "  already waiting."
+                PRINT ""
+                PRINT "  He does not look surprised to see you again."
+            ELSE
+                PRINT "  The room is as you left it. The gold is everywhere. The throne is"
+                PRINT "  empty."
+                PRINT ""
+                PRINT "  The room is quiet in a way it was not before."
+            END IF
+        ELSE
+            PRINT "  The room is vast. After everything that came before it, the scale is"
+            PRINT "  wrong -- ceilings that disappear into darkness above, walls lost in"
+            PRINT "  shadow at the edges, a floor of cracked stone buried under three hundred"
+            PRINT "  years of accumulated coin."
+            PRINT ""
+            PRINT "  Gold. More than you have ever seen or imagined. More than you will ever"
+            PRINT "  be able to carry. It sits in drifts and piles around the base of the"
+            PRINT "  throne like a tide that came in and never went back out."
+            PRINT ""
+            PRINT "  The throne is at the far end. On it, a figure. Armoured, still, head"
+            PRINT "  bowed under the weight of something on its brow."
+            PRINT ""
+            PRINT "  Not dead. You can tell, even from here. Not dead, not sleeping. Waiting"
+            PRINT "  -- the way only something that has been waiting for three hundred years"
+            PRINT "  can wait, with a patience that has long since stopped being patience and"
+            PRINT "  become simply the shape of its existence."
+            PRINT ""
+            PRINT "  It raises its head."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+    IF roomId = ROOM_GATE THEN
+        PRINT "  A plain room. Stone floor, stone walls, low ceiling. Two doors in the far"
+        PRINT "  wall, side by side. No decoration, no inscription, no indication of what"
+        PRINT "  lies beyond either of them."
+        PRINT ""
+        PRINT "  After everything that brought you here, the ordinariness of it is its own"
+        PRINT "  kind of wrong. You stand in the doorway and wait for something to happen."
+        PRINT "  Nothing does. The room offers nothing -- no sound from beyond the doors,"
+        PRINT "  no draft, no sign. Just two doors in a plain room at the end of a dungeon"
+        PRINT "  that has been trying to kill you since you stepped into it."
+        PRINT ""
+        PRINT "  You keep waiting. The silence holds."
+        PRINT ""
+        PRINT "  Eventually you realise the dungeon has already made its last move. It just"
+        PRINT "  looks like a room."
+        PRINT ""
+        IF gateCorrectDoor = 1 THEN
+            PRINT "  The right door is worn smooth around the handle. Thousands of hands have"
+            PRINT "  reached for it. The left door is stiffer -- the wood darker, the hinges"
+            PRINT "  tighter. It has not been opened nearly as often."
+        ELSE
+            PRINT "  The left door is worn smooth around the handle. Thousands of hands have"
+            PRINT "  reached for it. The right door is stiffer -- the wood darker, the hinges"
+            PRINT "  tighter. It has not been opened nearly as often."
+        END IF
+        PRINT ""
+        PRINT "  You step forward and make your choice."
+        PRINT ""
+        PRINT "  Type LEFT or RIGHT to choose a door."
+        PRINT ""
+        CALL PrintExits(roomId)
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB EnterRoom -- roomId AS INTEGER, postFight AS INTEGER
+REM  Renders a full room screen: header, location line, description,
+REM  separator. Sets the visited flag for the room after rendering.
+REM  If postFight = 1, prints immediate aftermath text instead of the
+REM  standard revisit description. If a monster is alive, prints the
+REM  encounter prompt.
+REM =================================================================
+SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
+    REM --- Issue 8: intercept rooms with special sequences ---
+    IF roomId = ROOM_STILL THEN
+        CALL StillChamberSequence()
+        RETURN
+    END IF
+    IF roomId = ROOM_RIDDLE AND riddleSolved = 0 THEN
+        CALL RiddleRoomSequence()
+        RETURN
+    END IF
+    CALL PrintHeader()
+    CALL FlushFlavour()
+    IF poisoned = 1 THEN
+        SET GLOBAL stamina = stamina - 1
+        SET GLOBAL minStamina = MIN(minStamina, stamina)
+        IF stamina <= 0 THEN
+            SET GLOBAL gameOver = 1
+            SET GLOBAL endState = 5
+            RETURN
+        END IF
+        PRINT "  The poison spreads further through your blood. You feel it costing you."
+        PRINT ""
+    END IF
+    PRINT "  LOCATION: " & RoomName(roomId)
+    PRINT ""
+    IF postFight = 1 THEN
+        IF roomId = ROOM_GUARDROOM THEN
+            PRINT "  The Brute is down. It fell the way big things fall -- all at once,"
+            PRINT "  without grace. The impact is still ringing in the floor."
+            PRINT ""
+            PRINT "  Your breathing is the loudest thing in the room now. The gouges in"
+            PRINT "  the stone are at your feet. The dark stain has company."
+        END IF
+        IF roomId = ROOM_COLLAPSED THEN
+            PRINT "  The skittering has stopped."
+            PRINT ""
+            PRINT "  The creature lies where it fell, legs folded at angles they were not"
+            PRINT "  built to reach. The cold passage is quiet. The rubble at the far end"
+            PRINT "  is exactly as it was -- whatever the thing was guarding, it is no"
+            PRINT "  longer guarding it."
+        END IF
+        IF roomId = ROOM_PIT THEN
+            PRINT "  The armoured figure is down at last. The old armour settles with a"
+            PRINT "  sound like a door closing for good."
+            PRINT ""
+            PRINT "  The pit is behind you, dropping into the same darkness it always did."
+            PRINT "  South is open."
+        END IF
+        IF roomId = ROOM_CISTERN THEN
+            PRINT "  The cold leaves all at once -- not gradually, just gone, the moment"
+            PRINT "  it stopped moving."
+            PRINT ""
+            PRINT "  The water sounds come back. Channels, stone, the dungeon's old"
+            PRINT "  plumbing tending to itself. The recess in the north wall is still there."
+        END IF
+        IF roomId = ROOM_UNDERHALL THEN
+            PRINT "  The Troll is down. Something that size takes a moment to accept. The"
+            PRINT "  floor still feels the weight of it."
+            PRINT ""
+            PRINT "  The room is the same -- the bones along the walls, the high ceiling,"
+            PRINT "  the smell that does not quite go away. But south is open now."
+        END IF
+        IF roomId = ROOM_THRONE THEN
+            PRINT "  The room is as you left it. The gold is everywhere. The throne is"
+            PRINT "  empty."
+            PRINT ""
+            PRINT "  The room is quiet in a way it was not before."
+        END IF
+        PRINT ""
+        CALL PrintExits(roomId)
+    ELSE
+        CALL PrintRoom(roomId)
+    END IF
+    PRINT ""
+    CALL PrintSeparator()
+    SET GLOBAL visited[roomId - 1] = 1
+    IF monsterAlive[roomId - 1] = 1 THEN
+        PRINT ""
+        PRINT "  FIGHT to engage, or SNEAK to try to pass."
+        PRINT ""
+    END IF
+    IF zombieAlive = 1 AND zombieRoom = roomId AND monsterAlive[roomId - 1] = 0 THEN
+        PRINT ""
+        PRINT "  FIGHT to engage, or SNEAK to try to pass."
+        PRINT ""
+    END IF
+END SUB
+
+REM =================================================================
+REM  FUNCTION AttackStrength -- statSkill AS INTEGER -> INTEGER
+REM  Returns the attack strength for one side of a combat round:
+REM  two dice plus the combatant's current SKILL. Higher value wins.
+REM =================================================================
+FUNCTION AttackStrength(statSkill AS INTEGER) AS INTEGER
+    RETURN RollDice(2) + statSkill
+END FUNCTION
+
+REM =================================================================
+REM  SUB CombatLoop
+REM  Parameterised combat engine used by every monster in the game.
+REM  Monster-specific mechanics are enabled by flag parameters --
+REM  the loop itself is universal. Both sides roll AttackStrength
+REM  each round; higher wins and deals damage to the other.
+REM
+REM  Parameters:
+REM    monsterName$     -- display name for the stat block
+REM    monsterSkill     -- monster's SKILL value
+REM    monsterStamina   -- monster's starting STAMINA (local copy)
+REM    hasArmour        -- 1: armoured; player deals 1 damage (2 with sword, Issue 6)
+REM    hasRegen         -- 1: monster restores 1 STAMINA/round (Troll)
+REM    hasLuckDrain     -- 1: LUCK -1 each round regardless of outcome (Hollow Mage)
+REM    hasLesserTerror  -- 1: SKILL -1 round 1 only, restored round 2 (Skittering Horror)
+REM    hasPoison        -- 1: on rounds monster wins, roll 1d6; poison on 4+ (Horror)
+REM    isBoss           -- 1: full terror; Crushing Blow on 3+ margin (Bound King)
+REM    searchInterrupt  -- 1: interrupted mid-SEARCH; SKILL -1 round 1, additive
+REM
+REM  All global state writes use SET GLOBAL throughout.
+REM =================================================================
+SUB CombatLoop(monsterName$ AS STRING, monsterSkill AS INTEGER, monsterStamina AS INTEGER, hasArmour AS INTEGER, hasRegen AS INTEGER, hasLuckDrain AS INTEGER, hasLesserTerror AS INTEGER, hasPoison AS INTEGER, isBoss AS INTEGER, searchInterrupt AS INTEGER)
+    SET GLOBAL inCombat = 1
+    LET round = 1
+    LET firstRound = 1
+    LET terrorActive = 0
+    LET startMonsterStamina = monsterStamina
+    LET lesserSearchPenalty = 0
+    LET penaltyApplied = 0
+    LET playerLowFired = 0
+    LET playerCriticalFired = 0
+    LET monsterLowFired = 0
+    LET monsterCriticalFired = 0
+    LET playerAttack = 0
+    LET monsterAttack = 0
+    LET baseDamage = 0
+    LET poisonRoll = 0
+
+    REM  Full terror -- Bound King only.
+    REM  Bangle of Courage negates terror entirely (passive item).
+    IF isBoss = 1 AND HasItem(ITEM_BANGLE) = 0 THEN
+        SET GLOBAL skill = skill - 2
+        IF luck > 0 THEN
+            SET GLOBAL luck = luck - 1
+        END IF
+        LET terrorActive = 1
+    END IF
+
+    REM  Stat block -- Fighting Fantasy style, shown once before round 1.
+    LET padLen = 18 - LEN(monsterName$)
+    IF padLen < 1 THEN LET padLen = 1 END IF
+    LET armourTag$ = ""
+    IF hasArmour = 1 THEN LET armourTag$ = "   [ARMOURED]" END IF
+    LET skillPad$ = ""
+    IF skill < 10 THEN LET skillPad$ = " " END IF
+    LET mSkillPad$ = ""
+    IF monsterSkill < 10 THEN LET mSkillPad$ = " " END IF
+    PRINT "  You" & STRING$(" ", 15) & "SKILL " & skillPad$ & skill & "   STAMINA " & stamina
+    PRINT "  " & monsterName$ & STRING$(" ", padLen) & "SKILL " & mSkillPad$ & monsterSkill & "   STAMINA " & monsterStamina & armourTag$
+    PRINT ""
+    SLEEP(COMBAT_DELAY)
+
+    WHILE gameOver = 0 AND monsterStamina > 0
+
+        REM  Luck drain fires at the start of each round (Hollow Mage).
+        REM  Floors at zero -- the drain continues but cannot go negative.
+        IF hasLuckDrain = 1 THEN
+            IF luck > 0 THEN
+                SET GLOBAL luck = luck - 1
+            END IF
+        END IF
+
+        REM  Monster regen fires before attack rolls (Troll).
+        REM  Capped at starting STAMINA -- cannot heal above where it started.
+        IF hasRegen = 1 THEN
+            LET monsterStamina = MIN(monsterStamina + 1, startMonsterStamina)
+        END IF
+
+        REM  Round-1 SKILL penalties: lesser terror and search interrupt
+        REM  are additive. Total stored in lesserSearchPenalty for restore.
+        IF firstRound = 1 THEN
+            LET lesserSearchPenalty = 0
+            IF hasLesserTerror = 1 AND HasItem(ITEM_BANGLE) = 0 THEN
+                LET lesserSearchPenalty = lesserSearchPenalty + 1
+            END IF
+            IF searchInterrupt = 1 THEN
+                LET lesserSearchPenalty = lesserSearchPenalty + 1
+            END IF
+            IF lesserSearchPenalty > 0 THEN
+                SET GLOBAL skill = skill - lesserSearchPenalty
+                LET penaltyApplied = 1
+            END IF
+        END IF
+
+        REM  Both sides roll attack strength. Result printed for player clarity.
+        LET playerAttack = AttackStrength(skill)
+        LET monsterAttack = AttackStrength(monsterSkill)
+        PRINT ""
+        PRINT "  Round " & round & ":   Your attack " & playerAttack & "   --   Monster attack " & monsterAttack
+        PRINT ""
+
+        SLEEP(COMBAT_DELAY)
+
+        IF playerAttack > monsterAttack THEN
+            REM  Player wins the round.
+            IF hasArmour = 1 THEN
+                REM  Sword of Sharpness cuts clean through armour.
+                LET hasSword = 0
+                FOR sw = 1 TO 4
+                    IF inventory[sw] = ITEM_SWORD THEN LET hasSword = 1 END IF
+                NEXT sw
+                IF hasSword = 1 THEN
+                    LET monsterStamina = monsterStamina - 2
+                    PRINT "  Your blade cuts clean through the armour.  Monster STAMINA: " & monsterStamina
+                ELSE
+                    LET monsterStamina = monsterStamina - 1
+                    PRINT "  You strike but the armour absorbs most of it.  Monster STAMINA: " & monsterStamina
+                END IF
+            ELSE
+                REM  Sword of Sharpness adds +1 damage to all attacks.
+                LET hasSword = 0
+                FOR sw = 1 TO 4
+                    IF inventory[sw] = ITEM_SWORD THEN LET hasSword = 1 END IF
+                NEXT sw
+                IF hasSword = 1 THEN
+                    LET monsterStamina = monsterStamina - 3
+                    PRINT "  Your blade bites deep.  Monster STAMINA: " & monsterStamina
+                ELSE
+                    LET monsterStamina = monsterStamina - 2
+                    PRINT "  You hit.  Monster STAMINA: " & monsterStamina
+                END IF
+            END IF
+            IF monsterStamina <= 4 AND monsterLowFired = 0 THEN
+                PRINT ""
+                PRINT "  You can feel the momentum shifting. It is yours to lose now."
+                LET monsterLowFired = 1
+            END IF
+            IF monsterStamina <= 2 AND monsterCriticalFired = 0 THEN
+                PRINT ""
+                PRINT "  It is nearly done. Don't give it a way back."
+                LET monsterCriticalFired = 1
+            END IF
+        ELSE
+            IF monsterAttack > playerAttack THEN
+                REM  Monster wins the round.
+                LET baseDamage = 2
+                IF overburdened = 1 THEN LET baseDamage = 3 END IF
+                LET hasShard = 0
+                FOR sh = 1 TO 4
+                    IF inventory[sh] = ITEM_SHARD THEN LET hasShard = 1 END IF
+                NEXT sh
+                IF hasShard = 1 THEN LET baseDamage = MAX(baseDamage - 1, 1) END IF
+                IF isBoss = 1 THEN
+                    IF monsterAttack - playerAttack >= 3 THEN
+                        LET baseDamage = 4
+                        PRINT "  The blow lands with the weight of three hundred years of experience."
+                        PRINT "  It takes you to one knee and you feel something break inside."
+                    END IF
+                END IF
+                SET GLOBAL stamina = stamina - baseDamage
+                SET GLOBAL minStamina = MIN(minStamina, stamina)
+                PRINT "  It hits.  Your STAMINA: " & stamina
+                REM  Poison check: only when the monster has the poison flag and wins the round.
+                REM  Silent -- the player discovers the poison on next room entry.
+                IF hasPoison = 1 THEN
+                    LET poisonRoll = RollDice(1)
+                    IF poisonRoll >= 4 THEN
+                        SET GLOBAL poisoned = 1
+                    END IF
+                END IF
+                IF stamina <= 4 AND playerLowFired = 0 THEN
+                    PRINT ""
+                    PRINT "  You are barely standing. So is your chance of walking out of here."
+                    LET playerLowFired = 1
+                END IF
+                IF stamina <= 2 AND playerCriticalFired = 0 THEN
+                    PRINT ""
+                    PRINT "  You are one blow from the end. You both know it."
+                    LET playerCriticalFired = 1
+                END IF
+                IF stamina <= 0 THEN
+                    SET GLOBAL gameOver = 1
+                    SET GLOBAL endState = 5
+                END IF
+            ELSE
+                REM  Tie -- neither blow lands cleanly.
+                PRINT "  Neither blow lands cleanly. You circle."
+            END IF
+        END IF
+
+        SLEEP(COMBAT_DELAY)
+
+        REM  Restore round-1 SKILL penalty at the end of round 1.
+        IF penaltyApplied = 1 THEN
+            SET GLOBAL skill = skill + lesserSearchPenalty
+            LET penaltyApplied = 0
+        END IF
+
+        REM  Advance turn counter and round.
+        CALL AdvanceTurns(1)
+        LET round = round + 1
+        LET firstRound = 0
+
+    WEND
+
+    REM  Restore full terror modifier after combat ends (Bound King only).
+    IF terrorActive = 1 THEN
+        SET GLOBAL skill = skill + 2
+        SET GLOBAL luck = MIN(luck + 1, startLuck)
+    END IF
+    SET GLOBAL inCombat = 0
+END SUB
+
+REM =================================================================
+REM  SUB HandleFight -- roomId AS INTEGER
+REM  Dispatcher: checks whether a monster is present in the room,
+REM  prints the encounter opening, builds the monster's stats, and
+REM  calls CombatLoop. Handles the outcome when combat ends.
+REM  Issue 5: Guardroom Brute. Issue 6: Horror, Guardian, Mage, Troll.
+REM  Issue 7: Zombie. Bound King wired in Issue 9.
+REM =================================================================
+SUB HandleFight(roomId AS INTEGER)
+    LET activeInterrupt = searchInterruptActive
+    SET GLOBAL searchInterruptActive = 0
+    LET zombieHere = 0
+    IF zombieAlive = 1 AND zombieRoom = currentRoom THEN
+        LET zombieHere = 1
+    END IF
+    IF monsterAlive[roomId - 1] = 0 AND zombieHere = 0 THEN
+        PRINT "  There is nothing here that requires that."
+        PRINT ""
+        RETURN
+    END IF
+    IF roomId = ROOM_GUARDROOM THEN
+        PRINT ""
+        PRINT "  It hears you before you reach it. The broad shoulders shift, the head"
+        PRINT "  turns, and then it is facing you -- fully, deliberately, with the"
+        PRINT "  unhurried attention of something that has done this many times and"
+        PRINT "  found it straightforward."
+        PRINT ""
+        PRINT "  It is very large. The weapon in its hand looks like it was made for"
+        PRINT "  someone even larger."
+        PRINT ""
+        PRINT "  It moves first."
+        PRINT ""
+        LET mSkill = RollDice(1) + 7
+        LET mStamina = RollDice(2) + 10
+        CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_KEY
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
+            PRINT ""
+            PRINT "  It goes down slowly, the way large things do -- first to one knee,"
+            PRINT "  then forward, the weapon dropping before the rest of it follows."
+            PRINT "  The floor shakes once when it lands."
+            PRINT ""
+            PRINT "  The room is considerably quieter."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  The weapon connects before you can recover."
+            PRINT "  The last thing you see is the floor approaching."
+            PRINT ""
+        END IF
+    END IF
+    IF roomId = ROOM_COLLAPSED THEN
+        PRINT ""
+        PRINT "  You hear it first -- a dry, rapid skittering from somewhere in the dark"
+        PRINT "  beyond the rubble. Then silence. Then it is in the room with you and you"
+        PRINT "  understand, viscerally and immediately, why silence followed the sound."
+        PRINT ""
+        PRINT "  It is fast. Faster than anything that size has any right to be. The"
+        PRINT "  chitinous plates catch the torchlight in fragments as it moves and it"
+        PRINT "  is already moving toward you before you have fully registered what you"
+        PRINT "  are looking at."
+        PRINT ""
+        PRINT "  Round one. Don't let it rattle you."
+        PRINT ""
+        LET mSkill = RollDice(1) + 5
+        LET mStamina = RollDice(1) + 4
+        CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL monsterAlive[roomId - 1] = 0
+            PRINT ""
+            PRINT "  It drops mid-movement, skidding across the stone floor before coming"
+            PRINT "  to rest against the far wall. The chitinous legs fold inward, one"
+            PRINT "  after another, until it is still."
+            PRINT ""
+            PRINT "  You stand over it for a moment. The cold in your hands fades slowly."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  It is on you before the next round begins. You don't feel the last"
+            PRINT "  blow. You feel the cold, spreading, and then nothing."
+            PRINT ""
+        END IF
+    END IF
+    IF roomId = ROOM_PIT THEN
+        PRINT ""
+        PRINT "  It turns to face you without urgency. The armour it wears has been"
+        PRINT "  repaired so many times the original shape is barely discernible --"
+        PRINT "  layer over layer over layer, each repair a testament to something that"
+        PRINT "  has been hit repeatedly and kept going."
+        PRINT ""
+        PRINT "  It raises its weapon with the economy of motion of something that does"
+        PRINT "  not waste effort. It has assessed you. It has found you worth engaging."
+        PRINT ""
+        LET mSkill = RollDice(1) + 8
+        LET mStamina = RollDice(2) + 8
+        CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_BANGLE
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
+            PRINT ""
+            PRINT "  The armour clatters against the stone in sections as it falls --"
+            PRINT "  the sound of something that has held together through a great deal"
+            PRINT "  finally coming apart all at once."
+            PRINT ""
+            PRINT "  It does not get up. Whatever kept it going, you have taken enough."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  The armoured figure finishes what it started with the economy of"
+            PRINT "  something that has done exactly this many times before."
+            PRINT "  The light goes first."
+            PRINT ""
+        END IF
+    END IF
+    IF roomId = ROOM_CISTERN THEN
+        PRINT ""
+        PRINT "  You see the light before you see the source -- a faint, cold luminescence"
+        PRINT "  at the edge of vision that keeps refusing to be where you look for it."
+        PRINT "  Then it stops moving and you see it properly."
+        PRINT ""
+        PRINT "  The cold in the room is its cold. It has been here a long time. It is"
+        PRINT "  not pleased to have company, and it intends to make that clear."
+        PRINT ""
+        PRINT "  You feel something drain from you before the fight has even begun."
+        PRINT ""
+        LET mSkill = RollDice(1) + 6
+        LET mStamina = RollDice(1) + 6
+        CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL monsterAlive[roomId - 1] = 0
+            PRINT ""
+            PRINT "  It does not fall so much as diminish -- the luminescence pulling"
+            PRINT "  inward, flickering, and then gone. The cold lifts from the room"
+            PRINT "  slowly, as though the stone itself needs time to remember warmth."
+            PRINT ""
+            PRINT "  The silence that follows is a different quality of silence than before."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  The last of your luck drains away and with it everything else."
+            PRINT "  The cold in the room is the last thing you feel."
+            PRINT ""
+        END IF
+    END IF
+    IF roomId = ROOM_UNDERHALL THEN
+        PRINT ""
+        PRINT "  It does not move when you enter. It watches you from the centre of the"
+        PRINT "  room with small, dark, patient eyes, and it waits to see what you do."
+        PRINT ""
+        PRINT "  It is enormous. The old wounds on its hide have closed and scarred and"
+        PRINT "  closed again. You are going to have to be fast, or lucky, or both."
+        PRINT ""
+        PRINT "  It has decided you are worth its attention. It stands."
+        PRINT ""
+        LET mSkill = RollDice(1) + 7
+        LET mStamina = RollDice(2) + 12
+        CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL monsterAlive[roomId - 1] = 0
+            SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_MOULDY
+            SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
+            PRINT ""
+            PRINT "  It goes down at last. The wounds don't close this time."
+            PRINT "  Whatever you took from it, you took enough."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  Every wound you deal closes before the next round. It outlasts you."
+            PRINT "  That was always how this ended."
+            PRINT ""
+        END IF
+    END IF
+    IF roomId = ROOM_THRONE THEN
+        CALL BoundKingSequence()
+    END IF
+    IF zombieHere = 1 THEN
+        PRINT ""
+        PRINT "  You almost walk into it. The smell hits you first -- something cold"
+        PRINT "  and wrong, like earth and old blood. It turns toward you with the"
+        PRINT "  slow, indifferent purpose of something that does not need to hurry."
+        PRINT ""
+        LET mSkill = RollDice(1) + 2
+        LET mStamina = RollDice(2) + 8
+        CALL CombatLoop("Wandering Zombie", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
+        IF gameOver = 0 THEN
+            SET GLOBAL zombieAlive = 0
+            PRINT ""
+            PRINT "  It goes down without drama -- no last surge, no last sound. It just"
+            PRINT "  stops. Whatever drove it is gone. You stand over it until you are"
+            PRINT "  certain. The dungeon is quiet."
+            PRINT ""
+        ELSE
+            PRINT ""
+            PRINT "  It does not stop. You fall back, then fall. The dungeon does not care."
+            PRINT ""
+        END IF
+    END IF
+END SUB
+
+REM =================================================================
+REM  SUB PrintEndScreen
+REM  Final end-of-game handler. Branches on endState to print the
+REM  appropriate narrative and stats. Win path (endState 1) counts
+REM  gold bags from inventory slots holding ITEM_GOLD (Decision 10).
+REM  Crown path (endState 2) shows no stats. All others show stats.
+REM =================================================================
+SUB PrintEndScreen()
+    PRINT ""
+    CALL PrintSeparator()
+    PRINT ""
+    IF endState = 1 THEN
+        REM  Count gold bags currently in inventory
+        LET bagCount = 0
+        FOR i = 1 TO 4
+            IF inventory[i] = ITEM_GOLD THEN
+                LET bagCount = bagCount + 1
+            END IF
+        NEXT i
+        PRINT "  You survived The Sunken Crown."
+        IF bagCount = 1 THEN
+            PRINT "  You escaped with 1 bag of gold."
+        ELSE
+            PRINT "  You escaped with " & bagCount & " bags of gold."
+        END IF
+    END IF
+    IF endState = 2 THEN
+        PRINT "  You are the Bound King now."
+    END IF
+    IF endState = 3 THEN
+        PRINT "  The ceiling lowered. The room did not care."
+    END IF
+    IF endState = 4 THEN
+        PRINT "  The torch went out. The dungeon kept you."
+    END IF
+    IF endState = 5 THEN
+        PRINT "  Your STAMINA reached zero."
+    END IF
+    IF endState = 6 THEN
+        PRINT "  The dungeon has been here longer than anyone you have ever met has been"
+        PRINT "  alive. It will be here after everyone you know is dust."
+        PRINT "  It did not notice you arrive."
+        PRINT "  It did not notice you leave."
+    END IF
+    IF endState <> 2 THEN
+        PRINT ""
+        PRINT "  Your SKILL was " & startSkill & ". Your STAMINA reached as low as " & minStamina & "."
+        PRINT "  You tested your LUCK " & luckTestCount & " times."
+    END IF
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  SUB PrintHelp
+REM  Prints the list of available commands.
+REM =================================================================
+SUB PrintHelp()
+    PRINT ""
+    PRINT "  COMMANDS:"
+    PRINT "  GO NORTH / SOUTH / EAST / WEST / NE   Move to adjacent room"
+    PRINT "  SNEAK NORTH / SOUTH / EAST / WEST / NE Attempt to pass unseen"
+    PRINT "  FIGHT                                   Engage monster in room"
+    PRINT "  SEARCH                                  Search room for items"
+    PRINT "  TAKE <item>                             Pick up an item"
+    PRINT "  DROP <item>                             Drop an item"
+    PRINT "  USE <item>                              Use an item"
+    PRINT "  INVENTORY                               Show carried items"
+    PRINT "  LOOK                                    Redisplay room"
+    PRINT "  LUCK                                    Test your luck"
+    PRINT "  STATS                                   Show current stats"
+    PRINT "  LEFT / RIGHT                            Choose a door (Gate only)"
+    PRINT "  HELP                                    Show this list"
+    PRINT "  QUIT                                    End the game"
+    PRINT ""
+END SUB
+
+REM =================================================================
+REM  Main program
+REM  InitExits populates the full map. InitMonsters sets all fixed
+REM  monsters to alive. The opening sequence runs: narrative,
+REM  attribute roll, pacing. EnterRoom renders the first room.
+REM  The WHILE loop reads and normalises input, then dispatches
+REM  all commands via SELECT CASE. Navigation goes through HandleGo;
+REM  combat goes through HandleFight. The loop exits when gameOver = 1.
+REM  PrintEndScreen shows the run summary based on endState.
+REM =================================================================
+CALL InitExits()
+
+WHILE keepPlaying = 1
+    LET gameOver = 0
+    LET endState = 0
+    LET currentRoom = ROOM_ENTRY
+    LET minStamina = 0
+    LET turns = 0
+    LET poisoned = 0
+    LET inCombat = 0
+    LET luckTestCount = 0
+    FOR i = 0 TO MAX_ROOMS - 1
+        LET visited[i] = 0
+        LET searched[i] = 0
+        LET droppedCount[i] = 0
+        FOR j = 0 TO MAX_ROOMS - 1
+            LET droppedItem[i][j] = ITEM_EMPTY
+        NEXT j
+    NEXT i
+    LET invCount = 0
+    LET overburdened = 0
+    LET armouryLocked = 1
+    LET medalTaken = 0
+    LET searchInterruptActive = 0
+    LET zombieSpawned = 0
+    LET zombieAlive = 0
+    LET zombieRoom = 0
+    LET riddleIndex = 0
+    LET riddleCorrectDoor = 0
+    LET riddleSolved = 0
+    LET pendingFlavourCount = 0
+    LET goldBags = 0
+    LET secondFight = 0
+    LET crownAvailable = 0
+    LET kingSkill = 0
+    LET kingStamina = 0
+    LET terrorActive = 0
+    LET gateCorrectDoor = 0
+    REM  Re-hide exits that may have been unhidden by previous run
+    LET exitHidden[11] = 1
+    LET exitHidden[14] = 1
+    LET exitHidden[15] = 1
+    FOR i = 1 TO 4
+        LET inventory[i] = ITEM_EMPTY
+    NEXT i
+    CALL InitMonsters()
+    CALL OpeningSequence()
+    CALL ShuffleLoot()
+    CALL InitRiddle()
+    CALL InitGate()
+    CALL EnterRoom(currentRoom, 0)
+
+    WHILE gameOver = 0
+        CALL FlushFlavour()
+        INPUT " > "; cmd$
+        LET cmd$ = UPPER$(cmd$)
+        SELECT CASE cmd$
+            CASE "GO NORTH"
+                CALL HandleGo(DIR_N)
+                IF currentRoom > 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "GO SOUTH"
+                CALL HandleGo(DIR_S)
+                IF currentRoom > 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "GO EAST"
+                CALL HandleGo(DIR_E)
+                IF currentRoom > 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "GO WEST"
+                CALL HandleGo(DIR_W)
+                IF currentRoom > 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "GO NE"
+                CALL HandleGo(DIR_NE)
+                IF currentRoom > 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "FIGHT"
+                CALL HandleFight(currentRoom)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 1)
+                END IF
+            CASE "SEARCH"
+                CALL HandleSearch()
+            CASE "INVENTORY"
+                CALL PrintInventoryScreen()
+            CASE "TAKE CROWN"
+                IF currentRoom = ROOM_THRONE AND crownAvailable = 1 THEN
+                    CALL CrownSequence()
+                ELSE
+                    IF currentRoom = ROOM_THRONE AND monsterAlive[ROOM_THRONE - 1] = 1 THEN
+                        PRINT "  The King sits between you and the gold."
+                        PRINT ""
+                    ELSE
+                        PRINT "  There is nothing here that fits that description."
+                        PRINT ""
+                    END IF
+                END IF
+            CASE "TAKE BAG", "TAKE GOLD"
+                IF currentRoom = ROOM_THRONE AND monsterAlive[ROOM_THRONE - 1] = 1 THEN
+                    PRINT "  The King sits between you and the gold."
+                    PRINT ""
+                ELSE
+                    CALL HandleTake(RIGHT$(cmd$, LEN(cmd$) - 5))
+                END IF
+            CASE "TAKE ALL", "TAKE KEY", "TAKE POTION", "TAKE CHARM", "TAKE SHARD", "TAKE BREAD", "TAKE MEDAL", "TAKE ANTIDOTE", "TAKE BANGLE", "TAKE SWORD", "TAKE MOULDY"
+                CALL HandleTake(RIGHT$(cmd$, LEN(cmd$) - 5))
+            CASE "DROP KEY", "DROP POTION", "DROP CHARM", "DROP SHARD", "DROP BREAD", "DROP MEDAL", "DROP ANTIDOTE", "DROP BANGLE", "DROP SWORD", "DROP MOULDY", "DROP BAG", "DROP GOLD"
+                CALL HandleDrop(RIGHT$(cmd$, LEN(cmd$) - 5))
+            CASE "USE KEY", "USE POTION", "USE CHARM", "USE SHARD", "USE BREAD", "USE MEDAL", "USE ANTIDOTE", "USE BANGLE", "USE SWORD", "USE MOULDY"
+                CALL HandleUse(RIGHT$(cmd$, LEN(cmd$) - 4))
+            CASE "LOOK"
+                CALL HandleLook()
+                CALL EnterRoom(currentRoom, 0)
+            CASE "SNEAK NORTH"
+                CALL HandleSneak(DIR_N)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK SOUTH"
+                CALL HandleSneak(DIR_S)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK EAST"
+                CALL HandleSneak(DIR_E)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK WEST"
+                CALL HandleSneak(DIR_W)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "SNEAK NE"
+                CALL HandleSneak(DIR_NE)
+                IF gameOver = 0 THEN
+                    CALL EnterRoom(currentRoom, 0)
+                END IF
+            CASE "LUCK"
+                LET result = TestLuck()
+                IF result = 1 THEN
+                    PRINT "  Fortune holds -- for now. Your LUCK is tested and found sufficient."
+                    PRINT ""
+                ELSE
+                    PRINT "  The dice betray you. Whatever you were hoping for, this is not it."
+                    PRINT ""
+                END IF
+                CALL AdvanceTurns(1)
+            CASE "QUIT"
+                CALL HandleQuit()
+            CASE "LEFT"
+                IF currentRoom = ROOM_GATE THEN
+                    CALL GateSequence(1)
+                ELSE
+                    PRINT "  The dungeon does not respond to that."
+                    PRINT ""
+                END IF
+            CASE "RIGHT"
+                IF currentRoom = ROOM_GATE THEN
+                    CALL GateSequence(2)
+                ELSE
+                    PRINT "  The dungeon does not respond to that."
+                    PRINT ""
+                END IF
+            CASE "STATS"
+                PRINT "  SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
+                PRINT ""
+            CASE "HELP"
+                CALL PrintHelp()
+            CASE ELSE
+                PRINT "  The dungeon does not respond to that."
+                PRINT ""
+        END SELECT
+    WEND
+
+    CALL PrintEndScreen()
+    INPUT "  Play again? (YES / NO): "; playAgain$
+    LET playAgain$ = UPPER$(playAgain$)
+    PRINT ""
+    IF playAgain$ = "YES" OR playAgain$ = "Y" THEN
+        LET keepPlaying = 1
+    ELSE
+        LET keepPlaying = 0
+    END IF
+WEND

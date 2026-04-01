@@ -58,3 +58,61 @@ FOR r = 0 TO 3
         PRINT STR$(r + 1) & "x" & STR$(c + 1) & "=" & STR$(grid[r][c])
     NEXT c
 NEXT r
+
+REM -------------------------------------------------------
+REM SET GLOBAL with arrays
+REM LET arr[i] inside a SUB creates a local shadow -- it
+REM does NOT write back to the global array.
+REM SET GLOBAL arr[i] is the only way to mutate a global
+REM array element from inside a SUB or FUNCTION.
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== SET GLOBAL with 1D Arrays ==="
+
+DIM totals[4] AS INTEGER
+
+SUB ResetTotals()
+    FOR i = 0 TO 3
+        SET GLOBAL totals[i] = 0
+    NEXT i
+END SUB
+
+SUB AccumulateTotals()
+    FOR i = 0 TO 3
+        SET GLOBAL totals[i] = totals[i] + (i + 1) * 10
+    NEXT i
+END SUB
+
+CALL ResetTotals()
+CALL AccumulateTotals()
+CALL AccumulateTotals()
+
+FOR i = 0 TO 3
+    PRINT "totals[" & STR$(i) & "] = " & STR$(totals[i])
+NEXT i
+
+REM -------------------------------------------------------
+REM SET GLOBAL with 2D arrays
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== SET GLOBAL with 2D Arrays ==="
+
+DIM identity[3][3] AS INTEGER
+
+SUB BuildIdentity()
+    FOR r = 0 TO 2
+        FOR c = 0 TO 2
+            IF r = c THEN
+                SET GLOBAL identity[r][c] = 1
+            ELSE
+                SET GLOBAL identity[r][c] = 0
+            END IF
+        NEXT c
+    NEXT r
+END SUB
+
+CALL BuildIdentity()
+
+FOR r = 0 TO 2
+    PRINT STR$(identity[r][0]) & "  " & STR$(identity[r][1]) & "  " & STR$(identity[r][2])
+NEXT r

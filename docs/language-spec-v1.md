@@ -66,6 +66,12 @@ Source files are read as text. Line endings are normalised at load time: `\r\n` 
 
 **Identifiers are case-sensitive.** `myVar` and `MYVAR` are two distinct symbols at runtime. The symbol table uses a case-sensitive key. Always use consistent casing for identifiers throughout your program.
 
+Underscores are permitted within identifiers between word characters.
+An underscore may not appear as the first or last character of an identifier,
+and consecutive underscores (`__`) are not permitted.
+Valid: `MAX_WIDTH`, `item_count`, `DIR_N`
+Invalid: `_name`, `done_`, `x__y`, `_`
+
 ### 2.3 Whitespace and Newlines
 
 Spaces are the primary token delimiter. The lexer accumulates characters into a buffer and flushes the buffer when it encounters a space, a recognised symbol character, a digit at the start of a token, or a newline.
@@ -150,6 +156,7 @@ SharpBASIC uses a lexically-chained symbol table. Each SUB and FUNCTION call cre
 
 - **Reading**: `Get` walks up the parent chain, so a sub/function can read variables from an enclosing scope.
 - **Writing**: `Set` always writes to the **current** (local) scope. Assignments inside a sub/function do **not** mutate variables in the caller's scope.
+- **Arrays**: `LET arr[i] = value` only works when the array was `DIM`'d in the current scope. Inside a SUB or FUNCTION, writing to a global array with `LET` is a runtime error — use `SET GLOBAL arr[i] = value` instead. Reading global array elements is always allowed.
 
 ```
 LET x = 10
@@ -164,6 +171,17 @@ END SUB
 CALL ShowX()
 REM still prints 10 - outer x was not mutated
 PRINT x
+```
+
+```
+DIM scores[3] AS INTEGER
+
+SUB Update()
+    REM Reading is fine
+    PRINT scores[0]
+    REM LET scores[0] = 99  <-- runtime error: array not in local scope
+    SET GLOBAL scores[0] = 99   REM correct way to write
+END SUB
 ```
 
 ---
@@ -196,30 +214,38 @@ PRINT GREETING   REM → Hello
 
 ### 4.4 SET GLOBAL
 
-`SET GLOBAL` writes a value to a variable that already exists in the **global** (topmost) scope. It is the only way to mutate global state from inside a SUB or FUNCTION.
+`SET GLOBAL` writes a value to a variable (or array element) that already exists in the **global** (topmost) scope. It is the only way to mutate global state from inside a SUB or FUNCTION.
 
 ```
-SET GLOBAL name = expression
+SET GLOBAL name = expression               REM scalar
+SET GLOBAL name[index] = expression        REM 1D array element
+SET GLOBAL name[rowIndex][colIndex] = expression   REM 2D array element
 ```
 
 - `SET GLOBAL` is only valid **inside a SUB or FUNCTION**. Using it at the top level is a runtime error: *"SET GLOBAL can only be used inside a SUB or FUNCTION."*
-- The named variable must already exist in the global scope. If it does not exist, the statement fails: *"SET GLOBAL: variable {name} not found in global scope."*
-- The expression is evaluated in the local scope of the current sub/function, then the result is stored directly in the global scope.
+- The named variable or array must already exist in the global scope. If it does not exist, the statement fails: *"SET GLOBAL: variable {name} not found in global scope."*
+- The expression (and any index expressions) are evaluated in the local scope of the current sub/function, then the result is stored directly in the global scope.
 - `SET GLOBAL` cannot target a `CONST`-declared name — attempting to do so is a runtime error.
+- Index expressions must evaluate to an `INTEGER`. Out-of-bounds indices are a runtime error.
 
 ```
 LET counter = 0
+DIM scores[5] AS INTEGER
+DIM grid[3][3] AS INTEGER
 
-SUB Increment()
-    SET GLOBAL counter = counter + 1
+SUB Update()
+    SET GLOBAL counter = counter + 1   REM scalar write
+    SET GLOBAL scores[2] = 99          REM 1D array element write
+    SET GLOBAL grid[1][2] = 42         REM 2D array element write
 END SUB
 
-CALL Increment()
-CALL Increment()
-PRINT counter   REM → 2
+CALL Update()
+PRINT counter      REM → 1
+PRINT scores[2]    REM → 99
+PRINT grid[1][2]   REM → 42
 ```
 
-> **Gotcha:** `counter + 1` inside the SUB reads `counter` from the global scope (via the parent chain), then writes the result back to the global scope via `SET GLOBAL`. If you used `LET counter = counter + 1` instead, `LET` would create a local variable — the global `counter` would remain unchanged.
+> **Gotcha:** `LET arr[i] = value` inside a SUB always creates or updates a *local* array — it never writes to the global. If you need to update an element of a globally declared array from inside a SUB, you **must** use `SET GLOBAL arr[i] = value`.
 
 ---
 
@@ -260,6 +286,8 @@ LET scores[3] = 42
 ```
 
 The `LET` keyword is required for array element assignment. Note the use of `LET name[index] = value` syntax, not `name[index] = value`.
+
+> **Scope restriction:** `LET arr[i] = value` only works when the array was `DIM`'d in the current scope. Inside a SUB or FUNCTION, attempting to write to a global array with `LET` produces a runtime error: *"Cannot assign to array '{name}' from inside a SUB or FUNCTION. Use SET GLOBAL."* Use `SET GLOBAL arr[i] = value` instead (see §4.4).
 
 ### 5.3 Bounds Behaviour
 
@@ -662,23 +690,29 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 | `UPPER$(s)` | `String` | Convert to upper-case | `UPPER$("hello")` → `"HELLO"` |
 | `LOWER$(s)` | `String` | Convert to lower-case | `LOWER$("HELLO")` → `"hello"` |
 | `CHR$(n)` | `String` | Character from Unicode code point `n` | `CHR$(65)` → `"A"`, `CHR$(34)` → `"\""`  |
+| `STRING$(char, count)` | `String` | `char` repeated `count` times. `char` must be exactly one character. | `STRING$("=", 5)` → `"====="` |
+| `ASC(s)` | `Integer` | Unicode code point of first character of `s` | `ASC("A")` → `65` |
 
 > **`MID$` uses 1-based indexing.** `MID$("abc", 1, 1)` → `"a"`, not `MID$("abc", 0, 1)`.
 
 > **`CHR$(34)` is the only way to embed a double-quote in a string**, since string literals have no escape sequence syntax. `CHR$(10)` produces a newline character.
 
-> **Gotcha:** `MID$`, `LEFT$`, and `RIGHT$` perform no internal bounds checking. Providing a `length` or `n` value that exceeds the string length (e.g. `LEFT$("hi", 10)`) throws an unhandled C# `ArgumentOutOfRangeException` that halts the interpreter. Validate string lengths before calling these functions.
+> **`MID$`, `LEFT$`, and `RIGHT$` perform bounds checking.** Out-of-range arguments (e.g. a `length` that exceeds the string, a negative index, or a start of `0`) produce a runtime diagnostic and halt the program cleanly. Validate string lengths before calling these functions if you want to avoid the error.
 
 ### Numeric functions
 
 | Signature | Return type | Description | Example |
 |-----------|-------------|-------------|---------|
 | `ABS(n)` | Same as input | Absolute value | `ABS(-5)` → `5` |
-| `SQR(n)` | `Float` | Square root | `SQR(9)` → `3.0` |
+| `SQR(n)` | `Float` | Square root; negative argument is a runtime error | `SQR(9)` → `3.0` |
 | `INT(n)` | `Integer` (if int input) / `Float` (if float input) | Floor: if `n` is Integer returns it unchanged; if Float returns `Math.Floor(n)` as Float | `INT(3.9)` → `3.0` |
+| `CINT(n)` | `Integer` | Truncate to integer toward zero | `CINT(3.9)` → `3`, `CINT(-3.9)` → `-3` |
 | `RND()` | `Float` | Pseudo-random number in range `[0.0, 1.0)` | `RND()` → e.g. `0.7341…` |
+| `MAX(a, b)` | Same as inputs | Larger of two numeric values | `MAX(3, 7)` → `7` |
+| `MIN(a, b)` | Same as inputs | Smaller of two numeric values | `MIN(3, 7)` → `3` |
+| `CLAMP(n, min, max)` | Same as `n` | Constrain `n` between `min` and `max` inclusive. `min > max` is a runtime error. | `CLAMP(15, 1, 10)` → `10` |
 
-> **`INT` returns a `Float` when given a `Float` argument.** `INT(3.9)` returns the `Float` value `3.0`, not the `Integer` `3`. To get an `Integer` from a `Float`, use `VAL(STR$(INT(n)))`.
+> **`INT` returns a `Float` when given a `Float` argument.** `INT(3.9)` returns the `Float` value `3.0`, not the `Integer` `3`. Use `CINT(n)` to get an `Integer` from a `Float` — `CINT(3.9)` → `3`. `CINT` truncates toward zero, so `CINT(-3.9)` → `-3`.
 
 ### Conversion functions
 
@@ -690,6 +724,14 @@ Built-in functions are resolved by name (case-insensitive) before user-defined f
 `VAL` returns `null` (which surfaces as a failure) if the string cannot be parsed as either integer or float.
 
 > **Gotcha (`STR$`):** `STR$` converts a `Float` via C# `double.ToString()` **without** an explicit culture argument. On systems where the decimal separator is `,` (e.g. many European locales), `STR$(3.14)` returns `"3,14"`. `PRINT` and `&` are not affected — `FloatValue.ToString()` uses invariant culture internally. If portability matters, avoid relying on `STR$` for float-to-string conversion.
+
+### Statement built-ins
+
+These are parsed as keyword statements, not as callable functions. They cannot be used in expression position and cannot be invoked with `CALL`.
+
+| Syntax | Description | Example |
+|--------|-------------|--------|
+| `SLEEP(ms)` | Pause execution for `ms` milliseconds. `ms` must be a non-negative integer. | `SLEEP(1500)` |
 
 ### Diagnostic function
 

@@ -37,3 +37,33 @@ FOR i = 0 TO 4
     LET letters = letters & CHR$(65 + i)
 NEXT i
 PRINT "A to E: " & letters
+
+REM -------------------------------------------------------
+REM ASC — code point of a character (inverse of CHR$)
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== ASC ==="
+PRINT "ASC(" & CHR$(34) & "A" & CHR$(34) & "): " & STR$(ASC("A"))
+PRINT "ASC(" & CHR$(34) & "a" & CHR$(34) & "): " & STR$(ASC("a"))
+PRINT "ASC(" & CHR$(34) & "0" & CHR$(34) & "): " & STR$(ASC("0"))
+
+REM Round-trip: CHR$ and ASC are inverses
+LET ch = CHR$(90)
+PRINT "CHR$(90) = " & ch & ",  ASC(" & ch & ") = " & STR$(ASC(ch))
+
+REM -------------------------------------------------------
+REM STRING$ — repeat a character n times
+REM -------------------------------------------------------
+PRINT ""
+PRINT "=== STRING$ ==="
+PRINT STRING$("=", 30)
+PRINT "| " & "SharpBASIC String Utilities" & " |"
+PRINT STRING$("=", 30)
+
+PRINT ""
+PRINT "Divider: " & STRING$("-", 20)
+PRINT "Padding: " & STRING$(".", 10) & "END"
+
+REM STRING$ with a variable count
+LET n = 15
+PRINT "Repeat " & STR$(n) & " stars: " & STRING$("*", n)

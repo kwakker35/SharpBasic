@@ -733,4 +733,259 @@ public class LexerTests
         Assert.Equal(TokenType.Eof, tokens[3].Type);
     }
 
+    // --- Underscore identifier tests ---
+
+    [Fact]
+    public void Lex_Underscore_MidIdentifier_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("MAX_WIDTH").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("MAX_WIDTH", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_LowerCase_MidIdentifier_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("start_time").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("start_time", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_MultipleSegments_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("x_y_z").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("x_y_z", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_AlphanumericSegments_ReturnsIdentifier()
+    {
+        var tokens = new Lexer("a1_b2_c3").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a1_b2_c3", tokens[0].Value);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Leading_ReturnsUnknown()
+    {
+        var tokens = new Lexer("_name").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Trailing_ReturnsUnknown()
+    {
+        var tokens = new Lexer("done_").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_Consecutive_ReturnsUnknown()
+    {
+        var tokens = new Lexer("x__y").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_BareUnderscore_ReturnsUnknown()
+    {
+        var tokens = new Lexer("_").Tokenise();
+        Assert.Equal(TokenType.Unknown, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_InLetStatement_ReturnsCorrectTokens()
+    {
+        var tokens = new Lexer("LET item_count = 5").Tokenise();
+        Assert.Equal(TokenType.Let, tokens[0].Type);
+        Assert.Equal(TokenType.Identifier, tokens[1].Type);
+        Assert.Equal("item_count", tokens[1].Value);
+        Assert.Equal(TokenType.Eq, tokens[2].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lex_Underscore_DollarSuffix_Unaffected()
+    {
+        var tokens = new Lexer("UPPER$").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("UPPER$", tokens[0].Value);
+    }
+
+    // --- No-whitespace operator tokenisation ---
+    // These tests exercise the "if (token.Length > 0) flush" guard inside each
+    // operator case — branches that only fire when an operator directly follows
+    // an identifier or number with no intervening whitespace (e.g. x+1).
+
+    [Fact]
+    public void Lex_Plus_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("x+1").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("x", tokens[0].Value);
+        Assert.Equal(TokenType.Plus, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lex_Minus_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("n-1").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("n", tokens[0].Value);
+        Assert.Equal(TokenType.Minus, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lex_Multiply_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a*b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a", tokens[0].Value);
+        Assert.Equal(TokenType.Multiply, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("b", tokens[2].Value);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lex_Divide_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("n/2").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("n", tokens[0].Value);
+        Assert.Equal(TokenType.Divide, tokens[1].Type);
+        Assert.Equal(TokenType.IntLiteral, tokens[2].Type);
+        Assert.Equal(TokenType.Eof, tokens[3].Type);
+    }
+
+    [Fact]
+    public void Lex_LParen_And_RParen_NoSpace_CorrectlyTokenises()
+    {
+        // FOO(x) — guard fires for ( (FOO pending) and for ) (x pending)
+        var tokens = new Lexer("FOO(x)").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("FOO", tokens[0].Value);
+        Assert.Equal(TokenType.LParen, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("x", tokens[2].Value);
+        Assert.Equal(TokenType.RParen, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lex_LBracket_And_RBracket_NoSpace_CorrectlyTokenises()
+    {
+        // arr[x] — guard fires for [ (arr pending) and for ] (x pending)
+        var tokens = new Lexer("arr[x]").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("arr", tokens[0].Value);
+        Assert.Equal(TokenType.LBracket, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("x", tokens[2].Value);
+        Assert.Equal(TokenType.RBracket, tokens[3].Type);
+        Assert.Equal(TokenType.Eof, tokens[4].Type);
+    }
+
+    [Fact]
+    public void Lex_Lt_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a<b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a", tokens[0].Value);
+        Assert.Equal(TokenType.Lt, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("b", tokens[2].Value);
+    }
+
+    [Fact]
+    public void Lex_LtEq_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a<=b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal(TokenType.LtEq, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+    }
+
+    [Fact]
+    public void Lex_NotEq_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a<>b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal(TokenType.NotEq, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+    }
+
+    [Fact]
+    public void Lex_Gt_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a>b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a", tokens[0].Value);
+        Assert.Equal(TokenType.Gt, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("b", tokens[2].Value);
+    }
+
+    [Fact]
+    public void Lex_GtEq_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a>=b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal(TokenType.GtEq, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+    }
+
+    [Fact]
+    public void Lex_Ampersand_NoSpace_CorrectlyTokenises()
+    {
+        var tokens = new Lexer("a&b").Tokenise();
+        Assert.Equal(TokenType.Identifier, tokens[0].Type);
+        Assert.Equal("a", tokens[0].Value);
+        Assert.Equal(TokenType.Ampersand, tokens[1].Type);
+        Assert.Equal(TokenType.Identifier, tokens[2].Type);
+        Assert.Equal("b", tokens[2].Value);
+    }
+
+    // --- Keyword recognition: CONST and SLEEP ---
+
+    [Fact]
+    public void Lex_Const_Keyword_ReturnsCorrectToken()
+    {
+        var tokens = new Lexer("CONST").Tokenise();
+        Assert.Equal(TokenType.Const, tokens[0].Type);
+    }
+
+    [Fact]
+    public void Lex_Sleep_Keyword_ReturnsCorrectToken()
+    {
+        var tokens = new Lexer("SLEEP").Tokenise();
+        Assert.Equal(TokenType.Sleep, tokens[0].Type);
+    }
+
+    // --- Multiline source: line counter advances across newlines ---
+
+    [Fact]
+    public void Lex_MultilineSource_EmitsCorrectLineNumbers()
+    {
+        // The newline branch in Advance() increments _line.
+        // Tokens on line 2 must report line 2.
+        var tokens = new Lexer("PRINT 1\nPRINT 2").Tokenise();
+        Assert.Equal(TokenType.Print, tokens[0].Type);
+        Assert.Equal(1, tokens[0].Line);
+        Assert.Equal(TokenType.IntLiteral, tokens[1].Type);
+        Assert.Equal(1, tokens[1].Line);
+        Assert.Equal(TokenType.NewLine, tokens[2].Type);
+        Assert.Equal(TokenType.Print, tokens[3].Type);
+        Assert.Equal(2, tokens[3].Line);
+        Assert.Equal(TokenType.IntLiteral, tokens[4].Type);
+        Assert.Equal(2, tokens[4].Line);
+    }
+
 }

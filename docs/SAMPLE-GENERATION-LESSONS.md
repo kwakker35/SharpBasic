@@ -184,8 +184,9 @@ need numeric formatting (e.g. `STR$(3.14)`). Never call `STR$` on a Boolean.
 
 **Description:**
 `MID$(s, start, length)` was called with a `length` that extended past the end
-of the string. The spec documents that `MID$` performs no bounds checking and
-an out-of-range length throws an unhandled `ArgumentOutOfRangeException`.
+of the string. As of the current interpreter version, `MID$`, `LEFT$`, and
+`RIGHT$` perform bounds checking and produce a clean runtime diagnostic instead
+of crashing.
 
 **Example (broken):**
 ```basic
@@ -199,12 +200,12 @@ REM position 6 leaves 5 chars ("BASIC")
 PRINT MID$("SharpBASIC", 6, 5)
 ```
 
-**Spec reference:** `docs/language-spec-v1.md` — §10 Built-in Functions, Gotcha under `MID$`
+**Spec reference:** `docs/language-spec-v1.md` — §10 Built-in Functions
 
 **Root cause:**
-`MID$` uses 1-based indexing. Off-by-one errors in the start position combined
-with the absent bounds check produce a crash. Always verify that
-`start + length - 1 <= LEN(s)` before calling `MID$`.
+`MID$` uses 1-based indexing. Off-by-one errors in the start position produce
+an out-of-range error. Always verify that `start + length - 1 <= LEN(s)` before
+calling `MID$`.
 
 **Prevention rule:**
 Always verify that `start + length - 1 <= LEN(s)` before calling `MID$`.
