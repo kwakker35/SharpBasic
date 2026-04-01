@@ -67,7 +67,7 @@ SNEAK EAST
 SNEAK WEST
 SNEAK NE
 ```
-Attempt to slip past a creature without fighting. Success depends on your SKILL. If you fail, you fight regardless. Sneaking past an enemy means you will not find anything they were carrying. You must SNEAK in a speciifc direction.
+Attempt to slip past a creature without fighting. Success depends on your SKILL. If you fail, you fight regardless. Sneaking past an enemy means you will not find anything they were carrying. You must SNEAK in a specific direction.
 
 **Items**
 ```
