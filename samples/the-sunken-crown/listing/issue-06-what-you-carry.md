@@ -22,6 +22,7 @@ This issue changes that. Inventory goes in. TAKE, DROP, USE, and SEARCH all star
 - Loot slot arrays — `slotContents`, `slotTaken`
 - `SUB ShuffleLoot()` — Fisher-Yates shuffle of 5 items across 6 loot slots at startup
 - `FUNCTION ItemName(code AS INTEGER) AS STRING` — converts item codes to display names
+- `FUNCTION HasItem(itemCode AS INTEGER) AS INTEGER` — returns 1 if carrying the given item, 0 otherwise
 - `SUB AddToInventory(itemCode AS INTEGER)` — adds an item, updates carry state
 - `SUB HandleSearch()` — searches the current room, reveals loot and monster drops
 - `SUB PrintInventoryScreen()` — the INVENTORY command display
@@ -245,6 +246,21 @@ FUNCTION ItemCode(item$ AS STRING) AS INTEGER
 END FUNCTION
 
 REM === NEW FUNCTION: add after FUNCTION ItemCode() ===
+
+REM =================================================================
+REM  FUNCTION HasItem -- itemCode AS INTEGER -> INTEGER
+REM  Returns 1 if the player is carrying the given item code in any
+REM  inventory slot (1-4), 0 otherwise. Utility used by CombatLoop
+REM  for Bangle of Courage terror checks.
+REM =================================================================
+FUNCTION HasItem(itemCode AS INTEGER) AS INTEGER
+    FOR h = 1 TO 4
+        IF inventory[h] = itemCode THEN RETURN 1 END IF
+    NEXT h
+    RETURN 0
+END FUNCTION
+
+REM === NEW FUNCTION: add after FUNCTION HasItem() ===
 
 REM =================================================================
 REM  FUNCTION RoomLootSlot -- roomId AS INTEGER -> INTEGER

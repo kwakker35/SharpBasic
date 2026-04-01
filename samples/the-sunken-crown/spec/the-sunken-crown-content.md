@@ -816,7 +816,7 @@ PRINT "SKILL: " & skill & "  STAMINA: " & stamina & "  LUCK: " & luck
 
 The `&` operator calls `.ToString()` on whatever it touches, so numbers become text automatically. You don't need to convert them first. The language handles it.
 
-The separator line — eighty characters of `=` — is built the same way, repeated in a loop. One character, eighty times. SharpBASIC doesn't have a string repeat function. You build what you need.
+The separator line — eighty characters of `=` — uses `STRING$("=", 80)`, SharpBASIC's built-in string repeat function. One call, eighty characters.
 
 **What to try**
 

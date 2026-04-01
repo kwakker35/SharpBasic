@@ -89,11 +89,11 @@ This is exactly how every room in the game gets added. The pattern is always the
 
 > This is Issue 2. You already have `the-sunken-crown.sbx` from Issue 1.
 > Add the code below in the sections indicated. Navigation markers (lines
-> starting with `'`) tell you where each block goes — do not type those
+> starting with `REM ===`) tell you where each block goes — do not type those
 > lines into your program.
 
 ```
-' === MODIFY: file header comment block ===
+REM === MODIFY: file header comment block ===
 
 REM  Replace "Everything that follows in subsequent issues goes inside it."
 REM  with:
@@ -102,12 +102,12 @@ REM  Issue 2: The First Room
 REM  Room description system, PrintRoom, EnterRoom, command loop.
 
 
-' === ADD TO: constants block, after CONST COMBAT_DELAY ===
+REM === ADD TO: constants block, after CONST COMBAT_DELAY ===
 
 CONST MAX_ROOMS = 12
 CONST ROOM_ENTRY = 1
 
-' === ADD TO: global declarations, after LET luck = 0 ===
+REM === ADD TO: global declarations, after LET luck = 0 ===
 
 REM ----------------------------------------------------------------
 REM  Navigation state
@@ -124,7 +124,7 @@ REM  Not set to 1 in this issue -- loop runs until interrupted.
 REM ----------------------------------------------------------------
 LET gameOver = 0
 
-' === NEW SUB: add after SUB PrintSeparator() ===
+REM === NEW SUB: add after SUB PrintSeparator() ===
 
 REM =================================================================
 REM  SUB Pause
@@ -136,7 +136,7 @@ SUB Pause()
     INPUT "  Press ENTER to continue."; p$
 END SUB
 
-' === NEW SUB: add after SUB Pause() ===
+REM === NEW SUB: add after SUB Pause() ===
 
 REM =================================================================
 REM  SUB PrintRoom -- roomId AS INTEGER
@@ -169,7 +169,7 @@ SUB PrintRoom(roomId AS INTEGER)
     END IF
 END SUB
 
-' === NEW SUB: add after SUB PrintRoom() ===
+REM === NEW SUB: add after SUB PrintRoom() ===
 
 REM =================================================================
 REM  SUB EnterRoom -- roomId AS INTEGER
@@ -190,13 +190,13 @@ SUB EnterRoom(roomId AS INTEGER)
     SET GLOBAL visited[roomId - 1] = 1
 END SUB
 
-' === REPLACE: the existing main program block at the bottom of the file ===
-' Replace the four lines:
-'   CALL PrintHeader()
-'   PRINT ""
-'   CALL PrintSeparator()
-'   PRINT " > "
-' With the block below:
+REM === REPLACE: the existing main program block at the bottom of the file ===
+REM  Replace the four lines:
+REM    CALL PrintHeader()
+REM    PRINT ""
+REM    CALL PrintSeparator()
+REM    PRINT " > "
+REM  With the block below:
 
 REM =================================================================
 REM  Main program

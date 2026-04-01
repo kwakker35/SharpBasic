@@ -99,21 +99,19 @@ REM === ADD TO: file header comment block, replacing the Issue 3 line ===
 REM  Issue 4: Moving Through Stone
 REM  Exit arrays, full map, navigation, all 12 room descriptions.
 
-REM === ADD TO: Constants block, after CONST COMBAT_DELAY ===
+REM === ADD TO: Constants block, after CONST ROOM_ENTRY ===
 CONST DIR_N = 1
 CONST DIR_S = 2
 CONST DIR_E = 3
 CONST DIR_W = 4
 CONST DIR_NE = 5
 CONST MAX_EXITS = 30
-CONST MAX_ROOMS = 12
 
 REM ----------------------------------------------------------------
 REM  Room identity constants
 REM  Symbolic names for every room. Used everywhere a room is
 REM  referenced -- navigation, combat, descriptions, loot.
 REM ----------------------------------------------------------------
-CONST ROOM_ENTRY      = 1
 CONST ROOM_GUARDROOM  = 2
 CONST ROOM_ARMOURY    = 3
 CONST ROOM_CROSSROADS = 4
@@ -678,6 +676,7 @@ REM  Uses RoomName() for the location line.
 REM =================================================================
 SUB EnterRoom(roomId AS INTEGER)
     CALL PrintHeader()
+    CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(roomId)
     PRINT ""
     CALL PrintRoom(roomId)

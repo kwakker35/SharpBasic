@@ -49,7 +49,7 @@ Break this down line by line:
 - `LET total = total + CINT(RND() * 6) + 1` — the die roll itself:
   - `RND()` returns a random number from 0.0 up to (but not including) 1.0
   - Multiply by 6 to get a range from 0.0 to 5.999...
-  - `INT()` floors it to one of 0, 1, 2, 3, 4, or 5
+  - `CINT()` truncates it to one of 0, 1, 2, 3, 4, or 5
   - Add 1 to shift the range to 1–6
   - Add the result to `total`
 - `NEXT i` — go back and roll again

@@ -24,7 +24,7 @@ This issue changes that. The Guardroom Brute is the teaching encounter — the f
 - `monsterAlive` array — tracks which monsters are still alive across the dungeon
 - `minStamina` tracking — records the lowest STAMINA reached this run for the end screen
 - Death handling — STAMINA reaching zero ends the run
-- `CASE "CHEAT"` — dev command: sets SKILL to 12, STAMINA to 100. Strip before release (see Issue 10).
+- `CASE "CHEAT"` — dev command: sets SKILL to 12, STAMINA to 24. Strip before release (see Issue 10).
 
 ---
 
@@ -236,6 +236,7 @@ REM === REPLACE: SUB EnterRoom() -- add postFight parameter and aftermath text =
 
 SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
     CALL PrintHeader()
+    CALL FlushFlavour()
     PRINT "  LOCATION: " & RoomName(roomId)
     PRINT ""
     IF postFight = 1 THEN

@@ -346,7 +346,7 @@ REM  Remove these lines from the game loop:
 REM            CASE "CHEAT"
 REM                REM  DEV TOOL -- strip before release (Issue 10)
 REM                LET skill = 12
-REM                LET stamina = 100
+REM                LET stamina = 24
 REM                PRINT "  [CHEAT] SKILL: " & skill & "  STAMINA: " & stamina
 REM                PRINT ""
 
