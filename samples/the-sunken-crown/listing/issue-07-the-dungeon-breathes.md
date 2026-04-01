@@ -124,7 +124,7 @@ SUB QueueFlavour(line$ AS STRING)
         PRINT line$
     ELSE
         IF pendingFlavourCount < 30 THEN
-            LET pendingFlavour[pendingFlavourCount] = line$
+            SET GLOBAL pendingFlavour[pendingFlavourCount] = line$
             SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
         END IF
     END IF
@@ -375,7 +375,7 @@ REM =================================================================
 SUB HandleSneak(dir AS INTEGER)
     REM --- Collapsed Passage: entering from Cistern clears the rubble ---
     IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
-        LET exitHidden[11] = 0
+        SET GLOBAL exitHidden[11] = 0
         CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
         CALL QueueFlavour("")
     END IF
@@ -448,7 +448,7 @@ REM  Add at top of SUB HandleGo, before LET start = ...:
     END IF
     REM --- Collapsed Passage: entering from Cistern clears the rubble ---
     IF currentRoom = ROOM_CISTERN AND dir = DIR_N AND exitHidden[11] = 1 THEN
-        LET exitHidden[11] = 0
+        SET GLOBAL exitHidden[11] = 0
         CALL QueueFlavour("  You push through from the south. The rubble shifts. The way through is clear.")
         CALL QueueFlavour("")
     END IF

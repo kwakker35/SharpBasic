@@ -172,7 +172,7 @@ REM  combat-time events remain visible inline.
 REM =================================================================
 SUB QueueFlavour(line$ AS STRING)
     IF pendingFlavourCount < 30 THEN
-        LET pendingFlavour[pendingFlavourCount] = line$
+        SET GLOBAL pendingFlavour[pendingFlavourCount] = line$
         SET GLOBAL pendingFlavourCount = pendingFlavourCount + 1
     END IF
 END SUB

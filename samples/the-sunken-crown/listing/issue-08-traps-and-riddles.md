@@ -155,15 +155,15 @@ SUB InitRiddle()
     SET GLOBAL riddleCorrectDoor = CINT(RND() * 2) + 1
     SET GLOBAL riddleSolved = 0
 
-    LET luckyPool[0] = ROOM_ENTRY
-    LET luckyPool[1] = ROOM_ARMOURY
+    SET GLOBAL luckyPool[0] = ROOM_ENTRY
+    SET GLOBAL luckyPool[1] = ROOM_ARMOURY
 
-    LET unluckyPool[0] = ROOM_GUARDROOM
-    LET unluckyPool[1] = ROOM_COLLAPSED
-    LET unluckyPool[2] = ROOM_PIT
-    LET unluckyPool[3] = ROOM_RIDDLE
-    LET unluckyPool[4] = ROOM_CISTERN
-    LET unluckyPool[5] = ROOM_UNDERHALL
+    SET GLOBAL unluckyPool[0] = ROOM_GUARDROOM
+    SET GLOBAL unluckyPool[1] = ROOM_COLLAPSED
+    SET GLOBAL unluckyPool[2] = ROOM_PIT
+    SET GLOBAL unluckyPool[3] = ROOM_RIDDLE
+    SET GLOBAL unluckyPool[4] = ROOM_CISTERN
+    SET GLOBAL unluckyPool[5] = ROOM_UNDERHALL
 END SUB
 
 REM =================================================================
@@ -296,7 +296,7 @@ SUB StillChamberSequence()
         PRINT "  The dice betray you. You wake somewhere worse."
         PRINT ""
     END IF
-    LET visited[ROOM_STILL - 1] = 1
+    SET GLOBAL visited[ROOM_STILL - 1] = 1
     CALL EnterRoom(currentRoom, 0)
 END SUB
 
@@ -348,9 +348,9 @@ SUB RiddleRoomSequence()
                 PRINT "  The door yields. Beyond it, a passage -- real, open, leading somewhere."
                 PRINT "  The wall behind you is still solid. But you are through."
                 PRINT ""
-                LET exitHidden[14] = 0
-                LET exitHidden[15] = 0
-                LET visited[ROOM_RIDDLE - 1] = 1
+                SET GLOBAL exitHidden[14] = 0
+                SET GLOBAL exitHidden[15] = 0
+                SET GLOBAL visited[ROOM_RIDDLE - 1] = 1
                 CALL EnterRoom(ROOM_RIDDLE, 0)
             ELSE
                 PRINT ""

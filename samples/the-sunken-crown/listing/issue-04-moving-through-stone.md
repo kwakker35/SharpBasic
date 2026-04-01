@@ -214,121 +214,121 @@ REM  that do not display until the room is SEARCHed (Issue 6).
 REM =================================================================
 SUB InitExits()
     REM --- Room 1: Entry Hall -- S->Guardroom (slot 1) ---
-    LET roomExitStart[ROOM_ENTRY - 1] = 1
-    LET roomExitCount[ROOM_ENTRY - 1] = 1
-    LET exitDir[1] = DIR_S
-    LET exitDest[1] = ROOM_GUARDROOM
-    LET exitHidden[1] = 0
+    SET GLOBAL roomExitStart[ROOM_ENTRY - 1] = 1
+    SET GLOBAL roomExitCount[ROOM_ENTRY - 1] = 1
+    SET GLOBAL exitDir[1] = DIR_S
+    SET GLOBAL exitDest[1] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[1] = 0
 
     REM --- Room 2: Guardroom -- N->Entry, E->Armoury, S->Crossroads (slots 2-4) ---
-    LET roomExitStart[ROOM_GUARDROOM - 1] = 2
-    LET roomExitCount[ROOM_GUARDROOM - 1] = 3
-    LET exitDir[2] = DIR_N
-    LET exitDest[2] = ROOM_ENTRY
-    LET exitHidden[2] = 0
-    LET exitDir[3] = DIR_E
-    LET exitDest[3] = ROOM_ARMOURY
-    LET exitHidden[3] = 0
-    LET exitDir[4] = DIR_S
-    LET exitDest[4] = ROOM_CROSSROADS
-    LET exitHidden[4] = 0
+    SET GLOBAL roomExitStart[ROOM_GUARDROOM - 1] = 2
+    SET GLOBAL roomExitCount[ROOM_GUARDROOM - 1] = 3
+    SET GLOBAL exitDir[2] = DIR_N
+    SET GLOBAL exitDest[2] = ROOM_ENTRY
+    SET GLOBAL exitHidden[2] = 0
+    SET GLOBAL exitDir[3] = DIR_E
+    SET GLOBAL exitDest[3] = ROOM_ARMOURY
+    SET GLOBAL exitHidden[3] = 0
+    SET GLOBAL exitDir[4] = DIR_S
+    SET GLOBAL exitDest[4] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[4] = 0
 
     REM --- Room 3: Armoury -- W->Guardroom (slot 5) ---
-    LET roomExitStart[ROOM_ARMOURY - 1] = 5
-    LET roomExitCount[ROOM_ARMOURY - 1] = 1
-    LET exitDir[5] = DIR_W
-    LET exitDest[5] = ROOM_GUARDROOM
-    LET exitHidden[5] = 0
+    SET GLOBAL roomExitStart[ROOM_ARMOURY - 1] = 5
+    SET GLOBAL roomExitCount[ROOM_ARMOURY - 1] = 1
+    SET GLOBAL exitDir[5] = DIR_W
+    SET GLOBAL exitDest[5] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[5] = 0
 
     REM --- Room 4: Crossroads -- N->Guardroom, W->Collapsed, E->Pit, NE->Still (slots 6-9) ---
-    LET roomExitStart[ROOM_CROSSROADS - 1] = 6
-    LET roomExitCount[ROOM_CROSSROADS - 1] = 4
-    LET exitDir[6] = DIR_N
-    LET exitDest[6] = ROOM_GUARDROOM
-    LET exitHidden[6] = 0
-    LET exitDir[7] = DIR_W
-    LET exitDest[7] = ROOM_COLLAPSED
-    LET exitHidden[7] = 0
-    LET exitDir[8] = DIR_E
-    LET exitDest[8] = ROOM_PIT
-    LET exitHidden[8] = 0
-    LET exitDir[9] = DIR_NE
-    LET exitDest[9] = ROOM_STILL
-    LET exitHidden[9] = 0
+    SET GLOBAL roomExitStart[ROOM_CROSSROADS - 1] = 6
+    SET GLOBAL roomExitCount[ROOM_CROSSROADS - 1] = 4
+    SET GLOBAL exitDir[6] = DIR_N
+    SET GLOBAL exitDest[6] = ROOM_GUARDROOM
+    SET GLOBAL exitHidden[6] = 0
+    SET GLOBAL exitDir[7] = DIR_W
+    SET GLOBAL exitDest[7] = ROOM_COLLAPSED
+    SET GLOBAL exitHidden[7] = 0
+    SET GLOBAL exitDir[8] = DIR_E
+    SET GLOBAL exitDest[8] = ROOM_PIT
+    SET GLOBAL exitHidden[8] = 0
+    SET GLOBAL exitDir[9] = DIR_NE
+    SET GLOBAL exitDest[9] = ROOM_STILL
+    SET GLOBAL exitHidden[9] = 0
 
     REM --- Room 5: The Still Chamber -- no exits (teleport handled in Issue 8) ---
-    LET roomExitStart[ROOM_STILL - 1] = 10
-    LET roomExitCount[ROOM_STILL - 1] = 0
+    SET GLOBAL roomExitStart[ROOM_STILL - 1] = 10
+    SET GLOBAL roomExitCount[ROOM_STILL - 1] = 0
 
     REM --- Room 6: Collapsed Passage -- E->Crossroads, S->Cistern (hidden) (slots 10-11) ---
-    LET roomExitStart[ROOM_COLLAPSED - 1] = 10
-    LET roomExitCount[ROOM_COLLAPSED - 1] = 2
-    LET exitDir[10] = DIR_E
-    LET exitDest[10] = ROOM_CROSSROADS
-    LET exitHidden[10] = 0
-    LET exitDir[11] = DIR_S
-    LET exitDest[11] = ROOM_CISTERN
-    LET exitHidden[11] = 1
+    SET GLOBAL roomExitStart[ROOM_COLLAPSED - 1] = 10
+    SET GLOBAL roomExitCount[ROOM_COLLAPSED - 1] = 2
+    SET GLOBAL exitDir[10] = DIR_E
+    SET GLOBAL exitDest[10] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[10] = 0
+    SET GLOBAL exitDir[11] = DIR_S
+    SET GLOBAL exitDest[11] = ROOM_CISTERN
+    SET GLOBAL exitHidden[11] = 1
 
     REM --- Room 7: The Pit -- W->Crossroads, S->Riddle (slots 12-13) ---
-    LET roomExitStart[ROOM_PIT - 1] = 12
-    LET roomExitCount[ROOM_PIT - 1] = 2
-    LET exitDir[12] = DIR_W
-    LET exitDest[12] = ROOM_CROSSROADS
-    LET exitHidden[12] = 0
-    LET exitDir[13] = DIR_S
-    LET exitDest[13] = ROOM_RIDDLE
-    LET exitHidden[13] = 0
+    SET GLOBAL roomExitStart[ROOM_PIT - 1] = 12
+    SET GLOBAL roomExitCount[ROOM_PIT - 1] = 2
+    SET GLOBAL exitDir[12] = DIR_W
+    SET GLOBAL exitDest[12] = ROOM_CROSSROADS
+    SET GLOBAL exitHidden[12] = 0
+    SET GLOBAL exitDir[13] = DIR_S
+    SET GLOBAL exitDest[13] = ROOM_RIDDLE
+    SET GLOBAL exitHidden[13] = 0
 
     REM --- Room 8: The Riddle Room -- N->Pit, W->Underhall (both hidden until solved) (slots 14-15) ---
-    LET roomExitStart[ROOM_RIDDLE - 1] = 14
-    LET roomExitCount[ROOM_RIDDLE - 1] = 2
-    LET exitDir[14] = DIR_N
-    LET exitDest[14] = ROOM_PIT
-    LET exitHidden[14] = 1
-    LET exitDir[15] = DIR_W
-    LET exitDest[15] = ROOM_UNDERHALL
-    LET exitHidden[15] = 1
+    SET GLOBAL roomExitStart[ROOM_RIDDLE - 1] = 14
+    SET GLOBAL roomExitCount[ROOM_RIDDLE - 1] = 2
+    SET GLOBAL exitDir[14] = DIR_N
+    SET GLOBAL exitDest[14] = ROOM_PIT
+    SET GLOBAL exitHidden[14] = 1
+    SET GLOBAL exitDir[15] = DIR_W
+    SET GLOBAL exitDest[15] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[15] = 1
 
     REM --- Room 9: The Cistern -- N->Collapsed, E->Underhall (slots 16-17) ---
-    LET roomExitStart[ROOM_CISTERN - 1] = 16
-    LET roomExitCount[ROOM_CISTERN - 1] = 2
-    LET exitDir[16] = DIR_N
-    LET exitDest[16] = ROOM_COLLAPSED
-    LET exitHidden[16] = 0
-    LET exitDir[17] = DIR_E
-    LET exitDest[17] = ROOM_UNDERHALL
-    LET exitHidden[17] = 0
+    SET GLOBAL roomExitStart[ROOM_CISTERN - 1] = 16
+    SET GLOBAL roomExitCount[ROOM_CISTERN - 1] = 2
+    SET GLOBAL exitDir[16] = DIR_N
+    SET GLOBAL exitDest[16] = ROOM_COLLAPSED
+    SET GLOBAL exitHidden[16] = 0
+    SET GLOBAL exitDir[17] = DIR_E
+    SET GLOBAL exitDest[17] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[17] = 0
 
     REM --- Room 10: The Underhall -- W->Cistern, E->Riddle, S->Throne (slots 18-20) ---
-    LET roomExitStart[ROOM_UNDERHALL - 1] = 18
-    LET roomExitCount[ROOM_UNDERHALL - 1] = 3
-    LET exitDir[18] = DIR_W
-    LET exitDest[18] = ROOM_CISTERN
-    LET exitHidden[18] = 0
-    LET exitDir[19] = DIR_E
-    LET exitDest[19] = ROOM_RIDDLE
-    LET exitHidden[19] = 0
-    LET exitDir[20] = DIR_S
-    LET exitDest[20] = ROOM_THRONE
-    LET exitHidden[20] = 0
+    SET GLOBAL roomExitStart[ROOM_UNDERHALL - 1] = 18
+    SET GLOBAL roomExitCount[ROOM_UNDERHALL - 1] = 3
+    SET GLOBAL exitDir[18] = DIR_W
+    SET GLOBAL exitDest[18] = ROOM_CISTERN
+    SET GLOBAL exitHidden[18] = 0
+    SET GLOBAL exitDir[19] = DIR_E
+    SET GLOBAL exitDest[19] = ROOM_RIDDLE
+    SET GLOBAL exitHidden[19] = 0
+    SET GLOBAL exitDir[20] = DIR_S
+    SET GLOBAL exitDest[20] = ROOM_THRONE
+    SET GLOBAL exitHidden[20] = 0
 
     REM --- Room 11: Throne Room -- N->Underhall, S->Gate (slots 21-22) ---
-    LET roomExitStart[ROOM_THRONE - 1] = 21
-    LET roomExitCount[ROOM_THRONE - 1] = 2
-    LET exitDir[21] = DIR_N
-    LET exitDest[21] = ROOM_UNDERHALL
-    LET exitHidden[21] = 0
-    LET exitDir[22] = DIR_S
-    LET exitDest[22] = ROOM_GATE
-    LET exitHidden[22] = 0
+    SET GLOBAL roomExitStart[ROOM_THRONE - 1] = 21
+    SET GLOBAL roomExitCount[ROOM_THRONE - 1] = 2
+    SET GLOBAL exitDir[21] = DIR_N
+    SET GLOBAL exitDest[21] = ROOM_UNDERHALL
+    SET GLOBAL exitHidden[21] = 0
+    SET GLOBAL exitDir[22] = DIR_S
+    SET GLOBAL exitDest[22] = ROOM_GATE
+    SET GLOBAL exitHidden[22] = 0
 
     REM --- Room 12: The Gate -- N->Throne (slot 23) ---
-    LET roomExitStart[ROOM_GATE - 1] = 23
-    LET roomExitCount[ROOM_GATE - 1] = 1
-    LET exitDir[23] = DIR_N
-    LET exitDest[23] = ROOM_THRONE
-    LET exitHidden[23] = 0
+    SET GLOBAL roomExitStart[ROOM_GATE - 1] = 23
+    SET GLOBAL roomExitCount[ROOM_GATE - 1] = 1
+    SET GLOBAL exitDir[23] = DIR_N
+    SET GLOBAL exitDest[23] = ROOM_THRONE
+    SET GLOBAL exitHidden[23] = 0
 END SUB
 
 REM === NEW SUB: add after SUB InitExits ===
@@ -683,7 +683,7 @@ SUB EnterRoom(roomId AS INTEGER)
     CALL PrintRoom(roomId)
     PRINT ""
     CALL PrintSeparator()
-    LET visited[roomId - 1] = 1
+    SET GLOBAL visited[roomId - 1] = 1
 END SUB
 
 REM === REPLACE: main program block -- replaces the Issue 2/3 command loop ===

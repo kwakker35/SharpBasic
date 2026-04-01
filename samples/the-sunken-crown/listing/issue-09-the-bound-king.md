@@ -245,7 +245,7 @@ SUB BoundKingSequence()
         RETURN
     END IF
     REM  King beaten.
-    LET monsterAlive[ROOM_THRONE - 1] = 0
+    SET GLOBAL monsterAlive[ROOM_THRONE - 1] = 0
     PRINT ""
     PRINT "  The King falls. You don't wait. You can already see his fingers moving."
     PRINT ""

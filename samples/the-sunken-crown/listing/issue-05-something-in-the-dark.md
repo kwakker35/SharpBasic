@@ -124,12 +124,12 @@ REM === REPLACE: SUB RollStartingStats() -- add last line before END SUB ===
 REM === NEW SUB: add after SUB InitExits() ===
 
 SUB InitMonsters()
-    LET monsterAlive[ROOM_GUARDROOM - 1] = 1   REM  Guardroom Brute
-    LET monsterAlive[ROOM_COLLAPSED - 1] = 1   REM  Skittering Horror
-    LET monsterAlive[ROOM_PIT - 1] = 1         REM  Pit Guardian
-    LET monsterAlive[ROOM_CISTERN - 1] = 1     REM  Hollow Mage
-    LET monsterAlive[ROOM_UNDERHALL - 1] = 1   REM  Troll
-    LET monsterAlive[ROOM_THRONE - 1] = 1      REM  Bound King
+    SET GLOBAL monsterAlive[ROOM_GUARDROOM - 1] = 1   REM  Guardroom Brute
+    SET GLOBAL monsterAlive[ROOM_COLLAPSED - 1] = 1   REM  Skittering Horror
+    SET GLOBAL monsterAlive[ROOM_PIT - 1] = 1         REM  Pit Guardian
+    SET GLOBAL monsterAlive[ROOM_CISTERN - 1] = 1     REM  Hollow Mage
+    SET GLOBAL monsterAlive[ROOM_UNDERHALL - 1] = 1   REM  Troll
+    SET GLOBAL monsterAlive[ROOM_THRONE - 1] = 1      REM  Bound King
 END SUB
 
 
@@ -282,7 +282,7 @@ SUB EnterRoom(roomId AS INTEGER, postFight AS INTEGER)
     END IF
     PRINT ""
     CALL PrintSeparator()
-    LET visited[roomId - 1] = 1
+    SET GLOBAL visited[roomId - 1] = 1
     IF monsterAlive[roomId - 1] = 1 THEN
         PRINT ""
         PRINT "  FIGHT to engage, or SNEAK to try to pass."
@@ -478,7 +478,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 10
         CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It goes down slowly, the way large things do -- first to one knee,"
             PRINT "  then forward, the weapon dropping before the rest of it follows."
@@ -510,7 +510,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(1) + 4
         CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, 0)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It drops mid-movement, skidding across the stone floor before coming"
             PRINT "  to rest against the far wall. The chitinous legs fold inward, one"
@@ -539,7 +539,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 8
         CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  The armour clatters against the stone in sections as it falls --"
             PRINT "  the sound of something that has held together through a great deal"
@@ -570,7 +570,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(1) + 6
         CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, 0)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It does not fall so much as diminish -- the luminescence pulling"
             PRINT "  inward, flickering, and then gone. The cold lifts from the room"
@@ -599,7 +599,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 12
         CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, 0)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It goes down at last. The wounds don't close this time."
             PRINT "  Whatever you took from it, you took enough."

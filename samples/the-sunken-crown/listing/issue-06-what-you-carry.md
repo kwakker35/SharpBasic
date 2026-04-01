@@ -939,7 +939,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 10
         CALL CombatLoop("Guardroom Brute", mSkill, mStamina, 0, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_KEY
             SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""
@@ -973,7 +973,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(1) + 4
         CALL CombatLoop("Skittering Horror", mSkill, mStamina, 0, 0, 0, 1, 1, 0, activeInterrupt)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It drops mid-movement, skidding across the stone floor before coming"
             PRINT "  to rest against the far wall. The chitinous legs fold inward, one"
@@ -1002,7 +1002,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 8
         CALL CombatLoop("Pit Guardian", mSkill, mStamina, 1, 0, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_BANGLE
             SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""
@@ -1035,7 +1035,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(1) + 6
         CALL CombatLoop("Hollow Mage", mSkill, mStamina, 0, 0, 1, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             PRINT ""
             PRINT "  It does not fall so much as diminish -- the luminescence pulling"
             PRINT "  inward, flickering, and then gone. The cold lifts from the room"
@@ -1064,7 +1064,7 @@ SUB HandleFight(roomId AS INTEGER)
         LET mStamina = RollDice(2) + 12
         CALL CombatLoop("Troll", mSkill, mStamina, 0, 1, 0, 0, 0, 0, activeInterrupt)
         IF gameOver = 0 THEN
-            LET monsterAlive[roomId - 1] = 0
+            SET GLOBAL monsterAlive[roomId - 1] = 0
             SET GLOBAL droppedItem[roomId - 1][droppedCount[roomId - 1]] = ITEM_MOULDY
             SET GLOBAL droppedCount[roomId - 1] = droppedCount[roomId - 1] + 1
             PRINT ""

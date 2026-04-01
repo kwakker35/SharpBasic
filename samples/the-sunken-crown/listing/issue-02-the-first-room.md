@@ -187,7 +187,7 @@ SUB EnterRoom(roomId AS INTEGER)
     CALL PrintRoom(roomId)
     PRINT ""
     CALL PrintSeparator()
-    LET visited[roomId - 1] = 1
+    SET GLOBAL visited[roomId - 1] = 1
 END SUB
 
 ' === REPLACE: the existing main program block at the bottom of the file ===
