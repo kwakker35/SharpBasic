@@ -539,7 +539,7 @@ public class LexerTests
     {
         var tokens = new Lexer("REM just a comment").Tokenise();
 
-        Assert.Equal(1, tokens.Count);
+        Assert.Single(tokens);
         Assert.Equal(TokenType.Eof, tokens[0].Type);
     }
 

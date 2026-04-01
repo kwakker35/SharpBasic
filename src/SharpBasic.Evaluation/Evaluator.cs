@@ -272,11 +272,13 @@ public class Evaluator(
 
     private EvalResult EvaluateSetGlobalStatement(SetGlobalStatement stmt)
     {
+        var loc = stmt.Location!;
+
         if (_table.IsGlobal)
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     "'SET GLOBAL' is not valid outside a SUB or FUNCTION.",
                     DiagnosticSeverity.Error
                 )]
@@ -287,8 +289,8 @@ public class Evaluator(
         if (root.Get(stmt.Identifier) is null)
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     $"'{stmt.Identifier}' does not exist in global scope.",
                     DiagnosticSeverity.Error
                 )]
@@ -312,8 +314,8 @@ public class Evaluator(
         if (getVal is not ArrayValue arrVal)
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     $"'{stmt.Identifier}' is not an array.",
                     DiagnosticSeverity.Error
                 )]
@@ -323,8 +325,8 @@ public class Evaluator(
         if (idxResult is not EvalSuccess idxSuccess || idxSuccess.Value is not IntValue idxIv)
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     "Array index must be an integer.",
                     DiagnosticSeverity.Error
                 )]
@@ -333,7 +335,7 @@ public class Evaluator(
         var valueRes = EvaluateExpression(stmt.Value);
         if (valueRes is not EvalSuccess valueSuccess)
             return valueRes;
-        var value = valueSuccess.Value;
+        var value = valueSuccess.Value!;
         var targetType = arrVal.ElementTypeName.ToUpperInvariant();
 
         // ----------------------------------------------------------
@@ -344,8 +346,8 @@ public class Evaluator(
             if (arrVal.Cols == 0)
                 return new EvalFailure(
                     [new Diagnostic(
-                        stmt.Location.Line,
-                        stmt.Location.Col,
+                        loc.Line,
+                        loc.Col,
                         $"'{stmt.Identifier}' is not a 2D array.",
                         DiagnosticSeverity.Error
                     )]
@@ -355,8 +357,8 @@ public class Evaluator(
             if (colResult is not EvalSuccess colSuccess || colSuccess.Value is not IntValue colIv)
                 return new EvalFailure(
                     [new Diagnostic(
-                        stmt.Location.Line,
-                        stmt.Location.Col,
+                        loc.Line,
+                        loc.Col,
                         "Column index must be an integer.",
                         DiagnosticSeverity.Error
                     )]
@@ -369,8 +371,8 @@ public class Evaluator(
             if (row < 0 || row >= rows)
                 return new EvalFailure(
                     [new Diagnostic(
-                        stmt.Location.Line,
-                        stmt.Location.Col,
+                        loc.Line,
+                        loc.Col,
                         $"Row index {row} is outside the range 0-{rows - 1} for array '{stmt.Identifier}'.",
                         DiagnosticSeverity.Error
                     )]
@@ -379,8 +381,8 @@ public class Evaluator(
             if (col < 0 || col >= arrVal.Cols)
                 return new EvalFailure(
                     [new Diagnostic(
-                        stmt.Location.Line,
-                        stmt.Location.Col,
+                        loc.Line,
+                        loc.Col,
                         $"Column index {col} is outside the range 0-{arrVal.Cols - 1} for array '{stmt.Identifier}'.",
                         DiagnosticSeverity.Error
                     )]
@@ -390,8 +392,8 @@ public class Evaluator(
             if (!AssignArrayElement(arrVal, flatIdx, targetType, value))
                 return new EvalFailure(
                     [new Diagnostic(
-                        stmt.Location.Line,
-                        stmt.Location.Col,
+                        loc.Line,
+                        loc.Col,
                         $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
                         DiagnosticSeverity.Error
                     )]
@@ -408,8 +410,8 @@ public class Evaluator(
         if (idx < 0 || idx >= arrVal.Items.Length)
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     $"Index {idx} is outside the range 0-{arrVal.Items.Length - 1} for array '{stmt.Identifier}'.",
                     DiagnosticSeverity.Error
                 )]
@@ -418,8 +420,8 @@ public class Evaluator(
         if (!AssignArrayElement(arrVal, idx, targetType, value))
             return new EvalFailure(
                 [new Diagnostic(
-                    stmt.Location.Line,
-                    stmt.Location.Col,
+                    loc.Line,
+                    loc.Col,
                     $"Value type does not match element type '{targetType}' for array '{stmt.Identifier}'.",
                     DiagnosticSeverity.Error
                 )]
@@ -867,9 +869,9 @@ public class Evaluator(
             stepEx is EvalSuccess stepS)
         {
             // evaluated once before the loop
-            double i = ToFloat(startS.Value);
-            double limit = ToFloat(limitS.Value);
-            double step = ToFloat(stepS.Value);
+            double i = ToFloat(startS.Value!);
+            double limit = ToFloat(limitS.Value!);
+            double step = ToFloat(stepS.Value!);
 
             _table.Set(stmt.LoopVar.Value, new IntValue((int)i));
 
@@ -985,7 +987,7 @@ public class Evaluator(
                             ).Evaluate();
             if (funcEval is EvalFailure) return funcEval;
         }
-        catch (ReturnException re)
+        catch (ReturnException)
         {
             //success hit return statement and swallow the return value
             return new EvalSuccess(new VoidValue());
@@ -1176,7 +1178,7 @@ public class Evaluator(
                         new Diagnostic(
                             expr.Location?.Line ?? 0,
                             expr.Location?.Col ?? 0,
-                            $"Invalid combination: {leftES.Value.GetType()} : {rightES.Value.GetType()}. Cannot perform AND or OR on non boolean values.",
+                            $"Invalid combination: {leftES.Value!.GetType()} : {rightES.Value!.GetType()}. Cannot perform AND or OR on non boolean values.",
                             DiagnosticSeverity.Error
                         )
                     ]
@@ -1224,8 +1226,8 @@ public class Evaluator(
 
         var isFloat = leftES.Value is FloatValue || rightES.Value is FloatValue;
 
-        double left = ToFloat(leftES.Value);
-        double right = ToFloat(rightES.Value);
+        double left = ToFloat(leftES.Value!);
+        double right = ToFloat(rightES.Value!);
 
         if (expr.Operator.Type is TokenType.Divide
                 && right == 0)

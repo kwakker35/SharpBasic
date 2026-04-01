@@ -508,8 +508,8 @@ public class Parser(IReadOnlyList<Token> tokens)
         return new ParseStatementSuccess(
             new ForStatement(
                 loopVar,
-                startExpr,
-                limitExpr,
+                startExpr!,
+                limitExpr!,
                 stepExpression,
                 nextVar,
                 body,
@@ -529,7 +529,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         err = ExpectExpression(expr, "expression after PRINT");
         if (err is not null) return err;
 
-        return new ParseStatementSuccess(new PrintStatement(expr, loc));
+        return new ParseStatementSuccess(new PrintStatement(expr!, loc));
     }
 
     private ParseStatementResult ParseSleepStatement()
@@ -551,7 +551,7 @@ public class Parser(IReadOnlyList<Token> tokens)
         if (err is not null) return err;
         Advance(); //Consume )
 
-        return new ParseStatementSuccess(new SleepStatement(expr, loc));
+        return new ParseStatementSuccess(new SleepStatement(expr!, loc));
     }
 
     private ParseStatementResult ParseDimStatement()
@@ -748,13 +748,13 @@ public class Parser(IReadOnlyList<Token> tokens)
             err = ExpectExpression(colExpr, "column index in 2D array access");
             if (err is not null) return null;
 
-            return new Array2dAccessExpression(name, expr, colExpr, loc);
+            return new Array2dAccessExpression(name, expr!, colExpr!, loc);
             // caller (ParseExpression) will Advance() to consume the final ]
         }
 
         return new ArrayAccessExpression(
                 name,
-                expr,
+                expr!,
                 loc
         );
     }
@@ -788,7 +788,7 @@ public class Parser(IReadOnlyList<Token> tokens)
             if (Current.Type == TokenType.Comma)
                 Advance(); //consume comma if it exsits
 
-            arguments.Add(expr);
+            arguments.Add(expr!);
         }
 
         if (Current.Type is TokenType.RParen)
@@ -832,7 +832,7 @@ public class Parser(IReadOnlyList<Token> tokens)
             if (Current.Type == TokenType.Comma)
                 Advance(); //consume comma if it exsits
 
-            arguments.Add(expr);
+            arguments.Add(expr!);
         }
 
         if (Current.Type is TokenType.RParen)
@@ -874,7 +874,7 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         return new ParseStatementSuccess(
             new WhileStatement(
-                condition,
+                condition!,
                 body,
                 wLoc
                 )
@@ -1179,7 +1179,7 @@ public class Parser(IReadOnlyList<Token> tokens)
 
         return new ParseStatementSuccess(
             new IfStatement(
-                condition,
+                condition!,
                 thenBlock,
                 elseBlock.Count > 0 ? elseBlock : null,
                 ifLoc

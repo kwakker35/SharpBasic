@@ -303,7 +303,7 @@ public class ParserTests
 
         //THEN block
         var thenBlock = Assert.IsType<List<Statement>>(stmt.ThenBlock);
-        Assert.Equal(1, thenBlock.Count);
+        Assert.Single(thenBlock);
         var thenStmt = Assert.IsType<PrintStatement>(thenBlock[0]);
         var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
         Assert.Equal("yes", strLit.Value);
@@ -359,7 +359,7 @@ public class ParserTests
 
         //THEN block
         var thenBlock = Assert.IsType<List<Statement>>(stmt.ThenBlock);
-        Assert.Equal(1, thenBlock.Count);
+        Assert.Single(thenBlock);
         var thenStmt = Assert.IsType<PrintStatement>(thenBlock[0]);
         var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
         Assert.Equal("yes", strLit.Value);
@@ -367,7 +367,7 @@ public class ParserTests
         //ELSE block
         Assert.NotNull(stmt.ElseBlock);
         var elseBlock = Assert.IsType<List<Statement>>(stmt.ElseBlock);
-        Assert.Equal(1, elseBlock.Count);
+        Assert.Single(elseBlock);
         var elseStmt = Assert.IsType<PrintStatement>(elseBlock[0]);
         var strLit2 = Assert.IsType<StringLiteralExpression>(elseStmt.Value);
         Assert.Equal("no", strLit2.Value);
@@ -420,7 +420,7 @@ public class ParserTests
 
         //BODY block
         var bodyBlock = Assert.IsType<List<Statement>>(stmt.Body);
-        Assert.Equal(1, bodyBlock.Count);
+        Assert.Single(bodyBlock);
         var thenStmt = Assert.IsType<PrintStatement>(bodyBlock[0]);
         var strLit = Assert.IsType<StringLiteralExpression>(thenStmt.Value);
         Assert.Equal("Hello, World!", strLit.Value);
@@ -478,7 +478,7 @@ public class ParserTests
 
         //BODY
         var body = Assert.IsType<List<Statement>>(stmt.Body);
-        Assert.Equal(1, body.Count);
+        Assert.Single(body);
         var printStmt = Assert.IsType<PrintStatement>(body[0]);
         var id = Assert.IsType<IdentifierExpression>(printStmt.Value);
         Assert.Equal("X", id.Name);
