@@ -61,9 +61,13 @@ FIGHT
 Engage whatever is in the room with you. Combat runs automatically round by round until one side falls. Each round takes one turn.
 
 ```
-SNEAK
+SNEAK NORTH
+SNEAK SOUTH
+SNEAK EAST
+SNEAK WEST
+SNEAK NE
 ```
-Attempt to slip past a creature without fighting. Success depends on your SKILL. If you fail, you fight regardless. Sneaking past an enemy means you will not find anything they were carrying.
+Attempt to slip past a creature without fighting. Success depends on your SKILL. If you fail, you fight regardless. Sneaking past an enemy means you will not find anything they were carrying. You must SNEAK in a speciifc direction.
 
 **Items**
 ```
@@ -107,6 +111,11 @@ HELP
 ```
 Lists available commands. Takes no turns.
 
+```
+QUIT
+```
+Quits the current run through without confirmation.
+
 ---
 
 ## Inventory
@@ -116,7 +125,6 @@ You can carry up to three items comfortably. You can carry a fourth, but you wil
 **Overburdened** — carrying four items — has consequences:
 
 - Movement costs 1 STAMINA per room
-- Your effectiveness in combat is reduced
 - Damage taken in combat increases
 
 All penalties lift the moment you drop back to three items. There is no penalty for dropping items — only for carrying too many.
