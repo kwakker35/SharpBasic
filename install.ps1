@@ -34,7 +34,7 @@ dotnet tool install  -g SharpBasic --add-source "$PSScriptRoot\artifacts" --vers
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
-    Write-Host "Done! Run 'sharpbasic' to start the REPL, or 'sharpbasic <file.bas>' to run a program."
+    Write-Host "Done! Run 'sharpbasic' to start the REPL, or 'sharpbasic <file.sbx>' to run a program."
 } else {
     Write-Error "Installation failed."
     exit 1
