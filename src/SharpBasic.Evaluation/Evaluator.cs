@@ -81,14 +81,17 @@ public class Evaluator(
             if (args[0] is FloatValue fv) return new StringValue(fv.V.ToString());
             throw new InvalidOperationException("STR$ requires a numeric argument");
         },
-        ["VAL"] = args => args[0] is StringValue sv ?
-                            int.TryParse(sv.V, out int ir) ? new IntValue(ir) :
-                            double.TryParse(sv.V,
-                                System.Globalization.NumberStyles.Float,
-                                System.Globalization.CultureInfo.InvariantCulture,
-                                out double dr) ? new FloatValue(dr)
-                            : null
-                            : null,
+        ["VAL"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("VAL requires a string argument");
+            if (int.TryParse(sv.V, out int ir)) return new IntValue(ir);
+            if (double.TryParse(sv.V,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out double dr)) return new FloatValue(dr);
+            throw new InvalidOperationException($"VAL: '{sv.V}' is not a valid number");
+        },
         ["ABS"] = args =>
         {
             if (args[0] is IntValue iv) return new IntValue(Math.Abs(iv.V));
@@ -117,14 +120,22 @@ public class Evaluator(
                 throw new InvalidOperationException("CHR$ requires an integer argument");
             return new StringValue(((char)iv.V).ToString());
         },
-        ["STRING$"] = args => args[0] is StringValue sv && args[1] is IntValue iv2
-            ? sv.V.Length == 1 && iv2.V >= 0
-                ? new StringValue(new string(sv.V[0], iv2.V))
-                : null
-            : null,
+        ["STRING$"] = args =>
+        {
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("STRING$ requires a string as its first argument");
+            if (args[1] is not IntValue iv2)
+                throw new InvalidOperationException("STRING$ requires an integer as its second argument");
+            if (sv.V.Length != 1)
+                throw new InvalidOperationException("STRING$ first argument must be a single character");
+            if (iv2.V < 0)
+                throw new InvalidOperationException("STRING$ count must be non-negative");
+            return new StringValue(new string(sv.V[0], iv2.V));
+        },
         ["ASC"] = args =>
         {
-            if (args[0] is not StringValue sv) return null;
+            if (args[0] is not StringValue sv)
+                throw new InvalidOperationException("ASC requires a string argument");
             if (sv.V.Length == 0) throw new InvalidOperationException("ASC requires a non-empty string argument");
             return new IntValue((int)sv.V[0]);
         },
@@ -970,6 +981,20 @@ public class Evaluator(
 
         var localSymbols = new SymbolTable(_table);
 
+        if (stmt.Arguments.Count != sub!.Parameters.Count)
+        {
+            return new EvalFailure(
+                        [
+                            new Diagnostic(
+                            stmt.Location?.Line ?? 0,
+                            stmt.Location?.Col ?? 0,
+                            $"Sub '{stmt.Name}' expects {sub.Parameters.Count} argument(s) but received {stmt.Arguments.Count}.",
+                            DiagnosticSeverity.Error
+                        )
+                        ]
+                    );
+        }
+
         for (int i = 0; i < sub!.Parameters.Count; i++)
         {
             var argResult = EvaluateExpression(stmt.Arguments[i]);  // evaluate in caller's scope
@@ -1063,6 +1088,20 @@ public class Evaluator(
 
         var localSymbols = new SymbolTable(_table);
 
+        if (expr.Arguments.Count != func!.Parameters.Count)
+        {
+            return new EvalFailure(
+                        [
+                            new Diagnostic(
+                            expr.Location?.Line ?? 0,
+                            expr.Location?.Col ?? 0,
+                            $"Function '{expr.Name}' expects {func.Parameters.Count} argument(s) but received {expr.Arguments.Count}.",
+                            DiagnosticSeverity.Error
+                        )
+                        ]
+                    );
+        }
+
         for (int i = 0; i < func!.Parameters.Count; i++)
         {
             var argResult = EvaluateExpression(expr.Arguments[i]);  // evaluate in caller's scope
@@ -1143,7 +1182,7 @@ public class Evaluator(
                         new Diagnostic(
                             expr.Location?.Line ?? 0,
                             expr.Location?.Col ?? 0,
-                            $"Unknown statement type: {expr.Operator.GetType().Name}",
+                            $"Unknown operator: {expr.Operator.Value}",
                             DiagnosticSeverity.Error
                         )
                     ]
@@ -1348,7 +1387,7 @@ public class Evaluator(
                         new Diagnostic(
                             stmt.Location?.Line ?? 0,
                             stmt.Location?.Col ?? 0,
-                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {stmt.Name}.",
+                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length - 1} defined for the array: {stmt.Name}.",
                             DiagnosticSeverity.Error
                         )
                     ]
@@ -1405,7 +1444,7 @@ public class Evaluator(
                         new Diagnostic(
                             stmt.Location?.Line ?? 0,
                             stmt.Location?.Col ?? 0,
-                            "Invalid index suppled.",
+                            "Invalid index supplied.",
                             DiagnosticSeverity.Error
                         )
                     ]
@@ -1445,7 +1484,7 @@ public class Evaluator(
                         new Diagnostic(
                             expr.Location?.Line ?? 0,
                             expr.Location?.Col ?? 0,
-                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length} defined for the array: {expr.Name}.",
+                            $"Supplied index {idx} is outside of the range 0-{arrVal.Items.Length - 1} defined for the array: {expr.Name}.",
                             DiagnosticSeverity.Error
                         )
                     ]
@@ -1477,7 +1516,7 @@ public class Evaluator(
                         new Diagnostic(
                             expr.Location?.Line ?? 0,
                             expr.Location?.Col ?? 0,
-                            "Invalid index suppled.",
+                            "Invalid index supplied.",
                             DiagnosticSeverity.Error
                         )
                     ]

@@ -529,23 +529,31 @@ public class StdlibTests
     Assert.Equal("yes", output);
   }
 
-  // --- Built-in null / edge-case return values ---
+  // --- Built-in error / edge-case return values ---
 
   [Fact]
-  public void LEN_Non_String_Argument_Returns_Empty_Output()
+  public void LEN_Non_String_Argument_Returns_EvalFailure()
   {
-    // LEN with a non-string argument returns null from the built-in,
-    // which the evaluator prints as an empty line.
-    var output = RunHelper.Run("PRINT LEN(42)");
-    Assert.Equal("", output);
+    // LEN requires a string; passing an integer raises a runtime error.
+    var result = RunHelper.RunResult("PRINT LEN(42)");
+    Assert.IsType<EvalFailure>(result);
   }
 
   [Fact]
-  public void VAL_Non_Numeric_String_Returns_Empty_Output()
+  public void VAL_Non_Numeric_String_Returns_EvalFailure()
   {
-    // VAL("abc") cannot parse → built-in returns null → prints empty line.
-    var output = RunHelper.Run("PRINT VAL(\"abc\")");
-    Assert.Equal("", output);
+    // VAL("abc") cannot be parsed as a number; the evaluator produces EvalFailure.
+    var result = RunHelper.RunResult("PRINT VAL(\"abc\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("valid number") || d.Message.Contains("VAL"));
+  }
+
+  [Fact]
+  public void VAL_Non_String_Argument_Returns_EvalFailure()
+  {
+    // VAL requires a string argument; passing an integer is a runtime error.
+    var result = RunHelper.RunResult("PRINT VAL(42)");
+    Assert.IsType<EvalFailure>(result);
   }
 
   [Fact]
@@ -578,11 +586,11 @@ public class StdlibTests
   }
 
   [Fact]
-  public void STR_Dollar_Non_Numeric_Argument_Returns_Empty_Output()
+  public void STR_Dollar_Non_Numeric_Argument_Returns_EvalFailure()
   {
-    // STR$ only accepts integers and floats; a boolean returns null → prints "".
-    var output = RunHelper.Run("PRINT STR$(TRUE)");
-    Assert.Equal("", output);
+    // STR$ only accepts integers and floats; a boolean is a runtime error.
+    var result = RunHelper.RunResult("PRINT STR$(TRUE)");
+    Assert.IsType<EvalFailure>(result);
   }
 
   // --- CHR$ ---
@@ -660,26 +668,26 @@ public class StdlibTests
   }
 
   [Fact]
-  public void CHR_Dollar_String_Argument_Returns_Empty_Output()
+  public void CHR_Dollar_String_Argument_Returns_EvalFailure()
   {
-    // Non-integer argument → null → prints ""
-    var output = RunHelper.Run("PRINT CHR$(\"H\")");
-    Assert.Equal("", output);
+    // Non-integer argument → runtime error
+    var result = RunHelper.RunResult("PRINT CHR$(\"H\")");
+    Assert.IsType<EvalFailure>(result);
   }
 
   [Fact]
-  public void CHR_Dollar_Float_Argument_Returns_Empty_Output()
+  public void CHR_Dollar_Float_Argument_Returns_EvalFailure()
   {
-    // Float does not match IntValue → null → prints ""
-    var output = RunHelper.Run("PRINT CHR$(72.5)");
-    Assert.Equal("", output);
+    // Float does not match IntValue → runtime error
+    var result = RunHelper.RunResult("PRINT CHR$(72.5)");
+    Assert.IsType<EvalFailure>(result);
   }
 
   [Fact]
-  public void CHR_Dollar_Boolean_Argument_Returns_Empty_Output()
+  public void CHR_Dollar_Boolean_Argument_Returns_EvalFailure()
   {
-    var output = RunHelper.Run("PRINT CHR$(TRUE)");
-    Assert.Equal("", output);
+    var result = RunHelper.RunResult("PRINT CHR$(TRUE)");
+    Assert.IsType<EvalFailure>(result);
   }
 
   // --- CONST declaration (happy path) ---
@@ -1381,5 +1389,60 @@ public class StdlibTests
     var failure = Assert.IsType<EvalFailure>(result);
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("MIN") && d.Message.Contains("built in"));
+  }
+
+  // --- VAL error cases ---
+
+  [Fact]
+  public void VAL_Non_Numeric_String_Error_Mentions_VAL()
+  {
+    var result = RunHelper.RunResult("LET x = VAL(\"abc\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("VAL") || d.Message.Contains("valid number"));
+  }
+
+  // --- STRING$ error cases ---
+
+  [Fact]
+  public void STRING_Dollar_Multi_Char_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(\"ab\", 3)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("single character"));
+  }
+
+  [Fact]
+  public void STRING_Dollar_Negative_Count_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(\"x\", -1)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-negative"));
+  }
+
+  [Fact]
+  public void STRING_Dollar_Non_String_First_Arg_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT STRING$(65, 3)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  // --- ASC error cases ---
+
+  [Fact]
+  public void ASC_Non_String_Argument_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT ASC(65)");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("string"));
+  }
+
+  [Fact]
+  public void ASC_Empty_String_Returns_EvalFailure()
+  {
+    var result = RunHelper.RunResult("PRINT ASC(\"\")");
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d => d.Message.Contains("non-empty"));
   }
 }

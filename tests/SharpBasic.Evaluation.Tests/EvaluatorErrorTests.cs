@@ -292,4 +292,81 @@ public class EvaluatorErrorTests
     Assert.Contains(failure.Diagnostics, d =>
         d.Message.Contains("LIMIT", StringComparison.OrdinalIgnoreCase));
   }
+
+  // --- Argument count mismatch ---
+
+  [Fact]
+  public void Evaluator_Call_Sub_Too_Few_Args_Returns_EvalFailure()
+  {
+    var source = """
+            SUB Add(a AS INTEGER, b AS INTEGER)
+              PRINT a + b
+            END SUB
+            CALL Add(1)
+            """;
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("Add") && d.Message.Contains("2") && d.Message.Contains("1"));
+  }
+
+  [Fact]
+  public void Evaluator_Call_Sub_Too_Many_Args_Returns_EvalFailure()
+  {
+    var source = """
+            SUB Greet(name AS STRING)
+              PRINT "Hello " & name
+            END SUB
+            CALL Greet("Alice", "extra")
+            """;
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("Greet") && d.Message.Contains("1") && d.Message.Contains("2"));
+  }
+
+  [Fact]
+  public void Evaluator_Call_Function_Too_Few_Args_Returns_EvalFailure()
+  {
+    var source = """
+            FUNCTION Multiply(a AS INTEGER, b AS INTEGER) AS INTEGER
+              RETURN a * b
+            END FUNCTION
+            PRINT Multiply(5)
+            """;
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("Multiply") && d.Message.Contains("2") && d.Message.Contains("1"));
+  }
+
+  [Fact]
+  public void Evaluator_Call_Function_Too_Many_Args_Returns_EvalFailure()
+  {
+    var source = """
+            FUNCTION Double(n AS INTEGER) AS INTEGER
+              RETURN n * 2
+            END FUNCTION
+            PRINT Double(3, 99)
+            """;
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("Double") && d.Message.Contains("1") && d.Message.Contains("2"));
+  }
+
+  [Fact]
+  public void Evaluator_Call_Sub_No_Params_With_Args_Returns_EvalFailure()
+  {
+    var source = """
+            SUB NoArgs()
+              PRINT "hi"
+            END SUB
+            CALL NoArgs(1)
+            """;
+    var result = RunHelper.RunResult(source);
+    var failure = Assert.IsType<EvalFailure>(result);
+    Assert.Contains(failure.Diagnostics, d =>
+        d.Message.Contains("NoArgs") && d.Message.Contains("0") && d.Message.Contains("1"));
+  }
 }
